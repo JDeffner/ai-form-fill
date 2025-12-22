@@ -1,0 +1,56 @@
+{
+  "name": "ai-form-fill",
+  "description": "Framework-agnostic library for AI-powered form filling. Extract structured data from unstructured text and automatically fill forms using OpenAI, Ollama, or custom AI providers.",
+  "version": "0.1.0",
+  "keywords": [
+    "ai",
+    "form",
+    "autofill",
+    "llm",
+    "openai",
+    "ollama",
+    "perplexity",
+    "typescript",
+    "form-filling",
+    "data-extraction",
+    "nlp",
+    "machine-learning",
+    "automation"
+  ],
+  "author": "Joel Deffner",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "homepage": "https://github.com/JDeffner",
+  "type": "module",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "types": "./dist/ai-form-input.d.ts",
+  "main": "./dist/ai-form-input.umd.cjs",
+  "module": "./dist/ai-form-input.js",
+  "exports": {
+    ".": {
+      "types": "./dist/ai-form-input.d.ts",
+      "import": "./dist/ai-form-input.js",
+      "require": "./dist/ai-form-input.umd.cjs"
+    }
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.2",
+    "openai": "^6.14.0",
+    "typescript": "~5.9.3",
+    "vite": "^7.3.0",
+    "vite-plugin-dts": "^4.5.4",
+    "vite-plugin-mock-dev-server": "^2.0.6"
+  }
+}

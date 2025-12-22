@@ -1,0 +1,34 @@
+{
+    "name": "jdeffner/ai-form-fill",
+    "description": "Framework-agnostic Library for AI-powered form filling.",
+    "keywords": [
+        "ai",
+        "form",
+        "autofill",
+        "llm",
+        "openai",
+        "ollama",
+        "typescript",
+        "form-filling",
+        "data-extraction",
+        "nlp",
+        "machine-learning",
+        "automation"
+    ],
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Joel Deffner",
+            "homepage": "https://github.com/JDeffner",
+            "role": "Developer"
+        }
+    ],
+    "minimum-stability": "stable",
+    "require": {},
+    "autoload": {
+        "psr-4": {
+            "Jdeffner\\AIFormFill\\": "dist/"
+        }
+    }
+}

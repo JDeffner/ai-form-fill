@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Form Input - Simple Demo</title>
+    <link rel="stylesheet" href="../styles.css" />
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>Simple Demo</h1>
+        <p class="subtitle">Basic example of AI-powered form filling</p>
+      </header>
+
+      <div class="content">
+        <!-- Configuration Panel --> 
+        <section class="panel">
+          <h2>Input Text</h2>
+          <div class="test-section">
+            <h3>Parse and Fill Form</h3>
+            <textarea id="aff-text" rows="8" placeholder="Hi, my name is John Doe. You can reach me at john.doe@example.com or call me at +1-555-123-4567. I live at 123 Main Street in New York, USA. I'm a software developer passionate about AI, music, and travel. I would like to receive the newsletter.">Hi, my name is Jim Raynor. You can reach me at jim.dope@starcraft.com or call me at +1-551-143-4567. I live at 1st Main Street in NYC, USA. I'm a software developer passionate about technology and music. I would like to subscribe to the newsletter and enable notifications. I'm male.
+            </textarea>
+            <div class="button-row">
+              <button id="aff-text-button" class="btn-primary">Parse & Fill Form</button>
+              <button id="aff-clear-button" class="btn-secondary">Clear Form</button>
+              <a href="../advanced/index.html"><button class="btn-secondary">Advanced Demo</button></a>
+            </div>
+          </div>
+        </section>
+
+        <!-- Test Form Panel -->
+        <section class="panel">
+          <h2>Test Form</h2>
+          <form id="aff-form" data-aff-provider="">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="firstName">First Name *</label>
+                <input type="text" id="firstName" name="firstName" placeholder="First name" required />
+              </div>
+              <div class="form-group">
+                <label for="lastName">Last Name *</label>
+                <input type="text" id="lastName" name="lastName" placeholder="Last name" required />
+              </div>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-group flex-2">
+                <label for="email">Email *</label>
+                <input type="email" id="email" name="email" placeholder="email@example.com" required />
+              </div>
+              <div class="form-group flex-1">
+                <label for="phone">Phone</label>
+                <input type="tel" id="phone" name="phone" placeholder="+1234567890" />
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label for="address">Address</label>
+              <input type="text" id="address" name="address" placeholder="Street address" />
+            </div>
+            
+            <div class="form-row">
+              <div class="form-group flex-2">
+                <label for="city">City</label>
+                <input type="text" id="city" name="city" placeholder="City" />
+              </div>
+              <div class="form-group flex-1">
+                <label for="country">Country</label>
+                <input type="text" id="country" name="country" placeholder="Country" />
+              </div>
+              <div class="form-group flex-1">
+                <label for="gender">Gender</label>
+                <select id="gender" name="gender">
+                  <option value="">Select</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label>Interests</label>
+              <div class="checkbox-group">
+                <label>
+                  <input type="checkbox" id="interest_tech" name="interest_tech" value="technology" />
+                  Technology
+                </label>
+                <label>
+                  <input type="checkbox" id="interest_sports" name="interest_sports" value="sports" />
+                  Sports
+                </label>
+                <label>
+                  <input type="checkbox" id="interest_arts" name="interest_arts" value="arts" />
+                  Arts
+                </label>
+                <label>
+                  <input type="checkbox" id="interest_music" name="interest_music" value="music" />
+                  Music
+                </label>
+                <label>
+                  <input type="checkbox" id="interest_travel" name="interest_travel" value="travel" />
+                  Travel
+                </label>
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label>Preferences</label>
+              <div class="checkbox-group">
+                <label>
+                  <input type="checkbox" id="newsletter" name="newsletter" value="yes" />
+                  Subscribe to newsletter
+                </label>
+                <label>
+                  <input type="checkbox" id="notifications" name="notifications" value="yes" />
+                  Enable notifications
+                </label>
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label for="about">About Me</label>
+              <textarea id="about" name="about" rows="3" placeholder="Briefly introduce yourself"></textarea>
+            </div>
+            
+            <div class="button-row">
+              <button type="submit" class="btn-primary">Submit Form</button>
+              <button id="clearButton" type="button" class="btn-secondary">Clear Form</button>
+            </div>
+          </form>
+        </section>
+      </div>
+    </div>
+    
+    <script type="module" src="./index.ts"></script>
+  </body>
+</html>
