@@ -1,0 +1,227 @@
+:root {
+    --primary-color: #6610F2;
+    --primary-background: #6610F222;
+    --input-shadow: #E2D6F9;
+    --icon-color: #555;
+    --box-background: #F8F9FA;
+    --box-border: #DEE2E6;
+    --box-heading: #ADB5BD;
+    --auswahl-hover: #E9ECEF;
+    --record-bg: #FFCDCD;
+    --record-color: #FF1900;
+
+}
+
+
+
+
+input[data-ai-enhanced]:focus {
+    border: 1px solid var(--primary-color) !important;
+    outline: 4px solid var(--input-shadow) !important;
+    box-shadow: 0 0 0 2px var(--input-shadow);
+}
+
+.input-with-icon {
+    position: relative;
+}
+
+.p-l input,
+.p-l textarea {
+    padding-left: 30px;
+    box-sizing: border-box;
+}
+
+.input-with-icon .icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--icon-color);
+    font-size: 14px;
+}
+
+.input-with-icon .iconSpeechRecording {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--icon-color);
+    font-size: 14px;
+}
+
+.input-changed {
+    background-color: var(--primary-background);
+    transition: background-color 1s;
+}
+
+
+input[type="time"],
+input[type="date"] {
+    padding-right: 25px;
+
+
+}
+
+.iconSpeechRecording {
+    cursor: pointer;
+    /* display: none; */
+}
+
+.iconSpeechRecording.active {
+    color: red !important;
+}
+
+.icon-container {
+    display: flex;
+    align-items: center;
+    color: var(--primary-color)
+}
+
+.box {
+    margin-top: 5px;
+    border: 1px solid var(--box-border);
+    background-color: var(--box-background);
+    border-radius: 10px;
+    display: none;
+    position: absolute;
+    z-index: 1000;
+    max-height: 200px;
+    overflow-y: scroll;
+}
+
+.heading {
+    color: var(--box-heading);
+    font-size: 12px;
+    font-weight: bold
+}
+
+.bereich {
+    padding: 10px 20px;
+    border-bottom: 1px solid var(--box-border);
+}
+
+.auswahl {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+    border-radius: 5px;
+    padding: 5px 10px;
+    font-weight: 500;
+    font-size: 16px;
+}
+
+.auswahl:hover {
+    background-color: var(--auswahl-hover);
+    cursor: pointer;
+}
+
+.ai-answer {
+    padding: 10px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+
+}
+
+.btn-ai-primary {
+    opacity: 0.9 !important;
+    color: var(--primary-color) !important;
+    background-color: #6610F222 !important;
+    font-weight: 700 !important;
+}
+
+.btn-record {
+    opacity: 1;
+    color: var(--record-color) !important;
+    background-color: var(--record-bg) !important;
+    font-weight: 700;
+}
+
+.btn-ai-primary:hover,
+.btn-ai-primary:focus,
+.btn-ai-primary:active,
+.btn-ai-primary:target,
+.btn-ai-primary:focus-visible {
+    opacity: 1;
+    color: var(--primary-color);
+    background-color: #6610F222;
+    font-weight: 700;
+}
+
+.btn-ai-danger {
+    opacity: 0.9;
+    color: #842029;
+    font-weight: 700;
+    background-color: #F8D7DA;
+}
+
+.btn-ai-danger:hover {
+    opacity: 1;
+    color: #842029;
+    font-weight: 700;
+    background-color: #F8D7DA;
+}
+
+
+
+/* speech */
+.speech-ai {
+    /* border: 1px solid var(--primary-color); */
+    border-radius: 8px;
+    padding: 10px 20px;
+    background-color: var(--box-background);
+}
+
+.accordion-header {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+}
+
+.accordion-body {
+    margin-top: 20px;
+}
+
+.aufnehmen {
+    width: 100%;
+    margin-bottom: 40px;
+}
+
+.visible {
+    display: none;
+}
+
+.inputButtonContainer {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    flex-wrap: nowrap;
+    justify-content: center;
+}
+
+.inputButtonContainer button {
+    text-align: center;
+    padding: 10px;
+    background-color: #f3e5ff;
+    border: none;
+    border-radius: 10px;
+    color: #6a1b9a;
+    font-size: 16px;
+    cursor: pointer;
+    height: 40px;
+}
+
+.inputButtonContainer > :first-child {
+    flex: 1;
+}
+
+.inputButtonContainer > :last-child {
+    flex: 0 0 auto;
+    width: 40px;
+}
+
+.inputButtonContainer > :only-child {
+    flex: 1;
+}

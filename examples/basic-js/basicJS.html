@@ -4,70 +4,42 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AI Form Input - Advanced Demo</title>
+    <title>AI Form Input - Simple Demo</title>
     <link rel="stylesheet" href="../styles.css" />
   </head>
   <body>
+    <nav style="margin-bottom: 1.5rem;">
+    <ul style="list-style: none; display: flex; gap: 1rem; padding: 0; margin: 0;">
+        <li><a class="btn-secondary" href="../advanced/advanced.html">Advanced Demo (TS)</a></li>
+        <li><a class="btn-secondary" href="../basic/basic.html">Basic Demo (TS)</a></li>
+        <!-- <li><a class="btn-secondary" href="../basic-js/basicJS.html">Basic Demo (JS)</a></li> -->
+        <li><a class="btn-secondary" href="../prototype/proto.html">Prototype</a></li>
+    </ul>
+    </nav>
     <div class="container">
       <header>
-        <h1>Advanced Demo</h1>
-        <p class="subtitle">Full-featured test environment with provider selection and debugging</p>
+        <h1>Simple Demo</h1>
+        <p class="subtitle">Basic example of AI-powered form filling</p>
       </header>
 
       <div class="content">
-        <!-- Configuration Panel -->
+        <!-- Configuration Panel --> 
         <section class="panel">
-          <h2>Configuration</h2>
-          <div class="config-form">
-            <div class="form-row">
-              <div class="form-group">
-                <label for="providerSelect">Provider:</label>
-                <select id="providerSelect">
-                  <option value="">Loading providers...</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label for="modelSelect">Model:</label>
-                <select id="modelSelect">
-                  <option value="">Loading models...</option>
-                </select>
-              </div>
-              <!-- <button id="refreshModels" class="btn-secondary btn-compact">🔄</button> -->
-            </div>
-            
-            <div class="form-group">
-              <label>
-                <input type="checkbox" id="debugMode" checked />
-                Debug Mode (Console Logging)
-              </label>
-            </div>
-            
-            <div class="button-row">
-              <button id="initButton" class="btn-primary">Initialize AI</button>
-              <button id="testApiButton" class="btn-secondary">Test API</button>
-              <a href="../basic/index.html"><button class="btn-secondary">Simple Demo</button></a>
-            </div>
-            <div id="status" class="status"></div>
-          </div>
-          
+          <h2>Input Text</h2>
           <div class="test-section">
             <h3>Parse and Fill Form</h3>
-            <textarea id="unstructuredText" rows="6" placeholder="Hi, my name is John Doe. You can reach me at john.doe@example.com or call me at +1-555-123-4567. I live at 123 Main Street in New York, USA. I'm a software developer passionate about AI and web technologies."></textarea>
-            <button id="parseAndFillButton" class="btn-primary">Parse & Fill Form</button>
-          </div>
-
-          <div class="test-section">
-            <h3>Fill Single Field</h3>
-            <p class="compact-text">Click a field, then:</p>
-            <button id="fillSingleButton" class="btn-primary">Fill Selected Field</button>
-            <p class="info">Selected: <span id="selectedFieldInfo">None</span></p>
+            <textarea id="aff-text" rows="8" placeholder="Hi, my name is John Doe. You can reach me at john.doe@example.com or call me at +1-555-123-4567. I live at 123 Main Street in New York, USA. I'm a software developer passionate about AI, music, and travel. I would like to receive the newsletter.">Hi, my name is Jim Raynor. You can reach me at jim.dope@starcraft.com or call me at +1-551-143-4567. I live at 1st Main Street in NYC, USA. I'm a software developer passionate about technology and music. I would like to subscribe to the newsletter and enable notifications. I'm male.
+            </textarea>
+            <div class="button-row">
+              <button id="aff-text-button" class="btn-primary">Parse & Fill Form</button>
+            </div>
           </div>
         </section>
 
         <!-- Test Form Panel -->
         <section class="panel">
           <h2>Test Form</h2>
-          <form id="testForm">
+          <form id="aff-form" data-aff-provider="">
             <div class="form-row">
               <div class="form-group">
                 <label for="firstName">First Name *</label>
@@ -162,21 +134,13 @@
             
             <div class="button-row">
               <button type="submit" class="btn-primary">Submit Form</button>
-              <button id="clearButton" type="button" class="btn-secondary">Clear Form</button>
+              <input id="clearButton" type="reset" class="btn-secondary" value="Clear Form" />
             </div>
           </form>
-        </section>
-
-        <!-- Results Panel -->
-        <section class="panel panel-wide">
-          <h2>Debug Log</h2>
-          <div id="results" class="results">
-            <p class="info">Results and debug information will appear here...</p>
-          </div>
         </section>
       </div>
     </div>
     
-    <script type="module" src="./index.ts"></script>
+    <script type="module" src="./basicJS.js"></script>
   </body>
 </html>

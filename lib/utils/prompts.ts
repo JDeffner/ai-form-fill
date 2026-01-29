@@ -44,10 +44,6 @@ export function buildFieldPrompt(field: FieldInfo, context?: string): string {
     prompt += `Placeholder: ${field.placeholder}\n`;
   }
 
-  // if (field.required) {
-  //   prompt += 'This field is required.\n';
-  // }
-
   if (field.pattern) {
     prompt += `Pattern/Format: ${field.pattern}\n`;
   }
@@ -66,30 +62,7 @@ export function buildFieldPrompt(field: FieldInfo, context?: string): string {
 }
 
 /**
- * Build a prompt for parsing unstructured text and extracting field data
- * 
- * Creates a comprehensive prompt that lists all form fields with their metadata,
- * provides the unstructured text, and instructs the AI to extract matching data
- * as JSON. Used by parseAndFillForm().
- * 
- * @param clientFieldInfos - Array of FieldInfo objects for all target fields
- * @param unstructuredText - The source text to extract data from
- * @returns A formatted prompt string that requests JSON extraction
- * 
- * @remarks
- * The AI is instructed to:
- * - Match field names exactly
- * - Return valid JSON only (no markdown)
- * - Include only fields where data was found
- * - Use field labels and placeholders as context clues
- * 
- * @example
- * ```typescript
- * const fields = getFillTargets(form);
- * const text = 'John Doe, john@example.com, (555) 123-4567';
- * const prompt = buildParsePrompt(fields, text);
- * // Returns prompt with field list + extraction instructions
- * ```
+ * Builds a prompt for AI to extract data from unstructured text into form fields.
  */
 export function buildParsePrompt(
   clientFieldInfos: FieldInfo[],
@@ -107,7 +80,20 @@ export function buildParsePrompt(
       const options = Array.from(field.element.options).map(opt => opt.textContent?.trim() || '').filter(opt => opt);
       prompt += ` - Options: [${options.join(', ')}]`;
     }
-    // if (field.required) prompt += ' - REQUIRED';
+    // Include radio button options
+    if (field.type === 'radio' && field.options) {
+      const optionLabels = field.options.map(opt => opt.label || opt.value);
+      prompt += ` - Options: [${optionLabels.join(', ')}]`;
+    }
+    // Add format hints for date/time fields
+    if (field.type === 'date') {
+      prompt += ' - Format: YYYY-MM-DD';
+    } else if (field.type === 'datetime-local') {
+      prompt += ' - Format: YYYY-MM-DDTHH:MM';
+    } else if (field.type === 'time') {
+      prompt += ' - Format: HH:MM';
+    }
+    if (field.hint) prompt += ` - Additional info: ${field.hint}`;
     prompt += '\n';
   }
 
@@ -117,6 +103,8 @@ export function buildParsePrompt(
     Only include fields where you found relevant data.
     \n
     For checkbox fields, return "true" if the text indicates the option should be checked, "false" or omit otherwise.
+    \n
+    For radio fields, return the value (preferred) or label of the selected option.
     \n
     Return ONLY the JSON object, no explanations or markdown formatting.
   `;
@@ -153,3 +141,62 @@ export const SYSTEM_PROMPTS = {
   
   PARSE_EXTRACT: 'You are a helpful assistant that extracts structured data from unstructured text. You must respond ONLY with valid JSON, no explanations or markdown code blocks. If its a checkbox field, return "true" if it should be checked, otherwise return "false" or omit the field.',
 } as const;
+
+/**
+ * Generates a JSON Schema from form fields for structured AI output.
+ */
+export function generateFormSchema(fields: FieldInfo[]): Record<string, any> {
+  const properties: Record<string, any> = {};
+
+  for (const fieldElement of fields) {
+    const fieldName = fieldElement.name || fieldElement.label;
+    if (!fieldName) continue;
+
+    let schema: Record<string, any>;
+    
+    switch (fieldElement.type) {
+      case 'number':
+      case 'range':
+        schema = { type: 'number' };
+        break;
+      case 'boolean':
+      case 'checkbox':
+        schema = { type: 'boolean' };
+        break;
+      case 'url':
+        schema = { type: 'string', format: 'uri' };
+        break;
+      case 'date':
+        schema = { type: 'string', format: 'date' };
+        break;
+      case 'datetime-local':
+        schema = { type: 'string', format: 'date-time' };
+        break;
+      case 'time':
+        schema = { type: 'string', format: 'time' };
+        break;
+      default:
+        schema = { type: 'string' };
+        break;
+    }
+
+    if (fieldElement.pattern) {
+      schema.pattern = fieldElement.pattern;
+    }
+
+    if (fieldElement.placeholder || fieldElement.hint) {
+      const parts = [] as string[];
+      if (fieldElement.placeholder) parts.push(fieldElement.placeholder);
+      if (fieldElement.hint) parts.push(fieldElement.hint);
+      schema.description = parts.join(' - ');
+    }
+
+    properties[fieldName] = schema;
+  }
+
+  return {
+    type: 'object',
+    properties,
+    additionalProperties: false,
+  };
+}

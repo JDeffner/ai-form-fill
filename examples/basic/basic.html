@@ -9,6 +9,14 @@
   </head>
   <body>
     <div class="container">
+    <nav style="margin-bottom: 1.5rem;">
+        <ul style="list-style: none; display: flex; gap: 1rem; padding: 0; margin: 0;">
+            <li><a class="btn-secondary" href="../advanced/advanced.html">Advanced Demo (TS)</a></li>
+            <!-- <li><a class="btn-secondary" href="../basic/basic.html">Basic Demo (TS)</a></li> -->
+            <li><a class="btn-secondary" href="../basic-js/basicJS.html">Basic Demo (JS)</a></li>
+            <li><a class="btn-secondary" href="../prototype/proto.html">Prototype</a></li>
+        </ul>
+    </nav>
       <header>
         <h1>Simple Demo</h1>
         <p class="subtitle">Basic example of AI-powered form filling</p>
@@ -24,8 +32,8 @@
             </textarea>
             <div class="button-row">
               <button id="aff-text-button" class="btn-primary">Parse & Fill Form</button>
-              <button id="aff-clear-button" class="btn-secondary">Clear Form</button>
-              <a href="../advanced/index.html"><button class="btn-secondary">Advanced Demo</button></a>
+             
+              <!-- <a href="../advanced/index.html"><button class="btn-secondary">Advanced Demo</button></a> -->
             </div>
           </div>
         </section>
@@ -128,13 +136,13 @@
             
             <div class="button-row">
               <button type="submit" class="btn-primary">Submit Form</button>
-              <button id="clearButton" type="button" class="btn-secondary">Clear Form</button>
+              <input id="clearButton" type="reset" class="btn-secondary" value="Clear Form" />
             </div>
           </form>
         </section>
       </div>
     </div>
     
-    <script type="module" src="./index.ts"></script>
+    <script type="module" src="./basic.ts"></script>
   </body>
 </html>

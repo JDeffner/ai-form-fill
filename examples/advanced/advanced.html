@@ -1,0 +1,245 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Form Input - Advanced Demo</title>
+    <link rel="stylesheet" href="../styles.css" />
+  </head>
+  <body>
+    <div class="container">
+      <nav style="margin-bottom: 1.5rem;">
+        <ul style="list-style: none; display: flex; gap: 1rem; padding: 0; margin: 0;">
+          <li><a class="btn-secondary" href="../basic/basic.html">Basic Demo (TS)</a></li>
+          <li><a class="btn-secondary" href="../basic-js/basicJS.html">Basic Demo (JS)</a></li>
+          <li><a class="btn-secondary" href="../prototype/proto.html">Prototype</a></li>
+        </ul>
+      </nav>
+      <header>
+        <h1>Advanced Demo</h1>
+        <p class="subtitle">Full-featured test environment with provider selection and debugging</p>
+      </header>
+
+      <div class="content">
+        <!-- Configuration Panel -->
+        <section class="panel">
+          <h2>Configuration</h2>
+          <div class="config-form">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="providerSelect">Provider:</label>
+                <select id="providerSelect">
+                  <option value="">Loading providers...</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="modelSelect">Model:</label>
+                <select id="modelSelect">
+                  <option value="">Loading models...</option>
+                </select>
+              </div>
+              <!-- <button id="refreshModels" class="btn-secondary btn-compact">🔄</button> -->
+            </div>
+            
+            <div class="form-group">
+              <label>
+                <input type="checkbox" id="debugMode" checked />
+                Debug Mode (Console Logging)
+              </label>
+            </div>
+            
+            <div class="button-row">
+              <button id="initButton" class="btn-primary">Initialize AI</button>
+              <button id="testApiButton" class="btn-secondary">Test API</button>
+              <a href="../basic/index.html"><button class="btn-secondary">Simple Demo</button></a>
+            </div>
+            <div id="status" class="status"></div>
+          </div>
+          
+          <div class="test-section">
+            <h3>Parse and Fill Form</h3>
+            <textarea id="unstructuredText" rows="10" placeholder="Hi, my name is John Doe."></textarea>
+            <button id="parseAndFillButton" class="btn-primary">Parse & Fill Form</button>
+          </div>
+
+          <div class="test-section">
+            <h3>Fill Single Field</h3>
+            <p class="compact-text">Click a field, then:</p>
+            <button id="fillSingleButton" class="btn-primary">Fill Selected Field</button>
+            <p class="info">Selected: <span id="selectedFieldInfo">None</span></p>
+          </div>
+        </section>
+
+        <!-- Test Form Panel -->
+        <section class="panel">
+          <h2>Test Form</h2>
+          <form id="testForm">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="firstName">First Name *</label>
+                <input type="text" id="firstName" name="firstName" placeholder="First name" required />
+              </div>
+              <div class="form-group">
+                <label for="lastName">Last Name *</label>
+                <input type="text" id="lastName" name="lastName" placeholder="Last name" required />
+              </div>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-group flex-2">
+                <label for="email">Email *</label>
+                <input type="email" id="email" name="email" placeholder="email@example.com" required />
+              </div>
+              <div class="form-group flex-1">
+                <label for="phone">Phone</label>
+                <input type="tel" id="phone" name="phone" placeholder="+1234567890" />
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label for="address">Address</label>
+              <input type="text" id="address" name="address" placeholder="Street address" />
+            </div>
+            
+            <div class="form-row">
+              <div class="form-group flex-2">
+                <label for="city">City</label>
+                <input type="text" id="city" name="city" placeholder="City" />
+              </div>
+              <div class="form-group flex-1">
+                <label for="country">Country</label>
+                <input type="text" id="country" name="country" placeholder="Country" />
+              </div>
+              <div class="form-group flex-1">
+                <label for="gender">Gender</label>
+                <select id="gender" name="gender">
+                  <option value="">Select</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label for="birthDate">Birth Date</label>
+                <input type="date" id="birthDate" name="birthDate" />
+              </div>
+              <div class="form-group flex-1">
+                <label for="startDate">Start Date</label>
+                <input type="date" id="startDate" name="startDate" data-aff-hint="When can the person start working" />
+              </div>
+              <div class="form-group flex-1">
+                <label for="preferredTime">Preferred Contact Time</label>
+                <input type="time" id="preferredTime" name="preferredTime" />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group flex-1">
+                <label>Employment Type</label>
+                <div class="radio-group">
+                  <label>
+                    <input type="radio" name="employmentType" value="full-time" />
+                    Full-time
+                  </label>
+                  <label>
+                    <input type="radio" name="employmentType" value="part-time" />
+                    Part-time
+                  </label>
+                  <label>
+                    <input type="radio" name="employmentType" value="contract" />
+                    Contract
+                  </label>
+                  <label>
+                    <input type="radio" name="employmentType" value="freelance" />
+                    Freelance
+                  </label>
+                </div>
+              </div>
+              <div class="form-group flex-1">
+                <label>Experience Level</label>
+                <div class="radio-group">
+                  <label>
+                    <input type="radio" name="experienceLevel" value="junior" />
+                    Junior (0-2 years)
+                  </label>
+                  <label>
+                    <input type="radio" name="experienceLevel" value="mid" />
+                    Mid-level (3-5 years)
+                  </label>
+                  <label>
+                    <input type="radio" name="experienceLevel" value="senior" />
+                    Senior (5+ years)
+                  </label>
+                </div>
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label>Interests</label>
+              <div class="checkbox-group">
+                <label>
+                  <input type="checkbox" id="interest_tech" name="interest_tech" value="technology" />
+                  Technology
+                </label>
+                <label>
+                  <input type="checkbox" id="interest_sports" name="interest_sports" value="sports" />
+                  Sports
+                </label>
+                <label>
+                  <input type="checkbox" id="interest_arts" name="interest_arts" value="arts" />
+                  Arts
+                </label>
+                <label>
+                  <input type="checkbox" id="interest_music" name="interest_music" value="music" />
+                  Music
+                </label>
+                <label>
+                  <input type="checkbox" id="interest_travel" name="interest_travel" value="travel" />
+                  Travel
+                </label>
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label>Preferences</label>
+              <div class="checkbox-group">
+                <label>
+                  <input type="checkbox" id="newsletter" name="newsletter" value="yes" />
+                  Subscribe to newsletter
+                </label>
+                <label>
+                  <input type="checkbox" id="notifications" name="notifications" value="yes" />
+                  Enable notifications
+                </label>
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label for="about">About Me</label>
+              <textarea id="about" name="about" rows="3" placeholder="Briefly introduce yourself" data-aff-hint="If no useful information is provided dont return anything"></textarea>
+            </div>
+            
+            <div class="button-row">
+              <button type="submit" class="btn-primary">Submit Form</button>
+              <button id="clearButton" type="button" class="btn-secondary">Clear Form</button>
+            </div>
+          </form>
+        </section>
+
+        <!-- Results Panel -->
+        <section class="panel panel-wide">
+          <h2>Debug Log</h2>
+          <div id="results" class="results">
+            <p class="info">Results and debug information will appear here...</p>
+          </div>
+        </section>
+      </div>
+    </div>
+    
+    <script type="module" src="./advanced.ts"></script>
+  </body>
+</html>

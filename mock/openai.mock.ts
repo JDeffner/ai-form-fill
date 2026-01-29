@@ -11,17 +11,19 @@ export default defineMock([
       const endpointObject = new OpenAI({
       apiKey: import.meta.env.VITE_OPEN_AI_KEY, // Keep your API key secure!
       });
-
       return await endpointObject.chat.completions.create({
         model: requestBody.model,
         messages: requestBody.messages,
-        max_tokens: requestBody.maxTokens
+        max_tokens: requestBody.maxTokens,
+        response_format: { type: "json_schema", json_schema: {
+          name: "form_schema",
+          schema: requestBody.format
+        }},
       })
       
     },
     headers: {
       'Content-Type': 'application/json',
-      
     },
   },
   // Comment out to simulate unavailable provider

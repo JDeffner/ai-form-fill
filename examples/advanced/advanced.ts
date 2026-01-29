@@ -5,11 +5,17 @@
  * and comprehensive testing capabilities
  */
 
-import { AIFormFill, AIProvider, LocalOllamaProvider, OpenAIProvider, PerplexityProvider, type AvailableProviders } from '../../lib/main';
+import { AIFormFill, AIProvider, LocalOllamaProvider, OpenAIProvider, PerplexityProvider, type AvailableProviders } from '../../lib/core/main';
 import { showStatus, logResult, clearForm } from '../utils/ui-helpers';
 
 // State
-let aiFormFill: AIFormFill | null = null;
+
+const listOfProviders: AIProvider[] = [
+  new LocalOllamaProvider({ apiEndpoint: 'http://localhost:11434', model: 'gemma3:4b' }),
+  new OpenAIProvider({ apiEndpoint: 'http://localhost:5173/api', model: 'gpt-5-nano' }),
+  new PerplexityProvider({ apiEndpoint: 'http://localhost:5173/api', model: 'sonar' }),
+];
+let aiFormFill: AIFormFill = new AIFormFill(listOfProviders[0], { debug: true, allowedProviders: listOfProviders });
 let selectedElement: HTMLElement | null = null;
 
 /**
@@ -19,7 +25,7 @@ let selectedElement: HTMLElement | null = null;
 async function loadProviders() {
   const providerSelect = document.getElementById('providerSelect') as HTMLSelectElement;
   providerSelect.innerHTML = '';
-  
+
   const providers = [
     { name: 'Local Ollama', value: 'ollama' },
     { name: 'OpenAI', value: 'openai' },
@@ -38,6 +44,7 @@ async function loadProviders() {
         option.textContent = provider.name;
         providerSelect.appendChild(option);
       });
+      providerSelect.value = aiFormFill.getProvider().getName();
       showStatus(`Loaded ${providers.length} providers`, 'success');
       logResult(`✅ Found ${providers.length} providers: ${providers.map(p => p.name).join(', ')}`);
     }
@@ -51,42 +58,42 @@ async function loadProviders() {
 
 async function loadModels() {
   const modelSelect = document.getElementById('modelSelect') as HTMLSelectElement;
+  const providerSelect = document.getElementById('providerSelect') as HTMLSelectElement;
   
   try {
     showStatus('Loading models...', 'info');
+    const selectedProviderName = providerSelect.value as AvailableProviders;
     
-    let provider: AIProvider;
-    const selectedProvider = (document.getElementById('providerSelect') as HTMLSelectElement).value;
-    
-    switch (selectedProvider) {
-      case 'ollama':
-        provider = new LocalOllamaProvider({ apiEndpoint: 'http://localhost:11434' });
-        break;
-      case 'openai':
-        provider = new OpenAIProvider({ apiEndpoint: 'http://localhost:5173/api' });
-        break;
-      case 'perplexity':
-        provider = new PerplexityProvider({ apiEndpoint: 'http://localhost:5173/api' });
-        break;
-      default:
-        throw new Error('Unsupported provider for model loading');
+    // Find and set the provider
+    const selectedProvider = listOfProviders.find(p => p.getName() === selectedProviderName);
+    if (selectedProvider) {
+      aiFormFill.setProvider(selectedProvider);
     }
-
-    const models = await provider.listModels();
+    
+    const models = await aiFormFill.getProvider()?.listModels();
+    console.log('Available Models:', models);
     
     modelSelect.innerHTML = '';
-    if (models.length === 0) {
-      modelSelect.innerHTML = '<option value="">No models found</option>';
-      showStatus('No models found. Make sure the service is running.', 'error');
-    } else {
+    if (models && models.length > 0) {
+      const currentModel = aiFormFill.getSelectedModel();
+      
       models.forEach(model => {
         const option = document.createElement('option');
         option.value = model;
         option.textContent = model;
         modelSelect.appendChild(option);
       });
+      
+      // Select the current model if it's in the list
+      if (currentModel && models.includes(currentModel)) {
+        modelSelect.value = currentModel;
+      }
+      
       showStatus(`Loaded ${models.length} models`, 'success');
       logResult(`✅ Found ${models.length} models: ${models.join(', ')}`);
+    } else {
+      modelSelect.innerHTML = '<option value="">No models found</option>';
+      showStatus('No models found. Make sure the service is running.', 'error');
     }
   } catch (error) {
     console.error('Error loading models:', error);
@@ -106,7 +113,7 @@ async function initializeAI() {
   const providerSelect = document.getElementById('providerSelect') as HTMLSelectElement;
   
   const selectedModel = modelSelect.value;
-  const selectedProvider = providerSelect.value;
+  const selectedProviderName = providerSelect.value;
 
   if (!selectedModel) {
     showStatus('Please select a model first', 'error');
@@ -114,12 +121,20 @@ async function initializeAI() {
   }
   
   try {
-    aiFormFill = new AIFormFill(selectedProvider as AvailableProviders, {
-      debug: debug,
-    });
+    // Find the matching provider from the allowed list
+    const selectedProvider = listOfProviders.find(p => p.getName() === selectedProviderName);
     
+    if (selectedProvider) {
+      // Use the existing provider instance and just update its model
+      aiFormFill.setProvider(selectedProvider);
+      await aiFormFill.setSelectedModel(selectedModel);
+    } else {
+      showStatus('Provider not found', 'error');
+      return;
+    }
+
     showStatus('AI Form Input initialized successfully!', 'success');
-    logResult(`✅ Initialized: new AIFormFill('${selectedProvider}')`);
+    logResult(`✅ Initialized with provider '${selectedProviderName}' and model '${selectedModel}'`);
   } catch (error) {
     console.error('Error initializing AI Form Input:', error);
     showStatus('Error initializing AI Form Input', 'error');
@@ -131,7 +146,7 @@ async function initializeAI() {
  * Form Filling Functions
  */
 
-async function parseAndFillForm() {
+async function extractAndInsertData() {
   if (!aiFormFill) {
     showStatus('Please initialize AI Form Input first', 'error');
     return;
@@ -152,8 +167,8 @@ async function parseAndFillForm() {
     
     await aiFormFill.parseAndFillForm(form, text);
     
-    showStatus('Form filled successfully!', 'success');
-    logResult('✅ Form filled!');
+    showStatus('API call complete', 'info');
+    logResult('✅ API call complete');
   } catch (error) {
     console.error('Error filling form:', error);
     showStatus('Error filling form', 'error');
@@ -194,15 +209,10 @@ async function fillSingleField() {
 async function testAPI() {
   showStatus('Testing /api/provider endpoint...');
   const providerSelect = document.getElementById('providerSelect') as HTMLSelectElement;
-  const selectedProvider = providerSelect.value;
   
-  const response = await fetch(`/api/${selectedProvider}/available`, { 
-    method: 'POST' 
-  });
-  
-  if (!response.ok) {
+  if (!aiFormFill.providerAvailable) {
     showStatus('Provider API is unavailable', 'error');
-    logResult(`❌ Provider API is unavailable: ${response.status}`);
+    logResult(`❌ Provider API is unavailable`);
     return;
   }
   
@@ -234,7 +244,7 @@ function setupFieldTracking() {
 function setupEventListeners() {
   // document.getElementById('refreshModels')!.addEventListener('click', loadModels);
   document.getElementById('initButton')!.addEventListener('click', initializeAI);
-  document.getElementById('parseAndFillButton')!.addEventListener('click', parseAndFillForm);
+  document.getElementById('parseAndFillButton')!.addEventListener('click', extractAndInsertData);
   document.getElementById('fillSingleButton')!.addEventListener('click', fillSingleField);
   document.getElementById('testApiButton')!.addEventListener('click', testAPI);
   document.getElementById('providerSelect')!.addEventListener('change', loadModels);
@@ -248,7 +258,7 @@ function setupEventListeners() {
 function addSampleData() {
   const textarea = document.getElementById('unstructuredText') as HTMLTextAreaElement;
   if (textarea) {
-    textarea.value = `Hi, my name is Jim Raynor. You can reach me at jim.dope@starcraft.com or call me at +1-551-143-4567. I live at 1st Main Street in NYC, USA. I'm a software developer passionate about technology and music. I enjoy travel as well. I would like to subscribe to the newsletter and enable notifications. I'm male.`;
+    textarea.value = `Hi, my name is John Doe. You can reach me at john.doe@example.com or call me at +1-555-123-4567. I live at 123 Main Street in New York, USA. I was born on March 15, 1990. I'm looking for a full-time position as a senior software developer and can start on January 1, 2026. Best time to reach me is around 2:30 PM. I'm passionate about AI and web technologies.`;
   }
 }
 
@@ -264,6 +274,7 @@ function initApp() {
   
   // Handle form submission
   const form = document.getElementById('testForm') as HTMLFormElement;
+  clearForm(form);
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     showStatus('Form submitted!', 'success');
@@ -286,7 +297,6 @@ function initApp() {
     console.log('Form Data:', data);
     logResult(`✅ Form Data: ${JSON.stringify(data, null, 2)}`);
   });
-  
   console.log('✅ Advanced demo ready!');
 }
 

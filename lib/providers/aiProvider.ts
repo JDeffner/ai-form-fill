@@ -1,25 +1,16 @@
 import type { ChatRequest, ChatResponse } from '../core/types';
-import { affConfig } from '../config';
+import { affConfig } from '../core/config';
 
 /**
- * Configuration for AI providers
- * @param apiEndpoint - The URL of the AI provider's API (if applicable)
- * @param model - The default model to use
- * @param timeout - Optional timeout for requests in milliseconds
+ * Configuration options for AI providers.
  */
 export interface ProviderConfig {
-  apiEndpoint: string;
+  apiEndpoint?: string;
   model?: string;
   timeout?: number;
-}
-
-/**
- * Response format for provider-specific API calls
- * 
- * @remark While not strictly necessary, a type like this should be created for each provider
- * to define the expected response structure from their APIs. This helps with type safety and clarity when handling responses.
- */
-export type ProviderResponse = {
+  chatEndpoint?: string;
+  listModelsEndpoint?: string;
+  availabilityEndpoint?: string;
 }
 
 export type ProviderType = 'local' | 'remote';
@@ -50,15 +41,16 @@ export abstract class AIProvider {
    * **Optional**: Concrete link to endpoint that checks API availability
    */
   protected availabilityEndpoint?: string;
-  protected selectedModel?: string;
+  
+  protected selectedModel: string;
   protected apiEndpoint: string;
   protected timeout: number;
-  protected debug: boolean = affConfig.defaults.debug;
+  protected supportsStructuredResponses: boolean = false;
 
-  constructor(config: ProviderConfig) {
-    this.apiEndpoint = config.apiEndpoint;
-    this.selectedModel = config.model;
-    this.timeout = config.timeout || 30000;
+  constructor(config?: ProviderConfig) {
+    this.apiEndpoint = config?.apiEndpoint || '';
+    this.selectedModel = config?.model || '';
+    this.timeout = config?.timeout || 30000;
   }
   /**
    * Sends a message to a model of the AI provider and returns the response
@@ -67,36 +59,32 @@ export abstract class AIProvider {
    */
   abstract chat(params: ChatRequest): Promise<ChatResponse>;
 
-  /**
-   * 
-   * @returns The currently selected model or undefined
-   */
-  getSelectedModel(): string | undefined {
+  /** Returns the currently selected model. */
+  getSelectedModel(): string {
     return this.selectedModel;
   }
 
   /**
-   * Set the selected model
-   * @param model - The model to select
+   * Sets the model to use for chat requests. Validates against available models if possible.
    */
-  setSelectedModel(model: string): void {
-    if (!model) return;
-    if (typeof this.listModels === 'function') {
-      this.listModels()
-        .then((models) => {
-          if (models && models.includes(model)) {
-            this.selectedModel = model;
-          } else if (this.debug) {
-            console.log(`Model "${model}" not found in provider models.`);
-          }
-        })
-        .catch((err) => {
-          if (this.debug) console.log('listModels failed:', err);
-        });
-      return;
+  async setSelectedModel(modelName: string): Promise<boolean> {
+    if (!modelName) return false;
+    
+    try {
+      const models = await this.listModels();
+      if (models && models.includes(modelName)) {
+        this.selectedModel = modelName;
+        return true;
+      } else if (affConfig.providerDebug) {
+        console.warn(`Model "${modelName}" not found. Available: ${models.join(', ')}`);
+      }
+      return false;
+    } catch (err) {
+      if (affConfig.providerDebug) console.warn('Could not validate model:', err);
+      // Set anyway if validation fails
+      this.selectedModel = modelName;
+      return true;
     }
-
-    // If no listModels is available, do not change selection by default.
   }
 
   /**
@@ -111,10 +99,19 @@ export abstract class AIProvider {
    * 
    * @returns Promise resolving to true if the API is accessible
    */
-  isAvailable?(): Promise<boolean>;
+  abstract isAvailable(): Promise<boolean>;
 
   getName(): string {
     return this.providerName;
+  }
+
+  /**
+   * Indicates if the provider supports structured output formats (e.g., JSON Schema)
+   * 
+   * @returns true if structured output is supported, false otherwise
+   */
+  supportsStructuredOutput(): boolean {
+    return this.supportsStructuredResponses;
   }
 }
 
@@ -122,12 +119,12 @@ export abstract class AIProvider {
  * @extension Extend this class for providers that run locally (e.g., Ollama, LocalAI)
  */
 export abstract class LocalAIProvider extends AIProvider {
-  protected providerType: ProviderType = 'local';
+  readonly providerType: ProviderType = 'local';
 }
 
 /**
  * @extension Extend this class for providers that run remotely (e.g., OpenAI, Perplexity)
  */
 export abstract class RemoteAIProvider extends AIProvider {
-  protected providerType: ProviderType = 'remote';
+  readonly providerType: ProviderType = 'remote';
 }

@@ -13,9 +13,9 @@
  * 
  */
 
+import { affConfig } from '../core/config';
 import type { ChatRequest, ChatResponse } from '../core/types';
-import { LocalAIProvider } from '../providers/aiProvider';
-import { affConfig } from '../config';
+import { LocalAIProvider, type ProviderConfig } from '../providers/aiProvider';
 
 /**
  * Ollama API response format
@@ -64,21 +64,35 @@ export interface OllamaModel {
  * @see {@link https://docs.ollama.com/api/introduction | Ollama API Documentation}
  */
 export class LocalOllamaProvider extends LocalAIProvider {
-  protected providerName: string = 'Ollama';
+  protected providerName: string = 'ollama';
+  protected supportsStructuredResponses: boolean = true;
+  protected chatEndpoint: string;
+  protected listModelsEndpoint: string;
+  protected availabilityEndpoint: string;
+
+  constructor(config?: ProviderConfig) {
+    super({
+      apiEndpoint: config?.apiEndpoint || affConfig.ollama.apiEndpoint,
+      model: config?.model || affConfig.ollama.model,
+      timeout: config?.timeout || affConfig.timeout,
+    });
+    this.chatEndpoint = this.apiEndpoint + '/api/chat';
+    this.listModelsEndpoint = this.apiEndpoint + '/api/tags';
+    this.availabilityEndpoint = this.apiEndpoint + '/api/tags';
+  }
 
   override async chat(params: ChatRequest): Promise<ChatResponse> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.timeout);
-    const requestEndpoint = this.chatEndpoint || `${this.apiEndpoint}${affConfig.providers.ollama.chatEndpoint}`;
+    const requestEndpoint = this.chatEndpoint;
 
     try {
-      // Build the Ollama-specific request body
       const requestBody = {
-        model: params.model || affConfig.providers.ollama.model,
+        model: params.model,
         messages: params.messages,
-        stream: false, // We want complete responses, not streaming
+        stream: false, 
         options: {
-          num_predict: params.maxTokens, // Ollama uses num_predict instead of maxTokens
+          num_predict: params.maxTokens,
         },
       };
 
@@ -120,7 +134,7 @@ export class LocalOllamaProvider extends LocalAIProvider {
 
   override async listModels(): Promise<string[]> {
     try {
-      const response = await fetch(`${this.apiEndpoint}${affConfig.providers.ollama.listModelsEndpoint}`);
+      const response = await fetch(this.listModelsEndpoint);
       
       if (!response.ok) {
         throw new Error(`Failed to fetch models: ${response.statusText}`);
@@ -136,7 +150,7 @@ export class LocalOllamaProvider extends LocalAIProvider {
 
   override async isAvailable(): Promise<boolean> {
     try {
-      const response = await fetch(`${this.apiEndpoint}${affConfig.providers.ollama.availabilityEndpoint}`, {
+      const response = await fetch(this.availabilityEndpoint, {
         method: 'GET',
       });
       return response.ok;

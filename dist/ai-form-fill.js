@@ -1,43 +1,23 @@
-let a = {
-  /**
-   * Provider-specific default configurations
-   * These can be overridden globally or per-instance
-   */
-  providers: {
-    ollama: {
-      apiEndpoint: "http://localhost:11434",
-      model: "gemma3:4b",
-      timeout: 3e4,
-      chatEndpoint: "/api/chat",
-      listModelsEndpoint: "/api/tags",
-      availabilityEndpoint: "/api/tags"
-    },
-    openai: {
-      apiEndpoint: "http://localhost:5173/api",
-      model: "gpt-5-nano",
-      timeout: 6e4,
-      chatEndpoint: void 0,
-      listModelsEndpoint: void 0,
-      availabilityEndpoint: void 0
-    },
-    perplexity: {
-      apiEndpoint: "http://localhost:5173/api",
-      model: "sonar",
-      timeout: 6e4,
-      chatEndpoint: void 0,
-      listModelsEndpoint: void 0,
-      availabilityEndpoint: void 0
-    }
+let l = {
+  ollama: {
+    apiEndpoint: "http://localhost:11434",
+    model: "gemma3:4b"
   },
-  /**
-   * Global library defaults
-   */
-  defaults: {
-    debug: !0,
-    timeout: 3e4
-  }
+  openai: {
+    apiEndpoint: "http://localhost:5173/api",
+    // http://localhost:5173/api for local testing proxy
+    model: "gpt-5-nano"
+  },
+  perplexity: {
+    apiEndpoint: "http://localhost:5173/api",
+    // http://localhost:5173/api for local testing proxy
+    model: "sonar"
+  },
+  providerDebug: !0,
+  formFillDebug: !0,
+  timeout: 3e4
 };
-class h {
+class y {
   /**
    * **Optional**: Concrete link to endpoint that sends chat messages
    */
@@ -53,124 +33,255 @@ class h {
   selectedModel;
   apiEndpoint;
   timeout;
-  debug = a.defaults.debug;
-  constructor(o) {
-    this.apiEndpoint = o.apiEndpoint, this.selectedModel = o.model, this.timeout = o.timeout || 3e4;
+  supportsStructuredResponses = !1;
+  constructor(e) {
+    this.apiEndpoint = e?.apiEndpoint || "", this.selectedModel = e?.model || "", this.timeout = e?.timeout || 3e4;
   }
-  /**
-   * 
-   * @returns The currently selected model or undefined
-   */
+  /** Returns the currently selected model. */
   getSelectedModel() {
     return this.selectedModel;
   }
   /**
-   * Set the selected model
-   * @param model - The model to select
+   * Sets the model to use for chat requests. Validates against available models if possible.
    */
-  setSelectedModel(o) {
-    if (o && typeof this.listModels == "function") {
-      this.listModels().then((e) => {
-        e && e.includes(o) ? this.selectedModel = o : this.debug && console.log(`Model "${o}" not found in provider models.`);
-      }).catch((e) => {
-        this.debug && console.log("listModels failed:", e);
-      });
-      return;
+  async setSelectedModel(e) {
+    if (!e) return !1;
+    try {
+      const t = await this.listModels();
+      return t && t.includes(e) ? (this.selectedModel = e, !0) : (l.providerDebug && console.warn(`Model "${e}" not found. Available: ${t.join(", ")}`), !1);
+    } catch (t) {
+      return l.providerDebug && console.warn("Could not validate model:", t), this.selectedModel = e, !0;
     }
   }
   getName() {
     return this.providerName;
   }
+  /**
+   * Indicates if the provider supports structured output formats (e.g., JSON Schema)
+   * 
+   * @returns true if structured output is supported, false otherwise
+   */
+  supportsStructuredOutput() {
+    return this.supportsStructuredResponses;
+  }
 }
-class b extends h {
+class w extends y {
   providerType = "local";
 }
-class y extends h {
+class $ extends y {
   providerType = "remote";
 }
-function m(t) {
-  const o = {
-    element: t,
+const F = [
+  "null",
+  "",
+  "n/a",
+  "none",
+  "no value",
+  "empty",
+  "undefined",
+  "unknown",
+  "missing"
+], x = ["true", "yes", "1", "checked", "on"];
+function h(o) {
+  o.dispatchEvent(new Event("input", { bubbles: !0 })), o.dispatchEvent(new Event("change", { bubbles: !0 }));
+}
+function S(o) {
+  return F.includes(o);
+}
+function M(o) {
+  if (o.id) {
+    const t = document.querySelector(`label[for="${o.id}"]`);
+    if (t)
+      return t.textContent?.trim() || "";
+  }
+  const e = o.closest("label");
+  return e && e.textContent?.trim() || "";
+}
+function T(o, e) {
+  let t = null;
+  const r = o.trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(r))
+    t = new Date(r);
+  else if (/^\d{1,2}[\/.-]\d{1,2}[\/.-]\d{2,4}$/.test(r)) {
+    const s = r.split(/[\/.-]/), c = parseInt(s[0], 10), u = parseInt(s[1], 10);
+    let f = parseInt(s[2], 10);
+    f < 100 && (f += 2e3), t = new Date(f, c - 1, u);
+  } else {
+    const s = Date.parse(r);
+    isNaN(s) || (t = new Date(s));
+  }
+  if (e === "time") {
+    const s = r.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?(?:\s*(am|pm))?/i);
+    if (s) {
+      let c = parseInt(s[1], 10);
+      const u = s[2], f = s[4]?.toLowerCase();
+      return f === "pm" && c < 12 && (c += 12), f === "am" && c === 12 && (c = 0), `${c.toString().padStart(2, "0")}:${u}`;
+    }
+    return null;
+  }
+  if (!t || isNaN(t.getTime()))
+    return null;
+  const i = t.getFullYear(), n = (t.getMonth() + 1).toString().padStart(2, "0"), a = t.getDate().toString().padStart(2, "0"), d = t.getHours().toString().padStart(2, "0"), p = t.getMinutes().toString().padStart(2, "0");
+  switch (e) {
+    case "date":
+      return `${i}-${n}-${a}`;
+    case "datetime-local":
+      return `${i}-${n}-${a}T${d}:${p}`;
+    case "month":
+      return `${i}-${n}`;
+    case "week":
+      const s = new Date(i, 0, 1), c = Math.floor((t.getTime() - s.getTime()) / (1440 * 60 * 1e3)), u = Math.ceil((c + s.getDay() + 1) / 7);
+      return `${i}-W${u.toString().padStart(2, "0")}`;
+    default:
+      return `${i}-${n}-${a}`;
+  }
+}
+function m(o) {
+  const e = {
+    element: o,
     type: "text"
   };
-  if (t instanceof HTMLInputElement ? (o.type = t.type, o.name = t.name, o.placeholder = t.placeholder, o.required = t.required, o.pattern = t.pattern, t.type === "checkbox" && (o.placeholder = t.value || "checkbox option")) : t instanceof HTMLTextAreaElement ? (o.type = "textarea", o.name = t.name, o.placeholder = t.placeholder, o.required = t.required) : t instanceof HTMLSelectElement && (o.type = "select", o.name = t.name, o.required = t.required), t.id) {
-    const e = document.querySelector(`label[for="${t.id}"]`);
-    e && (o.label = e.textContent?.trim());
+  if (o instanceof HTMLInputElement ? (e.type = o.type, e.name = o.name, e.placeholder = o.placeholder, e.pattern = o.pattern, o.type === "checkbox" && (e.placeholder = o.value || "checkbox option"), o.type === "radio" && (e.placeholder = o.value || "radio option")) : o instanceof HTMLTextAreaElement ? (e.type = "textarea", e.name = o.name, e.placeholder = o.placeholder) : o instanceof HTMLSelectElement && (e.type = "select", e.name = o.name), o.id) {
+    const r = document.querySelector(`label[for="${o.id}"]`);
+    r && (e.label = r.textContent?.trim());
   }
-  if (!o.label) {
-    const e = t.closest("label");
-    e && (o.label = e.textContent?.trim());
+  if (!e.label) {
+    const r = o.closest("label");
+    r && (e.label = r.textContent?.trim());
   }
-  return o;
+  const t = o.dataset.affHint;
+  return t && (e.hint = t), e;
 }
-function g(t) {
-  const o = [];
-  return t.querySelectorAll(
-    'input:not([type="submit"]):not([type="button"]):not([type="reset"]), textarea, select'
-  ).forEach((r) => {
-    r instanceof HTMLElement && o.push(m(r));
-  }), o;
+function k(o) {
+  const e = [], t = /* @__PURE__ */ new Map();
+  o.querySelectorAll(
+    'input:not([type="submit"]):not([type="reset"]):not([type="button"]):not([type="hidden"]):not([type="image"]):not([type="file"]), textarea, select'
+  ).forEach((i) => {
+    if (i instanceof HTMLInputElement && i.type === "radio") {
+      const n = i.name;
+      n && (t.has(n) || t.set(n, []), t.get(n).push(i));
+    } else i instanceof HTMLElement && e.push(m(i));
+  });
+  for (const [i, n] of t.entries()) {
+    if (n.length === 0) continue;
+    const a = n[0], d = m(a);
+    d.options = n.map((p) => {
+      let s = "";
+      if (p.id) {
+        const c = document.querySelector(`label[for="${p.id}"]`);
+        c && (s = c.textContent?.trim() || "");
+      }
+      if (!s) {
+        const c = p.closest("label");
+        c && (s = c.textContent?.trim() || "");
+      }
+      return {
+        value: p.value,
+        label: s || p.value
+      };
+    });
+    for (const p of n) {
+      const s = p.dataset.affHint;
+      s && (d.hint += " " + s);
+    }
+    e.push(d);
+  }
+  return e;
 }
-function u(t, o) {
-  const e = o.trim().toLowerCase();
-  if (!(e == "null" || e === "" || e === "n/a" || e === "none" || e === "no value" || e === "empty" || e === "undefined" || e === "unknown")) {
-    if (t instanceof HTMLInputElement)
-      if (t.type === "checkbox") {
-        const r = e === "true" || e === "yes" || e === "1" || e === "checked" || e === "on";
-        t.checked = r, t.dispatchEvent(new Event("change", { bubbles: !0 })), t.dispatchEvent(new Event("input", { bubbles: !0 }));
-      } else
-        t.value = o, t.dispatchEvent(new Event("input", { bubbles: !0 })), t.dispatchEvent(new Event("change", { bubbles: !0 }));
-    else if (t instanceof HTMLTextAreaElement)
-      t.value = o, t.dispatchEvent(new Event("input", { bubbles: !0 })), t.dispatchEvent(new Event("change", { bubbles: !0 }));
-    else if (t instanceof HTMLSelectElement) {
-      let r = Array.from(t.options).find(
-        (n) => n.value.toLowerCase() === e || n.text.toLowerCase() === e
-      );
-      r || (r = Array.from(t.options).find(
-        (n) => n.value.toLowerCase().includes(e) || n.text.toLowerCase().includes(e) || e.includes(n.value.toLowerCase()) || e.includes(n.text.toLowerCase())
-      )), r ? (t.value = r.value, t.dispatchEvent(new Event("change", { bubbles: !0 })), t.dispatchEvent(new Event("input", { bubbles: !0 }))) : a.defaults.debug && console.warn(
-        `No matching option found for select element. Value: "${o}", Available options:`,
-        Array.from(t.options).map((n) => `${n.value} (${n.text})`)
-      );
+function A(o, e) {
+  const t = x.includes(e);
+  o.checked = t, h(o);
+}
+function L(o, e) {
+  const t = o.closest("form");
+  if (!t || !o.name) return;
+  const r = t.querySelectorAll(
+    `input[type="radio"][name="${o.name}"]`
+  );
+  for (const i of r) {
+    const n = M(i).toLowerCase(), a = i.value.toLowerCase();
+    if (a === e || n === e || a.includes(e) || n.includes(e) || e.includes(a) || e.includes(n)) {
+      i.checked = !0, h(i);
+      break;
     }
   }
 }
-function w(t) {
-  return t.name || t.label || t.placeholder || "unknown";
+function N(o, e) {
+  const t = T(e, o.type);
+  t ? (o.value = t, h(o)) : l.formFillDebug && console.warn(`Could not parse date value "${e}" for ${o.type} input`);
 }
-function x(t, o) {
-  let e = `Generate appropriate content for the following form field:
+function D(o, e, t) {
+  let r = Array.from(o.options).find(
+    (i) => i.value.toLowerCase() === e || i.text.toLowerCase() === e
+  );
+  r || (r = Array.from(o.options).find(
+    (i) => i.value.toLowerCase().includes(e) || i.text.toLowerCase().includes(e) || e.includes(i.value.toLowerCase()) || e.includes(i.text.toLowerCase())
+  )), r ? (o.value = r.value, h(o)) : l.formFillDebug && console.warn(
+    `No matching option for select. Value: "${t}", Options:`,
+    Array.from(o.options).map((i) => `${i.value} (${i.text})`)
+  );
+}
+function g(o, e) {
+  const t = e.trim().toLowerCase();
+  if (!S(t))
+    if (o instanceof HTMLInputElement)
+      switch (o.type) {
+        case "checkbox":
+          A(o, t);
+          break;
+        case "radio":
+          L(o, t);
+          break;
+        case "date":
+        case "datetime-local":
+        case "time":
+          N(o, e);
+          break;
+        default:
+          o.value = e, h(o);
+      }
+    else o instanceof HTMLTextAreaElement ? (o.value = e, h(o)) : o instanceof HTMLSelectElement && D(o, t, e);
+}
+function P(o) {
+  return o.name || o.label || o.placeholder || "unknown";
+}
+function C(o, e) {
+  let t = `Generate appropriate content for the following form field:
 
 `;
-  return t.label && (e += `Field Label: ${t.label}
-`), t.name && (e += `Field Name: ${t.name}
-`), e += `Field Type: ${t.type}
-`, t.placeholder && (e += `Placeholder: ${t.placeholder}
-`), t.pattern && (e += `Pattern/Format: ${t.pattern}
-`), o && (e += `
-Additional Context: ${o}
-`), t.type === "checkbox" ? e = `${o}
-Randomly return "true" or "false", no explanations. Dont repeat your choice too often.` : e += `
-Provide a realistic and appropriate value for this field. Only return the value itself, no explanations.`, e;
+  return o.label && (t += `Field Label: ${o.label}
+`), o.name && (t += `Field Name: ${o.name}
+`), t += `Field Type: ${o.type}
+`, o.placeholder && (t += `Placeholder: ${o.placeholder}
+`), o.pattern && (t += `Pattern/Format: ${o.pattern}
+`), e && (t += `
+Additional Context: ${e}
+`), o.type === "checkbox" ? t = `${e}
+Randomly return "true" or "false", no explanations. Dont repeat your choice too often.` : t += `
+Provide a realistic and appropriate value for this field. Only return the value itself, no explanations.`, t;
 }
-function $(t, o) {
-  let e = `Extract structured data from the following unstructured text and match it to the form fields.
+function I(o, e) {
+  let t = `Extract structured data from the following unstructured text and match it to the form fields.
 
 `;
-  e += `Form fields:
+  t += `Form fields:
 `;
-  for (const r of t) {
-    const n = r.name || r.label || r.placeholder || "unknown";
-    if (e += `- ${n} (type: ${r.type})`, r.label && (e += ` - Label: "${r.label}"`), r.placeholder && (e += ` - Placeholder: "${r.placeholder}"`), r.type === "select" && r.element instanceof HTMLSelectElement) {
-      const i = Array.from(r.element.options).map((s) => s.textContent?.trim() || "").filter((s) => s);
-      e += ` - Options: [${i.join(", ")}]`;
+  for (const r of o) {
+    const i = r.name || r.label || r.placeholder || "unknown";
+    if (t += `- ${i} (type: ${r.type})`, r.label && (t += ` - Label: "${r.label}"`), r.placeholder && (t += ` - Placeholder: "${r.placeholder}"`), r.type === "select" && r.element instanceof HTMLSelectElement) {
+      const n = Array.from(r.element.options).map((a) => a.textContent?.trim() || "").filter((a) => a);
+      t += ` - Options: [${n.join(", ")}]`;
     }
-    e += `
+    if (r.type === "radio" && r.options) {
+      const n = r.options.map((a) => a.label || a.value);
+      t += ` - Options: [${n.join(", ")}]`;
+    }
+    r.type === "date" ? t += " - Format: YYYY-MM-DD" : r.type === "datetime-local" ? t += " - Format: YYYY-MM-DDTHH:MM" : r.type === "time" && (t += " - Format: HH:MM"), r.hint && (t += ` - Additional info: ${r.hint}`), t += `
 `;
   }
-  return e += `
+  return t += `
 Unstructured text:
-${o}
+${e}
 
 
     Extract the relevant information and return it as a JSON object where keys match the field names exactly.
@@ -182,87 +293,142 @@ ${o}
     For checkbox fields, return "true" if the text indicates the option should be checked, "false" or omit otherwise.
     
 
+    For radio fields, return the value (preferred) or label of the selected option.
+    
+
     Return ONLY the JSON object, no explanations or markdown formatting.
-  `, e;
+  `, t;
 }
-const f = {
+const v = {
   FIELD_FILL: "You are a helpful assistant that generates appropriate content for form fields. Provide only the value to fill in the field, without any explanation or additional text.",
   PARSE_EXTRACT: 'You are a helpful assistant that extracts structured data from unstructured text. You must respond ONLY with valid JSON, no explanations or markdown code blocks. If its a checkbox field, return "true" if it should be checked, otherwise return "false" or omit the field.'
 };
-function F(t) {
+function O(o) {
+  const e = {};
+  for (const t of o) {
+    const r = t.name || t.label;
+    if (!r) continue;
+    let i;
+    switch (t.type) {
+      case "number":
+      case "range":
+        i = { type: "number" };
+        break;
+      case "boolean":
+      case "checkbox":
+        i = { type: "boolean" };
+        break;
+      case "url":
+        i = { type: "string", format: "uri" };
+        break;
+      case "date":
+        i = { type: "string", format: "date" };
+        break;
+      case "datetime-local":
+        i = { type: "string", format: "date-time" };
+        break;
+      case "time":
+        i = { type: "string", format: "time" };
+        break;
+      default:
+        i = { type: "string" };
+        break;
+    }
+    if (t.pattern && (i.pattern = t.pattern), t.placeholder || t.hint) {
+      const n = [];
+      t.placeholder && n.push(t.placeholder), t.hint && n.push(t.hint), i.description = n.join(" - ");
+    }
+    e[r] = i;
+  }
+  return {
+    type: "object",
+    properties: e,
+    additionalProperties: !1
+  };
+}
+function R(o) {
   try {
-    let o = t.trim();
-    o = o.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-    const e = JSON.parse(o), r = {};
-    for (const [n, i] of Object.entries(e))
-      r[n] = String(i);
+    let e = o.trim();
+    e = e.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+    const t = JSON.parse(e), r = {};
+    for (const [i, n] of Object.entries(t))
+      r[i] = String(n);
     return r;
-  } catch (o) {
-    return console.error("Failed to parse JSON response:", o), console.error("Response was:", t), {};
+  } catch (e) {
+    return console.error("Failed to parse JSON response:", e), console.error("Response was:", o), {};
   }
 }
-function M(t) {
+function j(o) {
   try {
-    return JSON.parse(t), !0;
+    return JSON.parse(o), !0;
   } catch {
     return !1;
   }
 }
-class A extends b {
-  providerName = "Ollama";
-  async chat(o) {
-    const e = new AbortController(), r = setTimeout(() => e.abort(), this.timeout), n = this.chatEndpoint || `${this.apiEndpoint}${a.providers.ollama.chatEndpoint}`;
+class Y extends w {
+  providerName = "ollama";
+  supportsStructuredResponses = !0;
+  chatEndpoint;
+  listModelsEndpoint;
+  availabilityEndpoint;
+  constructor(e) {
+    super({
+      apiEndpoint: e?.apiEndpoint || l.ollama.apiEndpoint,
+      model: e?.model || l.ollama.model,
+      timeout: e?.timeout || l.timeout
+    }), this.chatEndpoint = this.apiEndpoint + "/api/chat", this.listModelsEndpoint = this.apiEndpoint + "/api/tags", this.availabilityEndpoint = this.apiEndpoint + "/api/tags";
+  }
+  async chat(e) {
+    const t = new AbortController(), r = setTimeout(() => t.abort(), this.timeout), i = this.chatEndpoint;
     try {
-      const i = {
-        model: o.model || a.providers.ollama.model,
-        messages: o.messages,
+      const n = {
+        model: e.model,
+        messages: e.messages,
         stream: !1,
-        // We want complete responses, not streaming
         options: {
-          num_predict: o.maxTokens
-          // Ollama uses num_predict instead of maxTokens
+          num_predict: e.maxTokens
         }
-      }, s = await fetch(n, {
+      }, a = await fetch(i, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify(i),
-        signal: e.signal
+        body: JSON.stringify(n),
+        signal: t.signal
       });
-      if (!s.ok)
-        throw new Error(`Ollama API error: ${s.status} ${s.statusText}`);
-      const l = await s.json();
+      if (!a.ok)
+        throw new Error(`Ollama API error: ${a.status} ${a.statusText}`);
+      const d = await a.json();
       return {
-        content: l.message.content,
-        model: l.model,
-        finishReason: l.done ? "stop" : "length"
+        content: d.message.content,
+        model: d.model,
+        finishReason: d.done ? "stop" : "length"
       };
-    } catch (i) {
-      if (i instanceof Error) {
-        if (i.name === "AbortError")
+    } catch (n) {
+      if (n instanceof Error) {
+        if (n.name === "AbortError")
           throw new Error(`Ollama request timed out after ${this.timeout}ms`);
-        if (i.message.includes("fetch") || i.message.includes("Failed to fetch"))
+        if (n.message.includes("fetch") || n.message.includes("Failed to fetch"))
           throw new Error(`Failed to connect to Ollama at ${this.apiEndpoint}. Is Ollama running?`);
       }
-      throw i;
+      throw n;
     } finally {
       clearTimeout(r);
     }
   }
   async listModels() {
     try {
-      const o = await fetch(`${this.apiEndpoint}${a.providers.ollama.listModelsEndpoint}`);
-      if (!o.ok)
-        throw new Error(`Failed to fetch models: ${o.statusText}`);
-      return ((await o.json()).models || []).map((r) => r.name);
-    } catch (o) {
-      return console.error("Error listing Ollama models:", o), [];
+      const e = await fetch(this.listModelsEndpoint);
+      if (!e.ok)
+        throw new Error(`Failed to fetch models: ${e.statusText}`);
+      return ((await e.json()).models || []).map((r) => r.name);
+    } catch (e) {
+      return console.error("Error listing Ollama models:", e), [];
     }
   }
   async isAvailable() {
     try {
-      return (await fetch(`${this.apiEndpoint}${a.providers.ollama.availabilityEndpoint}`, {
+      return (await fetch(this.availabilityEndpoint, {
         method: "GET"
       })).ok;
     } catch {
@@ -270,98 +436,87 @@ class A extends b {
     }
   }
 }
-class v extends y {
-  providerName = "OpenAI";
-  async chat(o) {
-    const e = new AbortController(), r = setTimeout(() => e.abort(), this.timeout), n = this.chatEndpoint || `${this.apiEndpoint}/${this.providerName.toLocaleLowerCase()}/chat`;
+class E extends $ {
+  providerName = "openai";
+  supportsStructuredResponses = !0;
+  chatEndpoint;
+  listModelsEndpoint;
+  availabilityEndpoint;
+  constructor(e) {
+    super({
+      apiEndpoint: e?.apiEndpoint || l.openai.apiEndpoint,
+      model: e?.model || l.openai.model,
+      timeout: e?.timeout || l.timeout
+    }), this.chatEndpoint = `${this.apiEndpoint}/${this.providerName}/chat`, this.listModelsEndpoint = `${this.apiEndpoint}/${this.providerName}/models`, this.availabilityEndpoint = `${this.apiEndpoint}/${this.providerName}/available`;
+  }
+  async chat(e) {
+    const t = new AbortController(), r = setTimeout(() => t.abort(), this.timeout), i = this.chatEndpoint;
     try {
-      const i = await fetch(n, {
+      const a = await (await fetch(i, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify(o),
-        signal: e.signal
-      });
-      this.debug && console.log(`${this.providerName} request sent:`, o);
-      const s = await i.json();
-      return this.debug && console.log(`${this.providerName} response body:`, s), {
-        content: s.choices[0].message.content,
-        model: s.model,
-        finishReason: s.choices[0].finish_reason
+        body: JSON.stringify(e),
+        signal: t.signal
+      })).json();
+      return l.providerDebug && console.log(`${this.providerName} response body:`, a), {
+        content: a.choices[0].message.content,
+        model: a.model,
+        finishReason: a.choices[0].finish_reason
       };
-    } catch (i) {
-      if (i instanceof Error) {
-        if (i.name === "AbortError")
+    } catch (n) {
+      if (n instanceof Error) {
+        if (n.name === "AbortError")
           throw new Error(`${this.providerName} request timed out after ${this.timeout}ms`);
-        if (i.message.includes("fetch") || i.message.includes("Failed to fetch"))
+        if (n.message.includes("fetch") || n.message.includes("Failed to fetch"))
           throw new Error(`Failed to connect to ${this.providerName}. Check your network connection.`);
       }
-      throw i;
+      throw n;
     } finally {
       clearTimeout(r);
     }
   }
   async listModels() {
-    const o = a.providers.openai.listModelsEndpoint ? `${this.apiEndpoint}${a.providers.openai.listModelsEndpoint}` : `${this.apiEndpoint}/${this.providerName.toLocaleLowerCase()}/models`;
+    const e = this.listModelsEndpoint;
     try {
-      const e = await fetch(o, { method: "POST" });
-      if (!e.ok)
-        throw new Error(`${this.providerName} API error: ${e.status} ${e.statusText}`);
-      return (await e.json()).models;
-    } catch (e) {
-      if (this.debug)
-        throw new Error(`Error fetching models from ${this.providerName}: ${e}`);
+      const t = await fetch(e, { method: "POST" });
+      if (!t.ok)
+        throw new Error(`${this.providerName} API error: ${t.status} ${t.statusText}`);
+      return (await t.json()).models;
+    } catch (t) {
+      if (l.providerDebug)
+        throw new Error(`Error fetching models from ${this.providerName}: ${t}`);
       return [];
     }
   }
   async isAvailable() {
-    const o = a.providers.openai.availabilityEndpoint ? `${this.apiEndpoint}${a.providers.openai.availabilityEndpoint}` : `${this.apiEndpoint}/${this.providerName.toLocaleLowerCase()}/available`;
+    const e = this.availabilityEndpoint;
     try {
-      return (await fetch(o, { method: "POST" })).ok;
-    } catch (e) {
-      if (this.debug)
-        throw e;
+      return (await fetch(e, { method: "POST" })).ok;
+    } catch (t) {
+      if (l.providerDebug)
+        throw t;
       return !1;
     }
   }
 }
-class T extends v {
-  providerName = "Perplexity";
+class H extends E {
+  providerName = "perplexity";
+  constructor(e) {
+    super({
+      apiEndpoint: e?.apiEndpoint || l.perplexity.apiEndpoint,
+      model: e?.model || l.perplexity.model,
+      timeout: e?.timeout || l.timeout
+    }), this.chatEndpoint = `${this.apiEndpoint}/${this.providerName}/chat`, this.listModelsEndpoint = `${this.apiEndpoint}/${this.providerName}/models`, this.availabilityEndpoint = `${this.apiEndpoint}/${this.providerName}/available`;
+  }
 }
-class L {
+class b {
   provider;
-  debug = a.defaults.debug;
-  context;
+  allowedProviders;
   selectedFields;
-  constructor(o, e) {
-    const r = {
-      ollama: () => new A({
-        apiEndpoint: e?.apiEndpoint || a.providers.ollama.apiEndpoint,
-        model: e?.model || a.providers.ollama.model,
-        timeout: e?.timeout || a.providers.ollama.timeout
-      }),
-      openai: () => new v({
-        apiEndpoint: e?.apiEndpoint || a.providers.openai.apiEndpoint,
-        model: e?.model || a.providers.openai.model,
-        timeout: e?.timeout || a.providers.openai.timeout
-      }),
-      perplexity: () => new T({
-        apiEndpoint: e?.apiEndpoint || a.providers.perplexity.apiEndpoint,
-        model: e?.model || a.providers.perplexity.model,
-        timeout: e?.timeout || a.providers.perplexity.timeout
-      })
-      /** 
-       * @extension Add more providers here as needed
-       */
-    }, n = o.toLowerCase(), i = r[n];
-    if (!i)
-      throw new Error(
-        `Unsupported provider: ${o}
-Available providers: ${Object.keys(r).join(", ")}`
-      );
-    const s = i();
-    this.provider = s, this.debug = e?.debug || a.defaults.debug;
+  constructor(e, t) {
+    e instanceof y ? this.provider = e : this.provider = b.constructProviderWithName(e, t), this.selectedFields = t?.targetFields, this.allowedProviders = t?.allowedProviders;
   }
   /**
    * Fill a single form field with AI-generated content
@@ -378,13 +533,13 @@ Available providers: ${Object.keys(r).join(", ")}`
    * await aiForm.fillSingleField(bioField);
    * ```
    */
-  async fillSingleField(o) {
-    const e = m(o);
-    this.debug && console.log(`Filling ${e.type} field: ${e.name}`);
-    const r = x(e, this.context), n = [
+  async fillSingleField(e) {
+    const t = m(e);
+    l.formFillDebug && console.log(`Filling ${t.type} field: ${t.name}`);
+    const r = C(t), i = [
       {
         role: "system",
-        content: f.FIELD_FILL
+        content: v.FIELD_FILL
       },
       {
         role: "user",
@@ -392,13 +547,13 @@ Available providers: ${Object.keys(r).join(", ")}`
       }
     ];
     try {
-      const i = await this.provider.chat({
-        messages: n,
+      const n = await this.provider.chat({
+        messages: i,
         model: this.provider.getSelectedModel()
       });
-      i.content && u(o, i.content.trim()), this.debug && console.log("Field filled with:", i.content);
-    } catch (i) {
-      this.debug && console.error("Error during fillSingleField:", i);
+      n.content && g(e, n.content.trim()), l.formFillDebug && console.log("Field filled with:", n.content);
+    } catch (n) {
+      l.formFillDebug && console.error("Error during fillSingleField:", n);
     }
   }
   /**
@@ -407,68 +562,82 @@ Available providers: ${Object.keys(r).join(", ")}`
    * @param formElement - The HTML form to fill
    * @param unstructuredText - The source text to extract data from
    *   - Examples: Resume text, email body, paragraph descriptions, JSON strings
-   * 
-   * @example Parse resume text into job application
-   * 
-   * const form = document.querySelector('form');
-   * const resumeText = `
-   *   John Doe
-   *   Email: john@example.com
-   *   Phone: (555) 123-4567
-   *   I have 5 years of experience in software development...
-   * `;
-   * 
-   * await aiForm.parseAndFillForm(form, resumeText);
-   * // Form fields automatically filled with extracted data
-   * 
-   * 
-   * @example Parse structured data
-   * typescript
-   * const jsonData = JSON.stringify({
-   *   firstName: 'Jane',
-   *   lastName: 'Smith',
-   *   email: 'jane@example.com'
-   * });
-   * 
-   * await aiForm.parseAndFillForm(form, jsonData);
-   * 
    */
-  async parseAndFillForm(o, e) {
-    const r = g(o);
-    this.debug && console.log("Parsing unstructured text for", r.length, "fields");
-    const n = this.selectedFields ? r.filter(
-      (d) => d.name && this.selectedFields.includes(d.name)
-    ) : r, i = $(n, e);
-    this.debug && console.log(`Constructed parse prompt:
-`, i);
-    const s = [
-      {
-        role: "system",
-        content: f.PARSE_EXTRACT
-      },
-      {
-        role: "user",
-        content: i
-      }
-    ], l = await this.provider.chat({
-      messages: s,
+  async parseAndFillForm(e, t) {
+    const r = k(e);
+    l.formFillDebug && (console.log("Parsing unstructured text for", r.length, "fields"), console.log("Unstructured text:", r));
+    const i = this.selectedFields ? r.filter(
+      (s) => s.name && this.selectedFields.includes(s.name)
+    ) : r, n = I(i, t);
+    l.formFillDebug && (console.groupCollapsed("Constructed parse prompt:"), console.log(n), console.groupEnd(), console.log(`Sending prompt to ${this.provider.getName()}'s ${this.provider.getSelectedModel()} model...`));
+    const d = {
+      messages: [
+        {
+          role: "system",
+          content: v.PARSE_EXTRACT
+        },
+        {
+          role: "user",
+          content: n
+        }
+      ],
       model: this.provider.getSelectedModel()
-    });
-    let c = {};
-    if (l.content)
-      c = F(l.content);
-    else
-      throw new Error("No content received from AI provider.");
-    this.debug && console.log("Extracted data:", c);
-    for (const d of n) {
-      const p = w(d);
-      if (p && c[p])
+    };
+    this.provider.supportsStructuredOutput() && (d.format = O(i), l.formFillDebug && console.log("Using structured output format:", d.format));
+    let p = {};
+    try {
+      const s = await this.provider.chat(d);
+      if (!s.content) {
+        l.formFillDebug && console.warn("No content received from AI provider.");
+        return;
+      }
+      p = R(s.content);
+    } catch (s) {
+      l.formFillDebug && console.error("Error calling AI provider:", s);
+      return;
+    }
+    l.formFillDebug && console.log("Extracted data:", p);
+    for (const s of i) {
+      const c = P(s);
+      if (c && p[c])
         try {
-          u(d.element, c[p]);
-        } catch (E) {
-          this.debug && console.error(`Failed to fill field "${p}":`, E);
+          g(s.element, p[c]);
+        } catch (u) {
+          l.formFillDebug && console.error(`Failed to fill field "${c}":`, u);
         }
     }
+  }
+  /**
+   * Get list of available models from the form's provider
+   */
+  async getAvailableModels() {
+    return this.provider.listModels ? await this.provider.listModels() : [];
+  }
+  /**
+   * Set the model to use for chat requests
+   */
+  async setSelectedModel(e) {
+    return this.provider.setSelectedModel(e);
+  }
+  /**
+   * Get the currently selected model
+   */
+  getSelectedModel() {
+    return this.provider.getSelectedModel();
+  }
+  /**
+   * Set which fields should be filled
+   */
+  setFields(e) {
+    this.selectedFields = e || void 0;
+  }
+  /**
+   * Get the currently configured field targets
+   * 
+   * @returns Array of field names being targeted, or undefined if all fields are targeted
+   */
+  getFields() {
+    return this.selectedFields;
   }
   /**
    * Check if the AI provider is available and responding
@@ -479,58 +648,68 @@ Available providers: ${Object.keys(r).join(", ")}`
     return this.provider.isAvailable ? await this.provider.isAvailable() : !0;
   }
   /**
-   * Get list of available models from the provider
-   * 
-   * Queries the provider for available models. Useful for building
-   * dynamic model selection interfaces.
-   * 
-   * @returns Promise resolving to array of model identifiers
-   * 
-   * @example Build a model selector
-   * ```typescript
-   * const models = await aiForm.getAvailableModels();
-   * 
-   * const select = document.querySelector('#model-select');
-   * models.forEach(model => {
-   *   const option = document.createElement('option');
-   *   option.value = model;
-   *   option.textContent = model;
-   *   select.appendChild(option);
-   * });
-   * ```
+   * Change the AI provider
    */
-  async getAvailableModels() {
-    return this.provider.listModels ? await this.provider.listModels() : [];
+  setProvider(e) {
+    this.provider = e;
+  }
+  /**
+   * Get the current AI provider
+   */
+  getProvider() {
+    return this.provider;
+  }
+  /**
+   * Get the list of allowed providers, if any
+   */
+  getListOfAllowedProviders() {
+    return this.allowedProviders;
+  }
+  /**
+   * Setup the AI provider based on the desired provider name
+   */
+  static constructProviderWithName(e, t) {
+    const r = {
+      apiEndpoint: t?.apiEndpoint || "",
+      model: t?.model || "",
+      timeout: t?.timeout
+    };
+    return {
+      ollama: () => new Y(r),
+      openai: () => new E(r),
+      perplexity: () => new H(r)
+      /** 
+       * @extension Add more providers here as needed
+       */
+    }[e]();
   }
 }
-function k() {
-  const t = document.getElementById("aff-form"), o = document.getElementById("aff-text"), e = document.getElementById("aff-text-button"), r = document.getElementById("aff-clear-button"), n = t.getAttribute("data-aff-provider") || "Ollama", i = new L(n, { debug: !0 });
-  e.addEventListener("click", async () => {
-    const s = o.value.trim();
+function q(o = "aff-form") {
+  const e = document.getElementById(o), t = document.getElementById("aff-text"), r = document.getElementById("aff-text-button"), i = e.getAttribute("data-aff-provider") || "ollama", n = new b(i, { debug: !0 });
+  r ? r.addEventListener("click", async () => {
+    const a = t.value.trim();
     try {
-      await i.parseAndFillForm(t, s);
-    } catch (l) {
-      console.error("Error filling form:", l), alert("Error filling form. Check console for details.");
+      await n.parseAndFillForm(e, a);
+    } catch (d) {
+      console.error("Error filling form:", d);
     }
-  }), r.addEventListener("click", () => {
-    t.reset();
-  });
+  }) : console.warn("AI Form Fill button not found");
 }
 export {
-  L as AIFormFill,
-  h as AIProvider,
-  A as LocalOllamaProvider,
-  v as OpenAIProvider,
-  T as PerplexityProvider,
-  f as SYSTEM_PROMPTS,
-  a as affConfig,
+  b as AIFormFill,
+  y as AIProvider,
+  Y as LocalOllamaProvider,
+  E as OpenAIProvider,
+  H as PerplexityProvider,
+  v as SYSTEM_PROMPTS,
+  l as affConfig,
   m as analyzeField,
-  x as buildFieldPrompt,
-  $ as buildParsePrompt,
-  w as getFieldIdentifier,
-  g as getFillTargets,
-  k as initializeAFFQuick,
-  M as isValidJson,
-  F as parseJsonResponse,
-  u as setFieldValue
+  C as buildFieldPrompt,
+  I as buildParsePrompt,
+  P as getFieldIdentifier,
+  k as getFillTargets,
+  q as initializeAFFQuick,
+  j as isValidJson,
+  R as parseJsonResponse,
+  g as setFieldValue
 };
