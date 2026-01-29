@@ -25,5 +25,5 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["lib", "dev", "mock"],
+  "include": ["lib", "dev", "mock", "tests/mockProvider.ts"],
 }

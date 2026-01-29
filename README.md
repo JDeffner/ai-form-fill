@@ -1,72 +1,88 @@
 # AI Form Fill
 
-Framework-agnostic library for AI-powered form filling. Extract structured data from unstructured text and automatically fill forms using OpenAI, Ollama, or custom AI providers.
+Framework-agnostic library for AI-powered form filling. Extract structured data from unstructured text and automatically fill forms using OpenAI, Ollama, Perplexity, or custom AI providers.
 
 ## Features
 
 - Uses LLMs to understand and extract data from natural language
 - Automatically matches data to form fields
-- Works with Ollama, OpenAI, Perplexity, or custom providers
-- Works with vanilla JS, React, Vue, or any framework (better documentation and support soon)
-- Get started in minutes with minimal configuration (not quite seemless yet)
+- Works with Ollama, OpenAI or Perplexity
+- Framework-agnostic - works with vanilla JS, React, Vue, or any framework that allows module imports
+- Two integration modes: Quick setup or full customization
+- Field hints for precise AI guidance
+- Configurable field targeting
 
 ## Installation
-TODO
+
 ```bash
 npm install ai-form-fill
 ```
 
-## Quick Start
+---
 
-### Simple Setup (Auto-Initialize)
+## Quick Start (Simple Setup)
 
-For the easiest setup, use the built-in initialization function:
+The fastest way to get started - just add HTML attributes and one line of JavaScript.
 
-**HTML:**
+### HTML Setup
+
 ```html
-<form id="aff-form">
+<form id="aff-form" data-aff-provider="ollama">
   <input type="text" name="name" placeholder="Name">
   <input type="email" name="email" placeholder="Email">
   <input type="tel" name="phone" placeholder="Phone">
 </form>
 
 <textarea id="aff-text" placeholder="Paste your text here..."></textarea>
-<!-- Clicking "aff-text-button" submits "aff-text" to the ai -->
 <button id="aff-text-button">Fill Form</button>
-<!-- Clicking "aff-clear-button" clears "aff-form" -->
-<button id="aff-clear-button">Clear</button>
-
-<!-- Add this to the document -->
-<script type="module">
-  import { initializeAFFQuick } from 'ai-form-fill';
-  initializeAFFQuick();
-</script>
 ```
-#### HTML Element IDs (Simple Setup)
 
-For auto-initialization with `initializeAFFQuick()`, use these IDs:
+### JavaScript (One Line!)
 
-- `aff-form` - The form element to fill
-- `aff-text` - Textarea for user input
-- `aff-text-button` - Button to trigger form filling
-- `aff-clear-button` - Button to clear the form
+```typescript
+import { initializeAFFQuick } from 'ai-form-fill';
 
-All 4 IDs have to be used otherwise the script will throw an error!
+initializeAFFQuick(); // That's it!
+```
 
-Add `data-aff-provider` attribute to the form to specify provider:
+### Required Element IDs
+
+| Element ID | Description |
+|------------|-------------|
+| `aff-form` | The form element to fill |
+| `aff-text` | Textarea for user input text |
+| `aff-text-button` | Button to trigger form filling |
+
+### Provider Selection
+
+Add `data-aff-provider` attribute to specify which AI provider to use:
+
 ```html
-<form id="aff-form" data-aff-provider="ollama">
+<form id="aff-form" data-aff-provider="openai">
 ```
 
+Available providers (case-insensitive): `ollama`, `openai`, `perplexity`
 
-### Custom Setup
+### Custom Form ID
 
-For more control, use the `AIFormFill` class directly:
+You can use a custom form ID by passing it to `initializeAFFQuick()`:
+
+```typescript
+initializeAFFQuick('my-custom-form');
+```
+
+---
+
+## Advanced Setup (Full Customization)
+
+For complete control over the library, use the `AIFormFill` class directly.
+
+### Basic Usage
 
 ```typescript
 import { AIFormFill } from 'ai-form-fill';
 
-// Create instance with Ollama (default)
+// Create instance with a provider
 const aiForm = new AIFormFill('ollama', { 
   model: 'gemma3:4b',
   debug: true 
@@ -77,35 +93,59 @@ const form = document.getElementById('myForm') as HTMLFormElement;
 const text = "My name is John Doe, email john@example.com, phone 555-1234";
 
 await aiForm.parseAndFillForm(form, text);
-
-// Or fill a single field
-const nameField = document.getElementById('name') as HTMLInputElement;
-await aiForm.fillField(nameField, "What's a good name for a software developer?");
 ```
 
+### Fill a Single Field
+
+```typescript
+const bioField = document.querySelector('#bio') as HTMLElement;
+await aiForm.fillSingleField(bioField);
+```
+
+### Using Custom Providers
+
+You can pass a custom `AIProvider` instance instead of a provider name:
+
+```typescript
+import { AIFormFill, LocalOllamaProvider } from 'ai-form-fill';
+
+const customProvider = new LocalOllamaProvider({
+  apiEndpoint: 'http://my-server:11434',
+  model: 'llama3',
+  timeout: 60000,
+});
+
+const aiForm = new AIFormFill(customProvider, { debug: true });
+```
+
+---
 
 ## Configuration
 
-### Provider Setup
+### Provider Options
 
-#### Ollama (Local)
+#### Ollama (Local - Recommended for Development)
 ```typescript
 const aiForm = new AIFormFill('ollama', {
-  model: 'gemma3:4b', // Default model
+  model: 'gemma3:4b',
+  apiEndpoint: 'http://localhost:11434', // Optional
+  timeout: 40000, // Optional
 });
 ```
 
 #### OpenAI
 ```typescript
 const aiForm = new AIFormFill('openai', {
-  model: 'gpt-5-nano', // Default model
+  model: 'gpt-5-nano',
+  timeout: 60000,
 });
 ```
 
 #### Perplexity
 ```typescript
 const aiForm = new AIFormFill('perplexity', {
-  model: 'sonar', // Default model
+  model: 'sonar',
+  timeout: 60000,
 });
 ```
 
@@ -120,73 +160,167 @@ import { affConfig } from 'ai-form-fill';
 affConfig.providers.ollama.model = 'mistral';
 affConfig.providers.ollama.apiEndpoint = 'http://my-server:11434';
 
+// Update OpenAI defaults
+affConfig.providers.openai.model = 'gpt-4o';
+
 // Enable debug mode globally
 affConfig.defaults.debug = true;
 ```
 
-## API Reference
+### Field Targeting
 
+By default, all detected form fields are filled. Target specific fields only:
 
+```typescript
+const aiForm = new AIFormFill('ollama', {
+  targetFields: ['firstName', 'lastName', 'email'], // Only fill fields with these name attributes
+});
 
+await aiForm.parseAndFillForm(form, text);
+```
+
+Update the field list after instantiation:
+
+```typescript
+aiForm.setFields(['name', 'phone']); // Update targeted fields
+aiForm.setFields(undefined);          // Reset to fill all fields
+
+// Get currently targeted fields
+const fields = aiForm.getFields(); // Returns string[] | undefined
+```
+
+### Field Hints (`data-aff-hint`)
+
+Provide additional context to help the AI understand specific fields using the `data-aff-hint` attribute:
+
+```html
+<form id="job-application">
+  <!-- Basic field - AI infers from name/label -->
+  <input type="text" name="firstName" />
+  
+  <!-- Date field with format hint -->
+  <input 
+    type="date" 
+    name="startDate" 
+    data-aff-hint="Use the earliest date mentioned in the text"
+  />
+  
+  <!-- Select with mapping hint -->
+  <select 
+    name="department" 
+    data-aff-hint="Map to the closest match from the available options"
+  >
+    <option value="engineering">Engineering</option>
+    <option value="sales">Sales</option>
+    <option value="marketing">Marketing</option>
+  </select>
+  
+  <!-- Textarea with content guidance -->
+  <textarea 
+    name="bio" 
+    data-aff-hint="Extract a professional summary, max 2 sentences"
+  ></textarea>
+</form>
+```
+
+Hints are automatically read when filling the form:
+
+```typescript
+const aiForm = new AIFormFill('openai', { debug: true });
+const form = document.getElementById('job-application') as HTMLFormElement;
+
+await aiForm.parseAndFillForm(form, resumeText);
+```
+
+---
+
+## Overview
+
+### `AIFormFill` Class
+
+#### Constructor
+
+```typescript
+new AIFormFill(provider: AvailableProviders | AIProvider, options?: AIFormFillConfig & ProviderConfig)
+```
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `provider` | `'ollama' \| 'openai' \| 'perplexity' \| AIProvider` | Provider name or custom instance |
+| `options.targetFields` | `string[]` | Optional list of field names to fill |
+| `options.debug` | `boolean` | Enable debug logging (default: `false`) |
+| `options.model` | `string` | Model name to use |
+| `options.apiEndpoint` | `string` | Custom API endpoint |
+| `options.timeout` | `number` | Request timeout in ms |
+
+#### Methods
+
+| Method | Description |
+|--------|-------------|
+| `parseAndFillForm(form, text)` | Parse text and fill matching form fields |
+| `fillSingleField(element)` | Fill a single field with AI-generated content |
+| `setProvider(provider)` | Change the AI provider |
+| `getProvider()` | Get the current AI provider |
+| `setFields(fields)` | Set which fields should be filled |
+| `getFields()` | Get currently targeted fields |
+| `getAvailableModels()` | Get list of available models from provider |
+| `setSelectedModel(model)` | Set the model to use |
+| `getSelectedModel()` | Get the currently selected model |
+| `providerAvailable()` | Check if the provider is available |
+
+### `initializeAFFQuick(formId?)`
+
+Quick initialization function for simple setups.
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `formId` | `string` | `'aff-form'` | ID of the form element |
+
+---
 
 ## Examples
 
-See the `examples/` folder for:
-- Basic demo - Simple form filling
-- Advanced demo - Full-featured with provider selection and debugging
+See the `examples/` folder for working demos:
 
-Run examples:
+| Example | Description |
+|---------|-------------|
+| `basic/` | Simple form filling with minimal setup |
+| `advanced/` | Full-featured demo with provider selection and debugging |
+
+Run examples locally:
+
 ```bash
 npm run dev
 ```
 
-## How the Library Uses APIs
-
-This library communicates with AI providers through their REST APIs:
-
-### Ollama (Local)
-- Connects directly to your local Ollama instance (default: `http://localhost:11434`)
-- No API key needed
-- **Recommended for development** - Install Ollama and pull `gemma3:4b` model
-
-### OpenAI & Perplexity
-- Requires API keys stored in environment variables
-- For development, the library uses **mock API endpoints** that proxy requests to the real APIs
-- Mock endpoints are defined in the `mock/` folder and powered by `vite-plugin-mock-dev-server`
-
-### Mock API Setup
-
-The `mock/` folder contains API mocks for testing without exposing keys in code:
-
-- `openai.mock.ts` - Proxies to OpenAI API using `VITE_OPEN_AI_KEY`
-- `perplexity.mock.ts` - Proxies to Perplexity API using `VITE_PERPLEXITY_KEY`
-
-During development (`npm run dev`), requests to `/api/openai/*` and `/api/perplexity/*` are intercepted by Vite and routed through these mocks.
+---
 
 ## Development Setup
 
 ### Prerequisites
-- Node.js LTS (latest recommended) - [Download](https://nodejs.org/)
-- **Ollama** (recommended) - [Install from ollama.ai](https://ollama.ai)
+
+- **Node.js** - [Install from nodejs.org](https://nodejs.org/en)
+- **pnpm** (recommended) - [Install guide on pnpm.io](https://pnpm.io/installation)
+- **Ollama** - [Install from ollama.ai](https://ollama.ai)
 
 ### Recommended: Ollama Setup (Simplest)
+
+Run this command after installing Ollama:
 ```bash
-# Install Ollama from ollama.ai
-# Then pull the default model:
 ollama pull gemma3:4b
 ```
 
-This gives you a working development environment with no API keys required!
+No API keys required!
 
-### Full Setup Instructions
+### Full Setup
 
-1. **Clone and install:**
-   ```bash
-   cd ai-form-input
-   npm install
-   ```
-
-2. **Optional - API Keys for OpenAI/Perplexity:**
+1. **Clone this Git repository**
+   
+2. **Go to the Project root and run**
+  ```bash
+  pnpm install
+  ```
+3. **Optional - API Keys for OpenAI/Perplexity:**
    
    Create a `.env` file in the project root:
    ```env
@@ -194,38 +328,28 @@ This gives you a working development environment with no API keys required!
    VITE_PERPLEXITY_KEY=your-perplexity-key-here
    ```
 
-3. **Start development server:**
+4. **Start development server:**
    ```bash
-   npm run dev
+   pnpm run dev
    ```
 
-4. **Access the demos:**
-   - Main page: `http://localhost:5173/`
-   - Basic example: `http://localhost:5173/examples/basic/`
-   - Advanced example: `http://localhost:5173/examples/advanced/`
+### Project Structure
 
-### Development Structure
+```
+ai-form-fill/
+├── lib/                 # Core library source
+│   ├── core/            # Main classes and types
+│   ├── providers/       # AI provider implementations
+│   └── utils/           # Utility functions
+├── examples/            # Demo applications
+│   ├── basic/           # Simple form fill example
+│   └── advanced/        # Full-featured demo
+└── mock/                # API mock endpoints for development
+```
 
-- `lib/` - Core library source code
-- `examples/` - Demo applications
-  - `basic/` - Simple form fill example
-  - `advanced/` - Full-featured demo with provider selection
-- `mock/` - API mock endpoints for development
-- `vite.config.js` - Build configuration with mock plugin
+## APIs
 
-The dev server provides hot reload - changes to library or examples update instantly.
+---
+APIs have to be handled with utmost care when working with JavaScipt since they are easily exposed when they are handled in the front end. since this library is a frontend one it means that sending the data to a self hosted backend first is a must. In the current version this happens through the mock abstraction but in real implementations this would require the configurations of a proper backend. this is outside the scope of this project but there is an obligation to set up guidelines as to how the libraries requiests should be relayed.
 
-## Requirements
-
-- At least one AI provider configured and running:
-  - **Ollama**: Install from [ollama.ai](https://ollama.ai) (recommended: `gemma3:4b` model)
-  - **OpenAI**: API key required
-  - **Perplexity**: API key required
-
-## License
-
-MIT
-
-## Author
-
-Joel Deffner
+---

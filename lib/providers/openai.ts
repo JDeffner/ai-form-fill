@@ -1,8 +1,6 @@
-
-
-import { affConfig } from '../config';
 import type { ChatRequest, ChatResponse } from '../core/types';
-import { RemoteAIProvider} from '../providers/aiProvider';
+import { RemoteAIProvider, type ProviderConfig } from '../providers/aiProvider';
+import { affConfig } from '../core/config';
 
 
 /** 
@@ -41,12 +39,27 @@ export type  OpenAIResponse = {
  * @see {@link https://platform.openai.com/docs/guides/text?prompt-templates-examples=filevar | OpenAI API Documentation} 
  */
 export class OpenAIProvider extends RemoteAIProvider {
-  protected providerName: string = 'OpenAI';
+  protected providerName: string = 'openai';
+  protected supportsStructuredResponses: boolean = true;
+  protected chatEndpoint: string;
+  protected listModelsEndpoint: string;
+  protected availabilityEndpoint: string;
+
+  constructor(config?: ProviderConfig) {
+    super({
+          apiEndpoint: config?.apiEndpoint || affConfig.openai.apiEndpoint,
+          model: config?.model || affConfig.openai.model,
+      timeout: config?.timeout || affConfig.timeout,
+    });
+    this.chatEndpoint = `${this.apiEndpoint}/${this.providerName}/chat`;
+    this.listModelsEndpoint = `${this.apiEndpoint}/${this.providerName}/models`;
+    this.availabilityEndpoint = `${this.apiEndpoint}/${this.providerName}/available`;
+  }
 
   override async chat(params: ChatRequest): Promise<ChatResponse> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.timeout);
-    const requestEndpoint = this.chatEndpoint || `${this.apiEndpoint}/${this.providerName.toLocaleLowerCase()}/chat`;
+    const requestEndpoint = this.chatEndpoint;
 
     try {
       const response = await fetch(requestEndpoint, {
@@ -58,12 +71,9 @@ export class OpenAIProvider extends RemoteAIProvider {
         signal: controller.signal,
       });
 
-      if (this.debug)
-        console.log(`${this.providerName} request sent:`, params);
-
       const responseBody = await response.json() as OpenAIResponse;
 
-      if (this.debug)
+      if (affConfig.providerDebug)
         console.log(`${this.providerName} response body:`, responseBody);
       
       return {
@@ -87,9 +97,7 @@ export class OpenAIProvider extends RemoteAIProvider {
   }
 
   override async listModels(): Promise<string[]> {
-    const responseEndpoint = affConfig.providers.openai.listModelsEndpoint 
-      ? `${this.apiEndpoint}${affConfig.providers.openai.listModelsEndpoint}` 
-      : `${this.apiEndpoint}/${this.providerName.toLocaleLowerCase()}/models`;
+    const responseEndpoint = this.listModelsEndpoint;
     try {
       const response = await fetch(responseEndpoint, { method: 'POST' });
       if (!response.ok) {
@@ -98,21 +106,20 @@ export class OpenAIProvider extends RemoteAIProvider {
       const responseBody = await response.json();
       return responseBody.models as string[];
     } catch (error) {
-      if (this.debug)
+      if (affConfig.providerDebug)
         throw new Error(`Error fetching models from ${this.providerName}: ${error}`);
       return [];
     }
   }
 
   override async isAvailable(): Promise<boolean> {
-    const responseEndpoint = affConfig.providers.openai.availabilityEndpoint
-      ? `${this.apiEndpoint}${affConfig.providers.openai.availabilityEndpoint}` 
-      : `${this.apiEndpoint}/${this.providerName.toLocaleLowerCase()}/available`;
+    const responseEndpoint = this.availabilityEndpoint;
+
     try {
       const response = await fetch(responseEndpoint, { method: 'POST' });
       return response.ok;
     } catch (error) {
-      if (this.debug)
+      if (affConfig.providerDebug)
         throw error;
       return false;
     } 

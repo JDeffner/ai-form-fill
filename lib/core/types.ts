@@ -2,6 +2,8 @@
  * Core types and interfaces for the AI Form Input library
  */
 
+import type { AIProvider } from "../providers/aiProvider";
+
 /**
  * A single message in a chat conversation
  * 
@@ -18,8 +20,9 @@ export type ChatMessage = {
  */
 export type ChatRequest = {
   messages: ChatMessage[];
-  model?: string;
+  model: string;
   maxTokens?: number;
+  format?: Record<string, any>; // For structured output formats
 }
 
 /**
@@ -34,12 +37,36 @@ export type ChatResponse = {
 /**
  * Configuration for the AIFormFill class
  * 
- * @param provider - The AI provider instance to use
- * @param fields - Optional array of field names to target (if omitted, all fields are filled)
- * @param debug - Enable console logging for debugging (default: false)
+ * @example Basic usage
+ * ```typescript
+ * const config: AIFormFillConfig = {
+ *   debug: true
+ * };
+ * ```
+ * 
+ * @example With field filtering
+ * ```typescript
+ * const config: AIFormFillConfig = {
+ *   fields: ['firstName', 'lastName', 'email'],
+ *   debug: true
+ * };
+ * ```
  */
 export type AIFormFillConfig = {
-  fields?: string[];
+  /** 
+   * Optional array of field names to target.
+   * If provided, only these fields will be filled (whitelist).
+   * If omitted, all detected fields are filled.
+   */
+  targetFields?: string[];
+
+  /** 
+   * Optional array of allowed AI providers.
+   * If provided, only these providers can be used.
+   */
+  allowedProviders?: AIProvider[];
+  
+  /** Enable console logging for debugging (default: false) */
   debug?: boolean;
 }
 
@@ -52,11 +79,13 @@ export type FieldInfo = {
   name?: string;
   label?: string;
   placeholder?: string;
-  required?: boolean;
   pattern?: string;
+  hint?: string;
+  /** For radio buttons: array of available options with value and label */
+  options?: Array<{ value: string; label: string }>;
 }
 
 /**
  * All currently implemented provider names
  */
-export type AvailableProviders = 'OpenAI' | 'Ollama' | 'Perplexity';
+export type AvailableProviders = 'openai' | 'ollama' | 'perplexity';

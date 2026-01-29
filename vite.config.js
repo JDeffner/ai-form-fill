@@ -1,3 +1,4 @@
+///<reference types="vitest/config" />
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vite'
@@ -9,7 +10,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 export default defineConfig({
   build: {
     lib: {
-      entry: resolve(__dirname, 'lib/main.ts'),
+      entry: resolve(__dirname, 'lib/core/main.ts'),
       name: 'AIFormFill',
       // the proper extensions will be added
       fileName: 'ai-form-fill',
@@ -37,5 +38,8 @@ export default defineConfig({
     proxy: {
       '^/api': 'http://example.com/',  // Plugin watches this pattern
     },
+  },
+  test: {
+    environment: 'jsdom',
   },
 })

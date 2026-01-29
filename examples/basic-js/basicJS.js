@@ -1,5 +1,5 @@
-import { AIFormFill } from '../../lib/main';
-import { initializeAFFQuick } from '../../lib/main';
+import { AIFormFill } from '../../lib/core/main';
+import { initializeAFFQuick } from '../../lib/core/main';
 
 /**
  * Simple Test Application for AI Form Input
@@ -9,14 +9,14 @@ import { initializeAFFQuick } from '../../lib/main';
 initializeAFFQuick();
 
 
-const form = document.getElementById('aff-form') as HTMLFormElement;
+const form = document.getElementById('aff-form');
 
 // Handle form submission
 form.addEventListener('submit', (e) => {
   e.preventDefault();
   console.log('Form submitted!');
   const formData = new FormData(form);
-  const data: Record<string, any> = {};
+  const data = {};
   
   formData.forEach((value, key) => {
     data[key] = value;
@@ -24,8 +24,8 @@ form.addEventListener('submit', (e) => {
   
   // Also get checkbox states
   const checkboxes = form.querySelectorAll('input[type="checkbox"]');
-  checkboxes.forEach((checkbox: Element) => {
-    const cb = checkbox as HTMLInputElement;
+  checkboxes.forEach((checkbox) => {
+    const cb = checkbox;
     data[cb.name] = cb.checked;
   });
   
