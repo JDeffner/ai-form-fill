@@ -27,18 +27,14 @@ export default defineConfig({
     },
   },
   plugins: [
-    mockDevServerPlugin(),
+    // `prefix` makes the plugin intercept /api/* without a server.proxy entry.
+    mockDevServerPlugin({ prefix: '^/api' }),
     dts({ 
       insertTypesEntry: true ,
       rollupTypes: true,
       tsconfigPath: './tsconfig.json',
     })
   ],
-  server: {
-    proxy: {
-      '^/api': 'http://example.com/',  // Plugin watches this pattern
-    },
-  },
   test: {
     environment: 'jsdom',
   },

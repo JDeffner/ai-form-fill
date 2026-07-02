@@ -2,13 +2,39 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AI Form Input - Demo & Testing</title>
+    <title>ai-form-fill — Demos</title>
     <link rel="stylesheet" href="/styles.css" />
-    <meta http-equiv='refresh' content='0; URL=/examples/advanced/advanced.html' />
   </head>
   <body>
-    <div class="container"></div> 
+    <div class="container">
+      <header>
+        <h1>ai-form-fill</h1>
+        <p class="subtitle">Framework-agnostic AI-powered form filling — demo pages</p>
+      </header>
+      <div class="content">
+        <section class="panel">
+          <h2>Examples</h2>
+          <ul style="list-style: none; display: flex; flex-direction: column; gap: 1rem; padding: 0; margin: 0;">
+            <li>
+              <a class="btn-primary" href="/examples/basic/basic.html">Basic demo</a>
+              — one-line <code>autoInit()</code> setup
+            </li>
+            <li>
+              <a class="btn-primary" href="/examples/advanced/advanced.html">Advanced demo</a>
+              — provider/model switching, single-field fill, debug log
+            </li>
+            <li>
+              <a class="btn-primary" href="/examples/voice/voice.html">Voice input demo</a>
+              — Web Speech API transcript into <code>fillForm</code>
+            </li>
+            <li>
+              <a class="btn-primary" href="/examples/react/react.html">React demo</a>
+              — controlled components receive AI-filled values
+            </li>
+          </ul>
+        </section>
+      </div>
+    </div>
   </body>
 </html>

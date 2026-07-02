@@ -357,7 +357,7 @@ No API keys required!
   ```
 3. **Optional - API Keys for OpenAI/Perplexity:**
    
-   Create a `.env` file in the project root (already gitignored, never commit real keys):
+   Copy `.env.example` to `.env` in the project root (already gitignored, never commit real keys):
    ```env
    VITE_OPEN_AI_KEY=your-openai-key-here
    VITE_PERPLEXITY_KEY=your-perplexity-key-here

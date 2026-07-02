@@ -17,6 +17,11 @@
     ],
     "type": "library",
     "license": "MIT",
+    "homepage": "https://github.com/JDeffner/ai-form-fill",
+    "support": {
+        "issues": "https://github.com/JDeffner/ai-form-fill/issues",
+        "source": "https://github.com/JDeffner/ai-form-fill"
+    },
     "authors": [
         {
             "name": "Joel Deffner",
@@ -25,10 +30,5 @@
         }
     ],
     "minimum-stability": "stable",
-    "require": {},
-    "autoload": {
-        "psr-4": {
-            "Jdeffner\\AIFormFill\\": "dist/"
-        }
-    }
+    "require": {}
 }

@@ -10,8 +10,8 @@ lerna-debug.log*
 node_modules/
 *.local
 .env
-tests/
-
+coverage/
+*.tsbuildinfo
 
 # Editor directories and files
 .vscode/*
