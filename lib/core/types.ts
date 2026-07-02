@@ -1,77 +1,51 @@
 /**
- * Core types and interfaces for the AI Form Input library
+ * Core types shared across the library.
  */
 
-import type { AIProvider } from "../providers/aiProvider";
-
 /**
- * A single message in a chat conversation
- * 
- * @param role - The role of the message sender (system, user, or assistant)
- * @param content - The content of the message
+ * A single message in a chat conversation.
  */
 export type ChatMessage = {
   role: 'system' | 'user' | 'assistant';
   content: string;
-}
+};
 
 /**
- * Parameters for a chat completion request
+ * Parameters for a chat completion request.
  */
 export type ChatRequest = {
   messages: ChatMessage[];
   model: string;
   maxTokens?: number;
-  format?: Record<string, any>; // For structured output formats
-}
+  /** JSON schema for structured output, when the provider supports it. */
+  format?: Record<string, any>;
+};
 
 /**
- * Response from a chat completion request
+ * Normalised response from a chat completion request.
  */
 export type ChatResponse = {
   content: string | null;
   model?: string;
   finishReason?: string;
-}
+};
 
 /**
- * Configuration for the AIFormFill class
- * 
- * @example Basic usage
- * ```typescript
- * const config: AIFormFillConfig = {
- *   debug: true
- * };
- * ```
- * 
- * @example With field filtering
- * ```typescript
- * const config: AIFormFillConfig = {
- *   fields: ['firstName', 'lastName', 'email'],
- *   debug: true
- * };
- * ```
+ * Options for the {@link AIFormFill} class.
  */
 export type AIFormFillConfig = {
-  /** 
-   * Optional array of field names to target.
-   * If provided, only these fields will be filled (whitelist).
-   * If omitted, all detected fields are filled.
+  /**
+   * Whitelist of field names to fill. If omitted, all detected fields are
+   * filled.
    */
   targetFields?: string[];
 
-  /** 
-   * Optional array of allowed AI providers.
-   * If provided, only these providers can be used.
-   */
-  allowedProviders?: AIProvider[];
-  
-  /** Enable console logging for debugging (default: false) */
+  /** Enable console logging for this instance (sets the global debug flag). */
   debug?: boolean;
-}
+};
 
 /**
- * Information about a form field
+ * Metadata extracted from a form field.
  */
 export type FieldInfo = {
   element: HTMLElement;
@@ -81,11 +55,11 @@ export type FieldInfo = {
   placeholder?: string;
   pattern?: string;
   hint?: string;
-  /** For radio buttons: array of available options with value and label */
+  /** For radio groups: the available options. */
   options?: Array<{ value: string; label: string }>;
-}
+};
 
 /**
- * All currently implemented provider names
+ * Built-in provider names accepted by the {@link AIFormFill} constructor.
  */
-export type AvailableProviders = 'openai' | 'ollama' | 'perplexity';
+export type AvailableProviders = 'ollama' | 'openai' | 'perplexity' | 'openrouter';

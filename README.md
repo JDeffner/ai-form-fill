@@ -1,12 +1,12 @@
 # AI Form Fill
 
-Framework-agnostic library for AI-powered form filling. Extract structured data from unstructured text and automatically fill forms using OpenAI, Ollama, Perplexity, or custom AI providers.
+Framework-agnostic library for AI-powered form filling. Extract structured data from unstructured text and automatically fill forms using Ollama or any OpenAI-compatible provider (OpenAI, Perplexity, OpenRouter, or your own).
 
 ## Features
 
 - Uses LLMs to understand and extract data from natural language
 - Automatically matches data to form fields
-- Works with Ollama, OpenAI or Perplexity
+- Works with Ollama and any OpenAI-compatible API (OpenAI, Perplexity, OpenRouter, ...)
 - Framework-agnostic - works with vanilla JS, React, Vue, or any framework that allows module imports
 - Two integration modes: Quick setup or full customization
 - Field hints for precise AI guidance
@@ -61,7 +61,7 @@ Add `data-aff-provider` attribute to specify which AI provider to use:
 <form id="aff-form" data-aff-provider="openai">
 ```
 
-Available providers (case-insensitive): `ollama`, `openai`, `perplexity`
+Available providers (case-insensitive): `ollama`, `openai`, `perplexity`, `openrouter`
 
 ### Custom Form ID
 
@@ -149,6 +149,37 @@ const aiForm = new AIFormFill('perplexity', {
 });
 ```
 
+#### OpenRouter (Recommended for cloud models)
+
+OpenRouter is an OpenAI-compatible gateway: one API key and base URL give access
+to models from many vendors. Select any model by its fully qualified id.
+
+```typescript
+const aiForm = new AIFormFill('openrouter', {
+  model: 'openai/gpt-4o-mini', // or 'anthropic/claude-3.5-sonnet', 'google/gemini-flash-1.5', ...
+  timeout: 60000,
+});
+```
+
+OpenAI, Perplexity and OpenRouter all speak the same wire format, so a single
+`OpenAICompatibleProvider` serves all three (selected by name). Requests go
+through your own backend proxy so the API key never reaches the browser (see the
+[APIs](#apis) section).
+
+#### Any other OpenAI-compatible service
+
+Point `OpenAICompatibleProvider` at any route your proxy handles:
+
+```typescript
+import { AIFormFill, OpenAICompatibleProvider } from 'ai-form-fill';
+
+const provider = new OpenAICompatibleProvider('myservice', {
+  apiEndpoint: '/api',        // your proxy base
+  model: 'some-model',
+});
+const aiForm = new AIFormFill(provider);
+```
+
 ### Global Configuration
 
 Change default settings for all instances:
@@ -156,16 +187,20 @@ Change default settings for all instances:
 ```typescript
 import { affConfig } from 'ai-form-fill';
 
-// Update Ollama defaults
-affConfig.providers.ollama.model = 'mistral';
-affConfig.providers.ollama.apiEndpoint = 'http://my-server:11434';
+// Shared proxy base for all remote (OpenAI-compatible) providers
+affConfig.apiBase = 'https://my-app.com/api';
 
-// Update OpenAI defaults
-affConfig.providers.openai.model = 'gpt-4o';
+// Per-provider defaults
+affConfig.ollama.model = 'mistral';
+affConfig.ollama.apiEndpoint = 'http://my-server:11434';
+affConfig.openai.model = 'gpt-4o';
+affConfig.openrouter.model = 'anthropic/claude-3.5-sonnet';
 
-// Enable debug mode globally
-affConfig.defaults.debug = true;
+// One switch for all logging
+affConfig.debug = true;
 ```
+
+Passing `{ debug: true }` to `new AIFormFill(...)` sets `affConfig.debug` for you.
 
 ### Field Targeting
 
@@ -246,7 +281,7 @@ new AIFormFill(provider: AvailableProviders | AIProvider, options?: AIFormFillCo
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `provider` | `'ollama' \| 'openai' \| 'perplexity' \| AIProvider` | Provider name or custom instance |
+| `provider` | `'ollama' \| 'openai' \| 'perplexity' \| 'openrouter' \| AIProvider` | Provider name or custom instance |
 | `options.targetFields` | `string[]` | Optional list of field names to fill |
 | `options.debug` | `boolean` | Enable debug logging (default: `false`) |
 | `options.model` | `string` | Model name to use |
@@ -322,10 +357,11 @@ No API keys required!
   ```
 3. **Optional - API Keys for OpenAI/Perplexity:**
    
-   Create a `.env` file in the project root:
+   Create a `.env` file in the project root (already gitignored, never commit real keys):
    ```env
    VITE_OPEN_AI_KEY=your-openai-key-here
    VITE_PERPLEXITY_KEY=your-perplexity-key-here
+   VITE_OPENROUTER_KEY=your-openrouter-key-here
    ```
 
 4. **Start development server:**
@@ -346,6 +382,23 @@ ai-form-fill/
 │   └── advanced/        # Full-featured demo
 └── mock/                # API mock endpoints for development
 ```
+
+## Building
+
+```bash
+pnpm build
+```
+
+This emits to `dist/`:
+
+- `ai-form-fill.js` / `ai-form-fill.umd.cjs` - the bundled library (ESM and UMD).
+- `ai-form-fill.d.ts` - bundled type declarations.
+
+The `.d.ts` keeps all JSDoc/TSDoc comments from the source, so anyone who installs
+the built package gets the same hover documentation and IntelliSense in their
+editor that you see while developing here. To preserve this, keep doc comments on
+exported APIs and leave `declaration: true` (tsconfig) and the `vite-plugin-dts`
+plugin enabled. No extra step is required.
 
 ## APIs
 

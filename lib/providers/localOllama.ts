@@ -1,46 +1,23 @@
 /**
- * Ollama provider implementation
- * 
- * Reference implementation showing how to integrate with Ollama's REST API using native fetch.
- * This provider demonstrates:
- * - Direct API calls without abstraction layers
- * - Timeout handling with AbortController
- * - Error handling for network issues and HTTP errors
- * - Request/response format translation
- * 
- * Use this as a template for other REST API providers (LM Studio, LocalAI, etc.)
- * 
- * 
+ * Ollama provider: talks directly to a local Ollama runtime over its REST API,
+ * with no backend proxy and no external network calls.
+ *
+ * Use this as a template for other local REST runtimes (LM Studio, LocalAI, ...).
  */
 
 import { affConfig } from '../core/config';
 import type { ChatRequest, ChatResponse } from '../core/types';
-import { LocalAIProvider, type ProviderConfig } from '../providers/aiProvider';
+import { AIProvider, type ProviderConfig, type ProviderType } from './aiProvider';
 
-/**
- * Ollama API response format
- */
+/** Ollama chat response shape. */
 export type OllamaResponse = {
   model: string;
-  message: {
-    role: string;
-    content: string;
-  };
+  message: { role: string; content: string };
   done: boolean;
   created_at?: string;
-}
+};
 
-/**
- * Ollama model information
- * 
- * ```ts
- * {
- * name: string;
- * modified_at: string;
- * size: number;
- * }
- * ```
- */
+/** Ollama model entry as returned by `/api/tags`. */
 export interface OllamaModel {
   name: string;
   modified_at: string;
@@ -48,27 +25,24 @@ export interface OllamaModel {
 }
 
 /**
- * Provider implementation for locally running Ollama instance
- * 
- * Ollama is a popular local AI runtime that supports many open-source models.
- * This implementation uses the Ollama REST API with no external dependencies.
- * 
+ * Provider for a locally running Ollama instance.
+ *
  * @example
  * ```typescript
  * const provider = new LocalOllamaProvider({
  *   apiEndpoint: 'http://localhost:11434',
  *   model: 'gemma3:4b',
- *   timeout: 30000,
  * });
  * ```
- * @see {@link https://docs.ollama.com/api/introduction | Ollama API Documentation}
+ * @see {@link https://docs.ollama.com/api | Ollama API Documentation}
  */
-export class LocalOllamaProvider extends LocalAIProvider {
-  protected providerName: string = 'ollama';
-  protected supportsStructuredResponses: boolean = true;
-  protected chatEndpoint: string;
-  protected listModelsEndpoint: string;
-  protected availabilityEndpoint: string;
+export class LocalOllamaProvider extends AIProvider {
+  protected readonly providerName: string = 'ollama';
+  protected readonly providerType: ProviderType = 'local';
+  protected override supportsStructured: boolean = true;
+
+  private readonly chatEndpoint: string;
+  private readonly tagsEndpoint: string;
 
   constructor(config?: ProviderConfig) {
     super({
@@ -76,32 +50,26 @@ export class LocalOllamaProvider extends LocalAIProvider {
       model: config?.model || affConfig.ollama.model,
       timeout: config?.timeout || affConfig.timeout,
     });
-    this.chatEndpoint = this.apiEndpoint + '/api/chat';
-    this.listModelsEndpoint = this.apiEndpoint + '/api/tags';
-    this.availabilityEndpoint = this.apiEndpoint + '/api/tags';
+    this.chatEndpoint = `${this.apiEndpoint}/api/chat`;
+    this.tagsEndpoint = `${this.apiEndpoint}/api/tags`;
   }
 
-  override async chat(params: ChatRequest): Promise<ChatResponse> {
+  override async chat(request: ChatRequest): Promise<ChatResponse> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.timeout);
-    const requestEndpoint = this.chatEndpoint;
 
     try {
-      const requestBody = {
-        model: params.model,
-        messages: params.messages,
-        stream: false, 
-        options: {
-          num_predict: params.maxTokens,
-        },
-      };
-
-      const response = await fetch(requestEndpoint, {
+      const response = await fetch(this.chatEndpoint, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(requestBody),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: request.model,
+          messages: request.messages,
+          stream: false,
+          // Ollama takes a JSON schema in the top-level `format` field.
+          ...(request.format ? { format: request.format } : {}),
+          options: { num_predict: request.maxTokens },
+        }),
         signal: controller.signal,
       });
 
@@ -109,9 +77,7 @@ export class LocalOllamaProvider extends LocalAIProvider {
         throw new Error(`Ollama API error: ${response.status} ${response.statusText}`);
       }
 
-      const data: OllamaResponse = await response.json();
-
-      // Translate Ollama response to standard format
+      const data = (await response.json()) as OllamaResponse;
       return {
         content: data.message.content,
         model: data.model,
@@ -122,7 +88,7 @@ export class LocalOllamaProvider extends LocalAIProvider {
         if (error.name === 'AbortError') {
           throw new Error(`Ollama request timed out after ${this.timeout}ms`);
         }
-        if (error.message.includes('fetch') || error.message.includes('Failed to fetch')) {
+        if (error.message.includes('fetch')) {
           throw new Error(`Failed to connect to Ollama at ${this.apiEndpoint}. Is Ollama running?`);
         }
       }
@@ -134,25 +100,21 @@ export class LocalOllamaProvider extends LocalAIProvider {
 
   override async listModels(): Promise<string[]> {
     try {
-      const response = await fetch(this.listModelsEndpoint);
-      
+      const response = await fetch(this.tagsEndpoint);
       if (!response.ok) {
         throw new Error(`Failed to fetch models: ${response.statusText}`);
       }
-
-      const data = await response.json() as { models: OllamaModel[] };
-      return (data.models || []).map((model) => model.name);
+      const data = (await response.json()) as { models: OllamaModel[] };
+      return (data.models ?? []).map((model) => model.name);
     } catch (error) {
-      console.error('Error listing Ollama models:', error);
+      if (affConfig.debug) console.error('Error listing Ollama models:', error);
       return [];
     }
   }
 
   override async isAvailable(): Promise<boolean> {
     try {
-      const response = await fetch(this.availabilityEndpoint, {
-        method: 'GET',
-      });
+      const response = await fetch(this.tagsEndpoint);
       return response.ok;
     } catch {
       return false;

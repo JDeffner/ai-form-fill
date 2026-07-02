@@ -1,6 +1,5 @@
 /**
- * Core AIFormFill class
- * Main entry point for the library
+ * Core entry point for the library.
  */
 
 import type {
@@ -15,73 +14,53 @@ import { analyzeField, getFillTargets, setFieldValue, getFieldIdentifier } from 
 import { buildFieldPrompt, buildParsePrompt, SYSTEM_PROMPTS, generateFormSchema } from '../utils/prompts';
 import { parseJsonResponse } from '../utils/jsonParser';
 import { LocalOllamaProvider } from '../providers/localOllama';
-import { OpenAIProvider } from '../providers/openai';
-import { PerplexityProvider } from '../providers/perplexity';
+import { OpenAICompatibleProvider } from '../providers/openAICompatible';
 import { affConfig } from './config';
 
 /**
- * Main class for AI-powered form input
- * 
- * Provides high-level methods for filling forms using AI. Supports:
- * - Extracting structured data from unstructured text
- * - Filling entire forms automatically
- * - Generating content for individual fields
- * - Multiple AI providers (Ollama, OpenAI, custom)
- * 
+ * AI-powered form filling.
+ *
+ * - Extract structured data from unstructured text and fill a whole form.
+ * - Generate content for a single field.
+ * - Works with any {@link AIProvider} (built-in or custom).
  */
 export class AIFormFill {
   private provider: AIProvider;
-  private allowedProviders?: AIProvider[];
   private selectedFields?: string[];
- 
-  constructor(desiredProvider: AvailableProviders | AIProvider, options?: AIFormFillConfig & Partial<ProviderConfig>) {
-    if (desiredProvider instanceof AIProvider) {
-      this.provider = desiredProvider;
-    } else {
-      this.provider = AIFormFill.constructProviderWithName(desiredProvider, options);
+
+  /**
+   * @param provider - A built-in provider name or a custom {@link AIProvider}.
+   * @param options - Field targeting, debug, and provider overrides.
+   */
+  constructor(
+    provider: AvailableProviders | AIProvider,
+    options?: AIFormFillConfig & Partial<ProviderConfig>,
+  ) {
+    if (options?.debug !== undefined) {
+      affConfig.debug = options.debug;
     }
 
+    this.provider =
+      provider instanceof AIProvider
+        ? provider
+        : AIFormFill.createProvider(provider, options);
+
     this.selectedFields = options?.targetFields;
-    this.allowedProviders = options?.allowedProviders;
   }
 
   /**
-   * Fill a single form field with AI-generated content
-   * 
-   * Generates appropriate content for one field based on its label, name,
-   * placeholder, and type. Useful for creative content or when you don't
-   * have source text to extract from.
-   * 
-   * @param element - The form field element to fill (input, textarea, or select)
-   * 
-   * @example
-   * ```typescript
-   * const bioField = document.querySelector('#bio');
-   * await aiForm.fillSingleField(bioField);
-   * ```
+   * Generate and set content for a single field, inferred from its label,
+   * name, placeholder and type. Useful when there is no source text.
+   *
+   * @param element - The input, textarea or select to fill.
    */
-  async fillSingleField(
-    element: HTMLElement,
-  ): Promise<void> {
+  async fillSingleField(element: HTMLElement): Promise<void> {
     const fieldInfo = analyzeField(element);
-    
-    if (affConfig.formFillDebug) {
-      console.log(`Filling ${fieldInfo.type} field: ${fieldInfo.name}`);
-    }
+    if (affConfig.debug) console.log(`Filling ${fieldInfo.type} field: ${fieldInfo.name}`);
 
-    // Build the prompt based on field information
-    const prompt = buildFieldPrompt(fieldInfo);
-
-    // Get AI response
     const messages: ChatMessage[] = [
-      {
-        role: 'system',
-        content: SYSTEM_PROMPTS.FIELD_FILL,
-      },
-      {
-        role: 'user',
-        content: prompt,
-      },
+      { role: 'system', content: SYSTEM_PROMPTS.FIELD_FILL },
+      { role: 'user', content: buildFieldPrompt(fieldInfo) },
     ];
 
     try {
@@ -89,210 +68,118 @@ export class AIFormFill {
         messages,
         model: this.provider.getSelectedModel(),
       });
-      if(response.content) {
+      if (response.content) {
         setFieldValue(element, response.content.trim());
       }
-      if (affConfig.formFillDebug) {
-        console.log('Field filled with:', response.content);
-      }
+      if (affConfig.debug) console.log('Field filled with:', response.content);
     } catch (error) {
-      if (affConfig.formFillDebug) {
-        console.error('Error during fillSingleField:', error);
-      }
+      if (affConfig.debug) console.error('Error during fillSingleField:', error);
     }
   }
 
   /**
-   * Parse unstructured text and automatically fill matching form fields
-   * 
-   * @param formElement - The HTML form to fill
-   * @param unstructuredText - The source text to extract data from
-   *   - Examples: Resume text, email body, paragraph descriptions, JSON strings
+   * Parse unstructured text and fill every matching field in the form.
+   *
+   * @param formElement - The form to fill.
+   * @param unstructuredText - Source text (resume, email, description, ...).
    */
-  async parseAndFillForm(
-    formElement: HTMLFormElement,
-    unstructuredText: string,
-  ): Promise<void> {
-    const fillTargets = getFillTargets(formElement);
-    
-    if (affConfig.formFillDebug) {
-      console.log('Parsing unstructured text for', fillTargets.length, 'fields');
-      console.log('Unstructured text:', fillTargets);
-    }
+  async parseAndFillForm(formElement: HTMLFormElement, unstructuredText: string): Promise<void> {
+    const allTargets = getFillTargets(formElement);
+    const targets = this.selectedFields
+      ? allTargets.filter((f: FieldInfo) => f.name && this.selectedFields!.includes(f.name))
+      : allTargets;
 
-    const filteredFillTargets = 
-      this.selectedFields
-      ? fillTargets.filter(
-          (field: FieldInfo) =>
-            field.name && this.selectedFields!.includes(field.name)
-        )
-      : fillTargets;
-
-    const prompt = buildParsePrompt(filteredFillTargets, unstructuredText);
-
-    if (affConfig.formFillDebug) {
-      console.groupCollapsed('Constructed parse prompt:');
-      console.log(prompt);
-      console.groupEnd();
-      console.log(`Sending prompt to ${this.provider.getName()}'s ${this.provider.getSelectedModel()} model...`);
-    }
-     
-
-    const messages: ChatMessage[] = [
-      {
-        role: 'system',
-        content: SYSTEM_PROMPTS.PARSE_EXTRACT,
-      },
-      {
-        role: 'user',
-        content: prompt,
-      },
-    ];
-
-    // Build chat request with optional structured output format
     const chatRequest: ChatRequest = {
-      messages,
+      messages: [
+        { role: 'system', content: SYSTEM_PROMPTS.PARSE_EXTRACT },
+        { role: 'user', content: buildParsePrompt(targets, unstructuredText) },
+      ],
       model: this.provider.getSelectedModel(),
     };
 
     if (this.provider.supportsStructuredOutput()) {
-      chatRequest.format = generateFormSchema(filteredFillTargets);
-      if (affConfig.formFillDebug) console.log('Using structured output format:', chatRequest.format);
+      chatRequest.format = generateFormSchema(targets);
     }
 
     let extractedData: Record<string, string> = {};
-
     try {
       const response = await this.provider.chat(chatRequest);
-
       if (!response.content) {
-        if (affConfig.formFillDebug) console.warn('No content received from AI provider.');
+        if (affConfig.debug) console.warn('No content received from AI provider.');
         return;
       }
-
       extractedData = parseJsonResponse(response.content);
     } catch (error) {
-      if (affConfig.formFillDebug) console.error('Error calling AI provider:', error);
+      if (affConfig.debug) console.error('Error calling AI provider:', error);
       return;
     }
-    
 
-    if (affConfig.formFillDebug) 
-      console.log('Extracted data:', extractedData);
+    if (affConfig.debug) console.log('Extracted data:', extractedData);
 
-    // Fill the client form fields with the extracted data
-    for (const field of filteredFillTargets) {
-      const fieldName = getFieldIdentifier(field);
-      if (fieldName 
-        && extractedData[fieldName]
-      ) {
+    for (const field of targets) {
+      const key = getFieldIdentifier(field);
+      if (key && extractedData[key]) {
         try {
-          setFieldValue(field.element, extractedData[fieldName]);
+          setFieldValue(field.element, extractedData[key]);
         } catch (error) {
-          if (affConfig.formFillDebug) {
-            console.error(`Failed to fill field "${fieldName}":`, error);
-          }
+          if (affConfig.debug) console.error(`Failed to fill field "${key}":`, error);
         }
       }
     }
   }
 
-
-  /**
-   * Get list of available models from the form's provider
-   */
-  async getAvailableModels(): Promise<string[]> {
-    if (this.provider.listModels) {
-      return await this.provider.listModels();
-    }
-    return [];
+  /** List the models offered by the current provider. */
+  getAvailableModels(): Promise<string[]> {
+    return this.provider.listModels();
   }
 
-  /**
-   * Set the model to use for chat requests
-   */
-  async setSelectedModel(modelName: string): Promise<boolean> {
+  /** Select the model to use, validated against the provider when possible. */
+  setSelectedModel(modelName: string): Promise<boolean> {
     return this.provider.setSelectedModel(modelName);
   }
 
-  /**
-   * Get the currently selected model
-   */
+  /** The currently selected model. */
   getSelectedModel(): string {
     return this.provider.getSelectedModel();
   }
 
-  /**
-   * Set which fields should be filled
-   */
+  /** Restrict filling to these field names, or pass `undefined` to fill all. */
   setFields(fields: string[] | undefined): void {
-    this.selectedFields = fields || undefined;
-    return;
+    this.selectedFields = fields;
   }
 
-  /**
-   * Get the currently configured field targets
-   * 
-   * @returns Array of field names being targeted, or undefined if all fields are targeted
-   */
+  /** The field names currently targeted, or `undefined` if all are targeted. */
   getFields(): string[] | undefined {
     return this.selectedFields;
   }
 
-  /**
-   * Check if the AI provider is available and responding
-   * 
-   * @returns Promise resolving to true if provider is available, false otherwise
-   */
-  async providerAvailable(): Promise<boolean> {
-    if (this.provider.isAvailable) {
-      return await this.provider.isAvailable();
-    }
-    return true;
+  /** Whether the current provider is reachable. */
+  providerAvailable(): Promise<boolean> {
+    return this.provider.isAvailable();
   }
 
-  /**
-   * Change the AI provider
-   */
+  /** Swap the active provider. */
   setProvider(provider: AIProvider): void {
     this.provider = provider;
   }
 
-  /**
-   * Get the current AI provider
-   */
+  /** The active provider. */
   getProvider(): AIProvider {
     return this.provider;
   }
 
-  /**
-   * Get the list of allowed providers, if any
-   */
-  getListOfAllowedProviders(): AIProvider[] | undefined {
-    return this.allowedProviders;
-  }
-  
-  /**
-   * Setup the AI provider based on the desired provider name
-   */
-  private static constructProviderWithName(
-    providerName: AvailableProviders, 
-    options?: AIFormFillConfig & Partial<ProviderConfig>
+  /** Build a built-in provider from its name. */
+  private static createProvider(
+    name: AvailableProviders,
+    options?: Partial<ProviderConfig>,
   ): AIProvider {
-    const providerConfig: ProviderConfig = {
-      apiEndpoint: options?.apiEndpoint || '',
-      model: options?.model || '',
+    const config: ProviderConfig = {
+      apiEndpoint: options?.apiEndpoint,
+      model: options?.model,
       timeout: options?.timeout,
     };
-    
-    const providerFactories = {
-        ollama: () => new LocalOllamaProvider(providerConfig),
-        openai: () => new OpenAIProvider(providerConfig),
-        perplexity: () => new PerplexityProvider(providerConfig),
-        /** 
-         * @extension Add more providers here as needed
-         */
-      };
-    return providerFactories[providerName]();
+    return name === 'ollama'
+      ? new LocalOllamaProvider(config)
+      : new OpenAICompatibleProvider(name, config);
   }
 }

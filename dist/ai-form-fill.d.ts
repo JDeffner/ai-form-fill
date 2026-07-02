@@ -1,266 +1,180 @@
 /**
- * Default configuration for AI Form Input library
- *
- * Users can modify these defaults by importing and changing values:
+ * Global defaults for the library. Mutate any field to change behaviour for all
+ * instances created afterwards.
  *
  * @example
  * ```typescript
- * import { config } from 'ai-form-input';
+ * import { affConfig } from 'ai-form-fill';
  *
- * // Change Ollama default endpoint
- * config.ollama.apiEndpoint = 'http://my-server:11434';
- *
- * // Change OpenAI to use real API
- * config.openai.apiEndpoint = 'https://api.openai.com/v1';
- * config.openai.model = 'gpt-4';
+ * affConfig.ollama.model = 'mistral';          // change a default model
+ * affConfig.apiBase = 'https://my-app.com/api'; // point remote providers at your proxy
+ * affConfig.debug = true;                        // turn on logging everywhere
  * ```
  */
-export declare let affConfig: {
+export declare const affConfig: {
+    /**
+     * Base URL of your backend proxy for all remote (OpenAI-compatible)
+     * providers. Each provider appends `/<name>/chat` etc. to this.
+     */
+    apiBase: string;
+    /** Default request timeout in milliseconds. */
+    timeout: number;
+    /** Enable console logging across the library. */
+    debug: boolean;
+    /** Ollama runs locally, so it has its own endpoint. */
     ollama: {
         apiEndpoint: string;
         model: string;
     };
+    /** Default model for each built-in remote preset. */
     openai: {
-        apiEndpoint: string;
         model: string;
     };
     perplexity: {
-        apiEndpoint: string;
         model: string;
     };
-    providerDebug: boolean;
-    formFillDebug: boolean;
-    timeout: number;
+    openrouter: {
+        model: string;
+    };
 };
 
 /**
- * Main class for AI-powered form input
+ * AI-powered form filling.
  *
- * Provides high-level methods for filling forms using AI. Supports:
- * - Extracting structured data from unstructured text
- * - Filling entire forms automatically
- * - Generating content for individual fields
- * - Multiple AI providers (Ollama, OpenAI, custom)
- *
+ * - Extract structured data from unstructured text and fill a whole form.
+ * - Generate content for a single field.
+ * - Works with any {@link AIProvider} (built-in or custom).
  */
 export declare class AIFormFill {
     private provider;
-    private allowedProviders?;
     private selectedFields?;
-    constructor(desiredProvider: AvailableProviders | AIProvider, options?: AIFormFillConfig & Partial<ProviderConfig>);
     /**
-     * Fill a single form field with AI-generated content
+     * @param provider - A built-in provider name or a custom {@link AIProvider}.
+     * @param options - Field targeting, debug, and provider overrides.
+     */
+    constructor(provider: AvailableProviders | AIProvider, options?: AIFormFillConfig & Partial<ProviderConfig>);
+    /**
+     * Generate and set content for a single field, inferred from its label,
+     * name, placeholder and type. Useful when there is no source text.
      *
-     * Generates appropriate content for one field based on its label, name,
-     * placeholder, and type. Useful for creative content or when you don't
-     * have source text to extract from.
-     *
-     * @param element - The form field element to fill (input, textarea, or select)
-     *
-     * @example
-     * ```typescript
-     * const bioField = document.querySelector('#bio');
-     * await aiForm.fillSingleField(bioField);
-     * ```
+     * @param element - The input, textarea or select to fill.
      */
     fillSingleField(element: HTMLElement): Promise<void>;
     /**
-     * Parse unstructured text and automatically fill matching form fields
+     * Parse unstructured text and fill every matching field in the form.
      *
-     * @param formElement - The HTML form to fill
-     * @param unstructuredText - The source text to extract data from
-     *   - Examples: Resume text, email body, paragraph descriptions, JSON strings
+     * @param formElement - The form to fill.
+     * @param unstructuredText - Source text (resume, email, description, ...).
      */
     parseAndFillForm(formElement: HTMLFormElement, unstructuredText: string): Promise<void>;
-    /**
-     * Get list of available models from the form's provider
-     */
+    /** List the models offered by the current provider. */
     getAvailableModels(): Promise<string[]>;
-    /**
-     * Set the model to use for chat requests
-     */
+    /** Select the model to use, validated against the provider when possible. */
     setSelectedModel(modelName: string): Promise<boolean>;
-    /**
-     * Get the currently selected model
-     */
+    /** The currently selected model. */
     getSelectedModel(): string;
-    /**
-     * Set which fields should be filled
-     */
+    /** Restrict filling to these field names, or pass `undefined` to fill all. */
     setFields(fields: string[] | undefined): void;
-    /**
-     * Get the currently configured field targets
-     *
-     * @returns Array of field names being targeted, or undefined if all fields are targeted
-     */
+    /** The field names currently targeted, or `undefined` if all are targeted. */
     getFields(): string[] | undefined;
-    /**
-     * Check if the AI provider is available and responding
-     *
-     * @returns Promise resolving to true if provider is available, false otherwise
-     */
+    /** Whether the current provider is reachable. */
     providerAvailable(): Promise<boolean>;
-    /**
-     * Change the AI provider
-     */
+    /** Swap the active provider. */
     setProvider(provider: AIProvider): void;
-    /**
-     * Get the current AI provider
-     */
+    /** The active provider. */
     getProvider(): AIProvider;
-    /**
-     * Get the list of allowed providers, if any
-     */
-    getListOfAllowedProviders(): AIProvider[] | undefined;
-    /**
-     * Setup the AI provider based on the desired provider name
-     */
-    private static constructProviderWithName;
+    /** Build a built-in provider from its name. */
+    private static createProvider;
 }
 
 /**
- * Configuration for the AIFormFill class
- *
- * @example Basic usage
- * ```typescript
- * const config: AIFormFillConfig = {
- *   debug: true
- * };
- * ```
- *
- * @example With field filtering
- * ```typescript
- * const config: AIFormFillConfig = {
- *   fields: ['firstName', 'lastName', 'email'],
- *   debug: true
- * };
- * ```
+ * Options for the {@link AIFormFill} class.
  */
 export declare type AIFormFillConfig = {
     /**
-     * Optional array of field names to target.
-     * If provided, only these fields will be filled (whitelist).
-     * If omitted, all detected fields are filled.
+     * Whitelist of field names to fill. If omitted, all detected fields are
+     * filled.
      */
     targetFields?: string[];
-    /**
-     * Optional array of allowed AI providers.
-     * If provided, only these providers can be used.
-     */
-    allowedProviders?: AIProvider[];
-    /** Enable console logging for debugging (default: false) */
+    /** Enable console logging for this instance (sets the global debug flag). */
     debug?: boolean;
 };
 
 /**
- * Base class that all AI providers must extend
+ * Base class that every AI provider extends.
  *
- * Providers are responsible for:
- * - Making API calls to their respective AI services (using fetch, axios, SDKs, etc.)
- * - Translating provider-specific request/response formats to the standard ChatParams/ChatResponse
- * - Handling authentication, rate limiting, and error handling
- * - Implementing optional features like model listing and availability checks
- *
- * @see Documentation: {@link AIProvider}
+ * A provider is responsible for:
+ * - making the network call to its service,
+ * - translating the common {@link ChatRequest} / {@link ChatResponse} shapes
+ *   to and from the service's own format,
+ * - reporting which models it offers and whether it is reachable.
  */
 export declare abstract class AIProvider {
-    protected abstract providerName: string;
-    protected abstract providerType: ProviderType;
-    /**
-     * **Optional**: Concrete link to endpoint that sends chat messages
-     */
-    protected chatEndpoint?: string;
-    /**
-     * **Optional**: Concrete link to endpoint that lists available models
-     */
-    protected listModelsEndpoint?: string;
-    /**
-     * **Optional**: Concrete link to endpoint that checks API availability
-     */
-    protected availabilityEndpoint?: string;
+    /** Stable, lowercase identifier for the provider (e.g. `ollama`). */
+    protected abstract readonly providerName: string;
+    /** Whether the provider runs locally or remotely. */
+    protected abstract readonly providerType: ProviderType;
+    /** Whether the provider can enforce a JSON schema on its output. */
+    protected supportsStructured: boolean;
     protected selectedModel: string;
     protected apiEndpoint: string;
     protected timeout: number;
-    protected supportsStructuredResponses: boolean;
     constructor(config?: ProviderConfig);
     /**
-     * Sends a message to a model of the AI provider and returns the response
-     * @param params - The {@link ChatRequest | chat request} including messages, model, etc.
-     * @returns A promise that resolves to a {@link ChatResponse}
+     * Send a chat request and return the normalised response.
+     * @param request - Messages, model and optional structured-output schema.
      */
-    abstract chat(params: ChatRequest): Promise<ChatResponse>;
-    /** Returns the currently selected model. */
+    abstract chat(request: ChatRequest): Promise<ChatResponse>;
+    /** List the model identifiers this provider currently offers. */
+    abstract listModels(): Promise<string[]>;
+    /** Resolve to `true` if the provider is reachable. */
+    abstract isAvailable(): Promise<boolean>;
+    /** The provider's identifier (e.g. `ollama`, `openrouter`). */
+    getName(): string;
+    /** Whether the provider is `local` or `remote`. */
+    getType(): ProviderType;
+    /** The model currently selected for requests. */
     getSelectedModel(): string;
     /**
-     * Sets the model to use for chat requests. Validates against available models if possible.
+     * Select a model, validating against {@link listModels} when possible.
+     * Falls back to setting it unvalidated if the list cannot be fetched.
+     * @returns `true` if the model was set.
      */
     setSelectedModel(modelName: string): Promise<boolean>;
-    /**
-     * Lists available provider models
-     *
-     * @returns The currently configured model(s) as a Promise resolving to an array of model names
-     */
-    abstract listModels(): Promise<string[]>;
-    /**
-     * **Optional**: Checks if the provider's API is accessible
-     *
-     * @returns Promise resolving to true if the API is accessible
-     */
-    abstract isAvailable(): Promise<boolean>;
-    getName(): string;
-    /**
-     * Indicates if the provider supports structured output formats (e.g., JSON Schema)
-     *
-     * @returns true if structured output is supported, false otherwise
-     */
+    /** Whether the provider supports structured (JSON schema) output. */
     supportsStructuredOutput(): boolean;
 }
 
 /**
- * Extracts metadata from a form field element (type, name, label, placeholder, etc.).
+ * Extract metadata (type, name, label, placeholder, hint) from a field element.
  */
 export declare function analyzeField(element: HTMLElement): FieldInfo;
 
 /**
- * All currently implemented provider names
+ * Built-in provider names accepted by the {@link AIFormFill} constructor.
  */
-export declare type AvailableProviders = 'openai' | 'ollama' | 'perplexity';
+export declare type AvailableProviders = 'ollama' | 'openai' | 'perplexity' | 'openrouter';
 
 /**
- * Build a prompt for filling a single form field
+ * Build a prompt for generating content for a single field, based on its label,
+ * name, type, placeholder and pattern.
  *
- * Constructs a detailed prompt that describes the field's purpose, type,
- * validation rules, and any additional context. Used by fillSingleField().
- *
- * @param field - The FieldInfo object describing the field
- * @param context - Optional additional context or instructions for the AI
- * @returns A formatted prompt string ready for the AI
- *
- * @example
- * ```typescript
- * const field = {
- *   label: 'Professional Bio',
- *   type: 'textarea',
- *   placeholder: 'Tell us about yourself...',
- *   required: true
- * };
- *
- * const prompt = buildFieldPrompt(field, 'Make it friendly and professional');
- * // Returns detailed prompt including label, type, requirements, and context
- * ```
+ * @param field - The field to describe.
+ * @param context - Optional extra instructions for the AI.
  */
 export declare function buildFieldPrompt(field: FieldInfo, context?: string): string;
 
 /**
- * Builds a prompt for AI to extract data from unstructured text into form fields.
+ * Build a prompt that asks the AI to extract data from unstructured text and map
+ * it onto the given form fields, returning a JSON object keyed by field name.
  */
 export declare function buildParsePrompt(clientFieldInfos: FieldInfo[], unstructuredText: string): string;
 
 /**
- * A single message in a chat conversation
- *
- * @param role - The role of the message sender (system, user, or assistant)
- * @param content - The content of the message
+ * Core types shared across the library.
+ */
+/**
+ * A single message in a chat conversation.
  */
 export declare type ChatMessage = {
     role: 'system' | 'user' | 'assistant';
@@ -268,17 +182,18 @@ export declare type ChatMessage = {
 };
 
 /**
- * Parameters for a chat completion request
+ * Parameters for a chat completion request.
  */
 export declare type ChatRequest = {
     messages: ChatMessage[];
     model: string;
     maxTokens?: number;
+    /** JSON schema for structured output, when the provider supports it. */
     format?: Record<string, any>;
 };
 
 /**
- * Response from a chat completion request
+ * Normalised response from a chat completion request.
  */
 export declare type ChatResponse = {
     content: string | null;
@@ -287,7 +202,7 @@ export declare type ChatResponse = {
 };
 
 /**
- * Information about a form field
+ * Metadata extracted from a form field.
  */
 export declare type FieldInfo = {
     element: HTMLElement;
@@ -297,7 +212,7 @@ export declare type FieldInfo = {
     placeholder?: string;
     pattern?: string;
     hint?: string;
-    /** For radio buttons: array of available options with value and label */
+    /** For radio groups: the available options. */
     options?: Array<{
         value: string;
         label: string;
@@ -305,13 +220,20 @@ export declare type FieldInfo = {
 };
 
 /**
- * Returns the best identifier for a field (name > label > placeholder > 'unknown').
+ * Build a JSON Schema from form fields for structured AI output. Keys match
+ * {@link getFieldIdentifier} so they line up with the fill step.
+ */
+export declare function generateFormSchema(fields: FieldInfo[]): Record<string, any>;
+
+/**
+ * The best identifier for a field: name, then label, then placeholder,
+ * else `'unknown'`.
  */
 export declare function getFieldIdentifier(field: FieldInfo): string;
 
 /**
- * Returns all fillable fields from a form (inputs, textareas, selects).
- * Radio buttons are grouped by name into a single FieldInfo with options.
+ * Return every fillable field in a form. Radio buttons are grouped by name into
+ * a single {@link FieldInfo} carrying all options.
  */
 export declare function getFillTargets(formElement: HTMLFormElement): FieldInfo[];
 
@@ -323,60 +245,66 @@ export declare function initializeAFFQuick(formId?: string): void;
 export declare function isValidJson(str: string): boolean;
 
 /**
- * @extension Extend this class for providers that run locally (e.g., Ollama, LocalAI)
- */
-declare abstract class LocalAIProvider extends AIProvider {
-    readonly providerType: ProviderType;
-}
-
-/**
- * Provider implementation for locally running Ollama instance
- *
- * Ollama is a popular local AI runtime that supports many open-source models.
- * This implementation uses the Ollama REST API with no external dependencies.
+ * Provider for a locally running Ollama instance.
  *
  * @example
  * ```typescript
  * const provider = new LocalOllamaProvider({
  *   apiEndpoint: 'http://localhost:11434',
  *   model: 'gemma3:4b',
- *   timeout: 30000,
  * });
  * ```
- * @see {@link https://docs.ollama.com/api/introduction | Ollama API Documentation}
+ * @see {@link https://docs.ollama.com/api | Ollama API Documentation}
  */
-export declare class LocalOllamaProvider extends LocalAIProvider {
-    protected providerName: string;
-    protected supportsStructuredResponses: boolean;
-    protected chatEndpoint: string;
-    protected listModelsEndpoint: string;
-    protected availabilityEndpoint: string;
+export declare class LocalOllamaProvider extends AIProvider {
+    protected readonly providerName: string;
+    protected readonly providerType: ProviderType;
+    protected supportsStructured: boolean;
+    private readonly chatEndpoint;
+    private readonly tagsEndpoint;
     constructor(config?: ProviderConfig);
-    chat(params: ChatRequest): Promise<ChatResponse>;
+    chat(request: ChatRequest): Promise<ChatResponse>;
     listModels(): Promise<string[]>;
     isAvailable(): Promise<boolean>;
 }
 
 /**
- * Provider implementation for OpenAI's API
+ * Built-in presets for OpenAI-compatible services. The preset is used as the
+ * route segment on your backend proxy (`/<preset>/chat`) and to look up the
+ * default model in {@link affConfig}.
+ */
+export declare type OpenAICompatiblePreset = 'openai' | 'perplexity' | 'openrouter';
+
+/**
+ * One provider for every OpenAI-compatible service.
+ *
+ * OpenAI, Perplexity and OpenRouter share the same request and response format,
+ * so they only differ by a name and a default model. Requests are sent to your
+ * own backend proxy at `${apiEndpoint}/${name}/chat` so the API key never
+ * reaches the browser.
  *
  * @example
  * ```typescript
- * const provider = new OpenAIProvider({
- *   model: 'gpt-5-nano',
- *   timeout: 60000,
- * });
+ * const openai = new OpenAICompatibleProvider('openai');
+ * const router = new OpenAICompatibleProvider('openrouter', { model: 'anthropic/claude-3.5-sonnet' });
+ * // Any other OpenAI-compatible service:
+ * const custom = new OpenAICompatibleProvider('myservice', { apiEndpoint: '/api', model: 'x' });
  * ```
- * @see {@link https://platform.openai.com/docs/guides/text?prompt-templates-examples=filevar | OpenAI API Documentation}
  */
-export declare class OpenAIProvider extends RemoteAIProvider {
-    protected providerName: string;
-    protected supportsStructuredResponses: boolean;
-    protected chatEndpoint: string;
-    protected listModelsEndpoint: string;
-    protected availabilityEndpoint: string;
-    constructor(config?: ProviderConfig);
-    chat(params: ChatRequest): Promise<ChatResponse>;
+export declare class OpenAICompatibleProvider extends AIProvider {
+    protected readonly providerName: string;
+    protected readonly providerType: ProviderType;
+    protected supportsStructured: boolean;
+    private readonly chatEndpoint;
+    private readonly listModelsEndpoint;
+    private readonly availabilityEndpoint;
+    /**
+     * @param name - A preset (`openai` | `perplexity` | `openrouter`) or any
+     *   custom route name handled by your proxy.
+     * @param config - Optional endpoint / model / timeout overrides.
+     */
+    constructor(name?: OpenAICompatiblePreset | string, config?: ProviderConfig);
+    chat(request: ChatRequest): Promise<ChatResponse>;
     listModels(): Promise<string[]>;
     isAvailable(): Promise<boolean>;
 }
@@ -391,67 +319,36 @@ export declare class OpenAIProvider extends RemoteAIProvider {
 export declare function parseJsonResponse(aiResponse: string): Record<string, string>;
 
 /**
- * Provider implementation for Perplexity AI's API
- *
- * @see {@link https://docs.perplexity.ai/getting-started/overview | Perplexity API Documentation}
+ * User-facing configuration options accepted by every provider.
  */
-export declare class PerplexityProvider extends OpenAIProvider {
-    protected providerName: string;
-    constructor(config?: ProviderConfig);
+export declare interface ProviderConfig {
+    /** Base URL the provider talks to (a local runtime, or your backend proxy). */
+    apiEndpoint?: string;
+    /** Model identifier to use for requests. */
+    model?: string;
+    /** Request timeout in milliseconds. */
+    timeout?: number;
 }
 
 /**
- * Configuration options for AI providers.
+ * Whether a provider runs on the user's machine (`local`) or behind a remote
+ * service (`remote`). Used purely as metadata, e.g. for UI grouping.
  */
-export declare interface ProviderConfig {
-    apiEndpoint?: string;
-    model?: string;
-    timeout?: number;
-    chatEndpoint?: string;
-    listModelsEndpoint?: string;
-    availabilityEndpoint?: string;
-}
-
 export declare type ProviderType = 'local' | 'remote';
 
 /**
- * @extension Extend this class for providers that run remotely (e.g., OpenAI, Perplexity)
- */
-declare abstract class RemoteAIProvider extends AIProvider {
-    readonly providerType: ProviderType;
-}
-
-/**
- * Sets the value of a form field and triggers change events for framework reactivity.
+ * Set a field's value and trigger change events for framework reactivity.
+ * Handles text, checkbox, radio, date/time and select inputs.
  */
 export declare function setFieldValue(element: HTMLElement, value: string): void;
 
 /**
- * System prompts for different AI tasks
- *
- * Predefined system messages that set the AI's behavior for specific tasks.
- * These are sent as the first message in every conversation to establish
- * the AI's role and response format.
- *
- * @property FIELD_FILL - For single field generation tasks
- *   - Instructs AI to return only the value, no explanations
- *   - Used by fillSingleField()
- *
- * @property PARSE_EXTRACT - For data extraction from unstructured text
- *   - Instructs AI to return only valid JSON
- *   - Prevents markdown code blocks and explanations
- *   - Used by parseAndFillForm()
- *
- * @example
- * ```typescript
- * const messages = [
- *   { role: 'system', content: SYSTEM_PROMPTS.PARSE_EXTRACT },
- *   { role: 'user', content: userPrompt }
- * ];
- * ```
+ * System prompts that set the AI's behaviour for each task.
  */
 export declare const SYSTEM_PROMPTS: {
+    /** Single-field generation: return only the value. */
     readonly FIELD_FILL: "You are a helpful assistant that generates appropriate content for form fields. Provide only the value to fill in the field, without any explanation or additional text.";
+    /** Data extraction: return only valid JSON. */
     readonly PARSE_EXTRACT: "You are a helpful assistant that extracts structured data from unstructured text. You must respond ONLY with valid JSON, no explanations or markdown code blocks. If its a checkbox field, return \"true\" if it should be checked, otherwise return \"false\" or omit the field.";
 };
 
