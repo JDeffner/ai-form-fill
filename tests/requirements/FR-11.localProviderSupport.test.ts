@@ -10,7 +10,6 @@ import { LocalOllamaProvider } from '../../lib/providers/localOllama';
 import { AIProvider } from '../../lib/providers/aiProvider';
 
 describe('FR-11: Local Provider Support', () => {
-
   // AC-1: At least one local provider implementation exists (e.g., Ollama-based).
   it('AC-1: Local provider implementation exists', () => {
     const localProvider = new LocalOllamaProvider();
@@ -19,5 +18,4 @@ describe('FR-11: Local Provider Support', () => {
     expect(localProvider.getName()).toBe('ollama');
     expect(localProvider.getType()).toBe('local');
   });
-
 });

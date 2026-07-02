@@ -1,4 +1,4 @@
-import { defineMock } from 'vite-plugin-mock-dev-server'
+import { defineMock } from 'vite-plugin-mock-dev-server';
 import OpenAI from 'openai';
 
 /**
@@ -45,4 +45,4 @@ export default defineMock([
       models: ['openai/gpt-4o-mini', 'anthropic/claude-3.5-sonnet', 'google/gemini-flash-1.5'],
     },
   },
-])
+]);

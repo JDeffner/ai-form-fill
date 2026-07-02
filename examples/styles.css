@@ -5,7 +5,8 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   padding: 2rem;
   max-width: 1400px;
   margin: 0 auto;
@@ -94,14 +95,14 @@ header h1 {
   font-size: 0.95rem;
 }
 
-.form-group input[type="text"],
-.form-group input[type="email"],
-.form-group input[type="tel"],
-.form-group input[type="url"],
-.form-group input[type="time"],
-.form-group input[type="number"],
-.form-group input[type="date"],
-.form-group input[type="datetime-local"],
+.form-group input[type='text'],
+.form-group input[type='email'],
+.form-group input[type='tel'],
+.form-group input[type='url'],
+.form-group input[type='time'],
+.form-group input[type='number'],
+.form-group input[type='date'],
+.form-group input[type='datetime-local'],
 .form-group select,
 textarea {
   padding: 0.75rem;
@@ -121,7 +122,7 @@ textarea {
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
-.form-group input[type="range"] {
+.form-group input[type='range'] {
   width: 100%;
   height: 6px;
   background: #e0e0e0;
@@ -129,7 +130,7 @@ textarea {
   outline: none;
 }
 
-.form-group input[type="range"]::-webkit-slider-thumb {
+.form-group input[type='range']::-webkit-slider-thumb {
   appearance: none;
   width: 18px;
   height: 18px;
@@ -138,13 +139,13 @@ textarea {
   cursor: pointer;
 }
 
-.form-group input[type="checkbox"] {
+.form-group input[type='checkbox'] {
   width: 18px;
   height: 18px;
   cursor: pointer;
 }
 
-.form-group label:has(input[type="checkbox"]) {
+.form-group label:has(input[type='checkbox']) {
   flex-direction: row;
   align-items: center;
   gap: 0.5rem;
@@ -190,7 +191,7 @@ textarea {
   cursor: pointer;
 }
 
-.checkbox-group input[type="checkbox"] {
+.checkbox-group input[type='checkbox'] {
   width: 18px;
   height: 18px;
   cursor: pointer;
@@ -212,7 +213,7 @@ textarea {
   cursor: pointer;
 }
 
-.radio-group input[type="radio"] {
+.radio-group input[type='radio'] {
   width: 18px;
   height: 18px;
   cursor: pointer;
@@ -355,28 +356,28 @@ textarea {
   body {
     padding: 1rem;
   }
-  
+
   header {
     padding: 1.5rem;
   }
-  
+
   header h1 {
     font-size: 1.5rem;
   }
-  
+
   .subtitle {
     font-size: 1rem;
   }
-  
+
   .form-row {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .button-row {
     flex-direction: column;
   }
-  
+
   .checkbox-group {
     flex-direction: column;
     gap: 0.75rem;

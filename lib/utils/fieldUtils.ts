@@ -7,7 +7,15 @@ import { affConfig } from '../core/config';
 
 /** AI responses that mean "no value", so the field is left untouched. */
 const EMPTY_VALUE_INDICATORS = [
-  'null', '', 'n/a', 'none', 'no value', 'empty', 'undefined', 'unknown', 'missing',
+  'null',
+  '',
+  'n/a',
+  'none',
+  'no value',
+  'empty',
+  'undefined',
+  'unknown',
+  'missing',
 ] as const;
 
 /** Values that mean a checkbox should be checked. */
@@ -20,7 +28,9 @@ function dispatchFieldEvents(element: HTMLElement): void {
 }
 
 function isEmptyValue(normalizedValue: string): boolean {
-  return EMPTY_VALUE_INDICATORS.includes(normalizedValue as typeof EMPTY_VALUE_INDICATORS[number]);
+  return EMPTY_VALUE_INDICATORS.includes(
+    normalizedValue as (typeof EMPTY_VALUE_INDICATORS)[number],
+  );
 }
 
 /** Resolve the visible label of a radio button. */
@@ -43,8 +53,8 @@ function formatDateValue(value: string, inputType: string): string | null {
 
   if (/^\d{4}-\d{2}-\d{2}/.test(trimmedValue)) {
     date = new Date(trimmedValue);
-  } else if (/^\d{1,2}[\/.-]\d{1,2}[\/.-]\d{2,4}$/.test(trimmedValue)) {
-    const parts = trimmedValue.split(/[\/.-]/);
+  } else if (/^\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4}$/.test(trimmedValue)) {
+    const parts = trimmedValue.split(/[/.-]/);
     const month = parseInt(parts[0], 10);
     const day = parseInt(parts[1], 10);
     let year = parseInt(parts[2], 10);
@@ -170,7 +180,7 @@ export function getFillTargets(formElement: HTMLFormElement): FieldInfo[] {
 }
 
 function setCheckboxValue(element: HTMLInputElement, normalizedValue: string): void {
-  element.checked = TRUTHY_VALUES.includes(normalizedValue as typeof TRUTHY_VALUES[number]);
+  element.checked = TRUTHY_VALUES.includes(normalizedValue as (typeof TRUTHY_VALUES)[number]);
   dispatchFieldEvents(element);
 }
 
@@ -209,9 +219,14 @@ function setDateValue(element: HTMLInputElement, value: string): void {
   }
 }
 
-function setSelectValue(element: HTMLSelectElement, normalizedValue: string, originalValue: string): void {
+function setSelectValue(
+  element: HTMLSelectElement,
+  normalizedValue: string,
+  originalValue: string,
+): void {
   let option = Array.from(element.options).find(
-    (opt) => opt.value.toLowerCase() === normalizedValue || opt.text.toLowerCase() === normalizedValue,
+    (opt) =>
+      opt.value.toLowerCase() === normalizedValue || opt.text.toLowerCase() === normalizedValue,
   );
   if (!option) {
     option = Array.from(element.options).find(

@@ -86,10 +86,12 @@ export class LocalOllamaProvider extends AIProvider {
     } catch (error) {
       if (error instanceof Error) {
         if (error.name === 'AbortError') {
-          throw new Error(`Ollama request timed out after ${this.timeout}ms`);
+          throw new Error(`Ollama request timed out after ${this.timeout}ms`, { cause: error });
         }
         if (error.message.includes('fetch')) {
-          throw new Error(`Failed to connect to Ollama at ${this.apiEndpoint}. Is Ollama running?`);
+          throw new Error(`Failed to connect to Ollama at ${this.apiEndpoint}. Is Ollama running?`, {
+            cause: error,
+          });
         }
       }
       throw error;

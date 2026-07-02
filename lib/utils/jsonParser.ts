@@ -10,22 +10,22 @@ export function parseJsonResponse(aiResponse: string): Record<string, string> {
   try {
     // Clean up the response
     let cleanedResponse = aiResponse.trim();
-    
+
     // Remove markdown code blocks
     cleanedResponse = cleanedResponse
       .replace(/```json\n?/g, '')
       .replace(/```\n?/g, '')
       .trim();
-    
+
     // Parse JSON
-    const responseAsJson: JSON = JSON.parse(cleanedResponse);
-    
+    const responseAsJson = JSON.parse(cleanedResponse) as Record<string, unknown>;
+
     // Convert all values to strings
     const result: Record<string, string> = {};
     for (const [fieldName, fieldValue] of Object.entries(responseAsJson)) {
       result[fieldName] = String(fieldValue);
     }
-    
+
     return result;
   } catch (error) {
     console.error('Failed to parse JSON response:', error);

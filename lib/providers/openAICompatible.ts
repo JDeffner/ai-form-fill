@@ -61,7 +61,7 @@ export class OpenAICompatibleProvider extends AIProvider {
    *   custom route name handled by your proxy.
    * @param config - Optional endpoint / model / timeout overrides.
    */
-  constructor(name: OpenAICompatiblePreset | string = 'openai', config?: ProviderConfig) {
+  constructor(name: OpenAICompatiblePreset | (string & {}) = 'openai', config?: ProviderConfig) {
     const presetModels: Record<string, string> = {
       openai: affConfig.openai.model,
       perplexity: affConfig.perplexity.model,
@@ -91,7 +91,9 @@ export class OpenAICompatibleProvider extends AIProvider {
       });
 
       if (!response.ok) {
-        throw new Error(`${this.providerName} API error: ${response.status} ${response.statusText}`);
+        throw new Error(
+          `${this.providerName} API error: ${response.status} ${response.statusText}`,
+        );
       }
 
       const body = (await response.json()) as OpenAIResponse;
@@ -109,10 +111,15 @@ export class OpenAICompatibleProvider extends AIProvider {
     } catch (error) {
       if (error instanceof Error) {
         if (error.name === 'AbortError') {
-          throw new Error(`${this.providerName} request timed out after ${this.timeout}ms`);
+          throw new Error(`${this.providerName} request timed out after ${this.timeout}ms`, {
+            cause: error,
+          });
         }
         if (error.message.includes('fetch')) {
-          throw new Error(`Failed to connect to ${this.providerName}. Check your network connection.`);
+          throw new Error(
+            `Failed to connect to ${this.providerName}. Check your network connection.`,
+            { cause: error },
+          );
         }
       }
       throw error;
@@ -125,7 +132,9 @@ export class OpenAICompatibleProvider extends AIProvider {
     try {
       const response = await fetch(this.listModelsEndpoint, { method: 'POST' });
       if (!response.ok) {
-        throw new Error(`${this.providerName} API error: ${response.status} ${response.statusText}`);
+        throw new Error(
+          `${this.providerName} API error: ${response.status} ${response.statusText}`,
+        );
       }
       const body = (await response.json()) as { models: string[] };
       return body.models ?? [];

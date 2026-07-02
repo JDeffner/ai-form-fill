@@ -28,9 +28,9 @@ The fastest way to get started - just add HTML attributes and one line of JavaSc
 
 ```html
 <form id="aff-form" data-aff-provider="ollama">
-  <input type="text" name="name" placeholder="Name">
-  <input type="email" name="email" placeholder="Email">
-  <input type="tel" name="phone" placeholder="Phone">
+  <input type="text" name="name" placeholder="Name" />
+  <input type="email" name="email" placeholder="Email" />
+  <input type="tel" name="phone" placeholder="Phone" />
 </form>
 
 <textarea id="aff-text" placeholder="Paste your text here..."></textarea>
@@ -47,10 +47,10 @@ initializeAFFQuick(); // That's it!
 
 ### Required Element IDs
 
-| Element ID | Description |
-|------------|-------------|
-| `aff-form` | The form element to fill |
-| `aff-text` | Textarea for user input text |
+| Element ID        | Description                    |
+| ----------------- | ------------------------------ |
+| `aff-form`        | The form element to fill       |
+| `aff-text`        | Textarea for user input text   |
 | `aff-text-button` | Button to trigger form filling |
 
 ### Provider Selection
@@ -58,7 +58,7 @@ initializeAFFQuick(); // That's it!
 Add `data-aff-provider` attribute to specify which AI provider to use:
 
 ```html
-<form id="aff-form" data-aff-provider="openai">
+<form id="aff-form" data-aff-provider="openai"></form>
 ```
 
 Available providers (case-insensitive): `ollama`, `openai`, `perplexity`, `openrouter`
@@ -83,14 +83,14 @@ For complete control over the library, use the `AIFormFill` class directly.
 import { AIFormFill } from 'ai-form-fill';
 
 // Create instance with a provider
-const aiForm = new AIFormFill('ollama', { 
+const aiForm = new AIFormFill('ollama', {
   model: 'gemma3:4b',
-  debug: true 
+  debug: true,
 });
 
 // Fill entire form from unstructured text
 const form = document.getElementById('myForm') as HTMLFormElement;
-const text = "My name is John Doe, email john@example.com, phone 555-1234";
+const text = 'My name is John Doe, email john@example.com, phone 555-1234';
 
 await aiForm.parseAndFillForm(form, text);
 ```
@@ -125,6 +125,7 @@ const aiForm = new AIFormFill(customProvider, { debug: true });
 ### Provider Options
 
 #### Ollama (Local - Recommended for Development)
+
 ```typescript
 const aiForm = new AIFormFill('ollama', {
   model: 'gemma3:4b',
@@ -134,6 +135,7 @@ const aiForm = new AIFormFill('ollama', {
 ```
 
 #### OpenAI
+
 ```typescript
 const aiForm = new AIFormFill('openai', {
   model: 'gpt-5-nano',
@@ -142,6 +144,7 @@ const aiForm = new AIFormFill('openai', {
 ```
 
 #### Perplexity
+
 ```typescript
 const aiForm = new AIFormFill('perplexity', {
   model: 'sonar',
@@ -174,7 +177,7 @@ Point `OpenAICompatibleProvider` at any route your proxy handles:
 import { AIFormFill, OpenAICompatibleProvider } from 'ai-form-fill';
 
 const provider = new OpenAICompatibleProvider('myservice', {
-  apiEndpoint: '/api',        // your proxy base
+  apiEndpoint: '/api', // your proxy base
   model: 'some-model',
 });
 const aiForm = new AIFormFill(provider);
@@ -218,7 +221,7 @@ Update the field list after instantiation:
 
 ```typescript
 aiForm.setFields(['name', 'phone']); // Update targeted fields
-aiForm.setFields(undefined);          // Reset to fill all fields
+aiForm.setFields(undefined); // Reset to fill all fields
 
 // Get currently targeted fields
 const fields = aiForm.getFields(); // Returns string[] | undefined
@@ -232,29 +235,19 @@ Provide additional context to help the AI understand specific fields using the `
 <form id="job-application">
   <!-- Basic field - AI infers from name/label -->
   <input type="text" name="firstName" />
-  
+
   <!-- Date field with format hint -->
-  <input 
-    type="date" 
-    name="startDate" 
-    data-aff-hint="Use the earliest date mentioned in the text"
-  />
-  
+  <input type="date" name="startDate" data-aff-hint="Use the earliest date mentioned in the text" />
+
   <!-- Select with mapping hint -->
-  <select 
-    name="department" 
-    data-aff-hint="Map to the closest match from the available options"
-  >
+  <select name="department" data-aff-hint="Map to the closest match from the available options">
     <option value="engineering">Engineering</option>
     <option value="sales">Sales</option>
     <option value="marketing">Marketing</option>
   </select>
-  
+
   <!-- Textarea with content guidance -->
-  <textarea 
-    name="bio" 
-    data-aff-hint="Extract a professional summary, max 2 sentences"
-  ></textarea>
+  <textarea name="bio" data-aff-hint="Extract a professional summary, max 2 sentences"></textarea>
 </form>
 ```
 
@@ -279,37 +272,37 @@ await aiForm.parseAndFillForm(form, resumeText);
 new AIFormFill(provider: AvailableProviders | AIProvider, options?: AIFormFillConfig & ProviderConfig)
 ```
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `provider` | `'ollama' \| 'openai' \| 'perplexity' \| 'openrouter' \| AIProvider` | Provider name or custom instance |
-| `options.targetFields` | `string[]` | Optional list of field names to fill |
-| `options.debug` | `boolean` | Enable debug logging (default: `false`) |
-| `options.model` | `string` | Model name to use |
-| `options.apiEndpoint` | `string` | Custom API endpoint |
-| `options.timeout` | `number` | Request timeout in ms |
+| Parameter              | Type                                                                 | Description                             |
+| ---------------------- | -------------------------------------------------------------------- | --------------------------------------- |
+| `provider`             | `'ollama' \| 'openai' \| 'perplexity' \| 'openrouter' \| AIProvider` | Provider name or custom instance        |
+| `options.targetFields` | `string[]`                                                           | Optional list of field names to fill    |
+| `options.debug`        | `boolean`                                                            | Enable debug logging (default: `false`) |
+| `options.model`        | `string`                                                             | Model name to use                       |
+| `options.apiEndpoint`  | `string`                                                             | Custom API endpoint                     |
+| `options.timeout`      | `number`                                                             | Request timeout in ms                   |
 
 #### Methods
 
-| Method | Description |
-|--------|-------------|
-| `parseAndFillForm(form, text)` | Parse text and fill matching form fields |
-| `fillSingleField(element)` | Fill a single field with AI-generated content |
-| `setProvider(provider)` | Change the AI provider |
-| `getProvider()` | Get the current AI provider |
-| `setFields(fields)` | Set which fields should be filled |
-| `getFields()` | Get currently targeted fields |
-| `getAvailableModels()` | Get list of available models from provider |
-| `setSelectedModel(model)` | Set the model to use |
-| `getSelectedModel()` | Get the currently selected model |
-| `providerAvailable()` | Check if the provider is available |
+| Method                         | Description                                   |
+| ------------------------------ | --------------------------------------------- |
+| `parseAndFillForm(form, text)` | Parse text and fill matching form fields      |
+| `fillSingleField(element)`     | Fill a single field with AI-generated content |
+| `setProvider(provider)`        | Change the AI provider                        |
+| `getProvider()`                | Get the current AI provider                   |
+| `setFields(fields)`            | Set which fields should be filled             |
+| `getFields()`                  | Get currently targeted fields                 |
+| `getAvailableModels()`         | Get list of available models from provider    |
+| `setSelectedModel(model)`      | Set the model to use                          |
+| `getSelectedModel()`           | Get the currently selected model              |
+| `providerAvailable()`          | Check if the provider is available            |
 
 ### `initializeAFFQuick(formId?)`
 
 Quick initialization function for simple setups.
 
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `formId` | `string` | `'aff-form'` | ID of the form element |
+| Parameter | Type     | Default      | Description            |
+| --------- | -------- | ------------ | ---------------------- |
+| `formId`  | `string` | `'aff-form'` | ID of the form element |
 
 ---
 
@@ -317,9 +310,9 @@ Quick initialization function for simple setups.
 
 See the `examples/` folder for working demos:
 
-| Example | Description |
-|---------|-------------|
-| `basic/` | Simple form filling with minimal setup |
+| Example     | Description                                              |
+| ----------- | -------------------------------------------------------- |
+| `basic/`    | Simple form filling with minimal setup                   |
 | `advanced/` | Full-featured demo with provider selection and debugging |
 
 Run examples locally:
@@ -341,6 +334,7 @@ npm run dev
 ### Recommended: Ollama Setup (Simplest)
 
 Run this command after installing Ollama:
+
 ```bash
 ollama pull gemma3:4b
 ```
@@ -350,14 +344,17 @@ No API keys required!
 ### Full Setup
 
 1. **Clone this Git repository**
-   
+
 2. **Go to the Project root and run**
-  ```bash
-  pnpm install
-  ```
+
+```bash
+pnpm install
+```
+
 3. **Optional - API Keys for OpenAI/Perplexity:**
-   
+
    Copy `.env.example` to `.env` in the project root (already gitignored, never commit real keys):
+
    ```env
    VITE_OPEN_AI_KEY=your-openai-key-here
    VITE_PERPLEXITY_KEY=your-perplexity-key-here
@@ -403,6 +400,7 @@ plugin enabled. No extra step is required.
 ## APIs
 
 ---
+
 APIs have to be handled with utmost care when working with JavaScipt since they are easily exposed when they are handled in the front end. since this library is a frontend one it means that sending the data to a self hosted backend first is a must. In the current version this happens through the mock abstraction but in real implementations this would require the configurations of a proper backend. this is outside the scope of this project but there is an obligation to set up guidelines as to how the libraries requiests should be relayed.
 
 ---

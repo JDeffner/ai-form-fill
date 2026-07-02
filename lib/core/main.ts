@@ -25,8 +25,18 @@ export {
 } from '../providers/openAICompatible';
 
 // Utilities
-export { analyzeField, getFillTargets, setFieldValue, getFieldIdentifier } from '../utils/fieldUtils';
-export { buildFieldPrompt, buildParsePrompt, SYSTEM_PROMPTS, generateFormSchema } from '../utils/prompts';
+export {
+  analyzeField,
+  getFillTargets,
+  setFieldValue,
+  getFieldIdentifier,
+} from '../utils/fieldUtils';
+export {
+  buildFieldPrompt,
+  buildParsePrompt,
+  SYSTEM_PROMPTS,
+  generateFormSchema,
+} from '../utils/prompts';
 export { parseJsonResponse, isValidJson } from '../utils/jsonParser';
 
 // Quick setup

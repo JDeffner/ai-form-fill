@@ -20,7 +20,7 @@ const listOfProviders: AIProvider[] = [
   new OpenAICompatibleProvider('perplexity'),
   new OpenAICompatibleProvider('openrouter'),
 ];
-let aiFormFill: AIFormFill = new AIFormFill(listOfProviders[0], { debug: true });
+const aiFormFill: AIFormFill = new AIFormFill(listOfProviders[0], { debug: true });
 let selectedElement: HTMLElement | null = null;
 
 /**

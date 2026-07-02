@@ -10,8 +10,18 @@ import type {
   AvailableProviders,
 } from './types';
 import { AIProvider, type ProviderConfig } from '../providers/aiProvider';
-import { analyzeField, getFillTargets, setFieldValue, getFieldIdentifier } from '../utils/fieldUtils';
-import { buildFieldPrompt, buildParsePrompt, SYSTEM_PROMPTS, generateFormSchema } from '../utils/prompts';
+import {
+  analyzeField,
+  getFillTargets,
+  setFieldValue,
+  getFieldIdentifier,
+} from '../utils/fieldUtils';
+import {
+  buildFieldPrompt,
+  buildParsePrompt,
+  SYSTEM_PROMPTS,
+  generateFormSchema,
+} from '../utils/prompts';
 import { parseJsonResponse } from '../utils/jsonParser';
 import { LocalOllamaProvider } from '../providers/localOllama';
 import { OpenAICompatibleProvider } from '../providers/openAICompatible';
@@ -41,9 +51,7 @@ export class AIFormFill {
     }
 
     this.provider =
-      provider instanceof AIProvider
-        ? provider
-        : AIFormFill.createProvider(provider, options);
+      provider instanceof AIProvider ? provider : AIFormFill.createProvider(provider, options);
 
     this.selectedFields = options?.targetFields;
   }
@@ -101,7 +109,7 @@ export class AIFormFill {
       chatRequest.format = generateFormSchema(targets);
     }
 
-    let extractedData: Record<string, string> = {};
+    let extractedData: Record<string, string>;
     try {
       const response = await this.provider.chat(chatRequest);
       if (!response.content) {

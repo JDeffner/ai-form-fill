@@ -25,7 +25,8 @@ export function buildFieldPrompt(field: FieldInfo, context?: string): string {
   if (field.type === 'checkbox') {
     prompt += '\nReturn only "true" or "false" for this checkbox, no explanations.';
   } else {
-    prompt += '\nProvide a realistic and appropriate value for this field. Only return the value itself, no explanations.';
+    prompt +=
+      '\nProvide a realistic and appropriate value for this field. Only return the value itself, no explanations.';
   }
 
   return prompt;
@@ -36,7 +37,8 @@ export function buildFieldPrompt(field: FieldInfo, context?: string): string {
  * it onto the given form fields, returning a JSON object keyed by field name.
  */
 export function buildParsePrompt(clientFieldInfos: FieldInfo[], unstructuredText: string): string {
-  let prompt = 'Extract structured data from the following unstructured text and match it to the form fields.\n\n';
+  let prompt =
+    'Extract structured data from the following unstructured text and match it to the form fields.\n\n';
   prompt += 'Form fields:\n';
 
   for (const field of clientFieldInfos) {
@@ -76,23 +78,25 @@ export function buildParsePrompt(clientFieldInfos: FieldInfo[], unstructuredText
  */
 export const SYSTEM_PROMPTS = {
   /** Single-field generation: return only the value. */
-  FIELD_FILL: 'You are a helpful assistant that generates appropriate content for form fields. Provide only the value to fill in the field, without any explanation or additional text.',
+  FIELD_FILL:
+    'You are a helpful assistant that generates appropriate content for form fields. Provide only the value to fill in the field, without any explanation or additional text.',
   /** Data extraction: return only valid JSON. */
-  PARSE_EXTRACT: 'You are a helpful assistant that extracts structured data from unstructured text. You must respond ONLY with valid JSON, no explanations or markdown code blocks. If its a checkbox field, return "true" if it should be checked, otherwise return "false" or omit the field.',
+  PARSE_EXTRACT:
+    'You are a helpful assistant that extracts structured data from unstructured text. You must respond ONLY with valid JSON, no explanations or markdown code blocks. If its a checkbox field, return "true" if it should be checked, otherwise return "false" or omit the field.',
 } as const;
 
 /**
  * Build a JSON Schema from form fields for structured AI output. Keys match
  * {@link getFieldIdentifier} so they line up with the fill step.
  */
-export function generateFormSchema(fields: FieldInfo[]): Record<string, any> {
-  const properties: Record<string, any> = {};
+export function generateFormSchema(fields: FieldInfo[]): Record<string, unknown> {
+  const properties: Record<string, unknown> = {};
 
   for (const field of fields) {
     const fieldName = getFieldIdentifier(field);
     if (!fieldName || fieldName === 'unknown') continue;
 
-    let schema: Record<string, any>;
+    let schema: Record<string, unknown>;
     switch (field.type) {
       case 'number':
       case 'range':

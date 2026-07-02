@@ -12,9 +12,9 @@ describe('buildFieldPrompt', () => {
       type: 'text',
       label: 'Full Name',
     };
-    
+
     const prompt = buildFieldPrompt(field);
-    
+
     expect(prompt).toContain('Field Label: Full Name');
   });
 
@@ -24,9 +24,9 @@ describe('buildFieldPrompt', () => {
       type: 'email',
       name: 'userEmail',
     };
-    
+
     const prompt = buildFieldPrompt(field);
-    
+
     expect(prompt).toContain('Field Type: email');
   });
 
@@ -36,9 +36,9 @@ describe('buildFieldPrompt', () => {
       type: 'text',
       placeholder: 'Enter your name',
     };
-    
+
     const prompt = buildFieldPrompt(field);
-    
+
     expect(prompt).toContain('Placeholder: Enter your name');
   });
 
@@ -48,9 +48,9 @@ describe('buildFieldPrompt', () => {
       type: 'textarea',
       label: 'Bio',
     };
-    
+
     const prompt = buildFieldPrompt(field, 'Make it professional');
-    
+
     expect(prompt).toContain('Additional Context: Make it professional');
   });
 
@@ -60,9 +60,9 @@ describe('buildFieldPrompt', () => {
       type: 'checkbox',
       name: 'newsletter',
     };
-    
+
     const prompt = buildFieldPrompt(field, 'Subscribe to newsletter');
-    
+
     expect(prompt).toContain('true');
     expect(prompt).toContain('false');
   });
@@ -74,42 +74,36 @@ describe('buildParsePrompt', () => {
       { element: mockElement, type: 'text', name: 'firstName' },
       { element: mockElement, type: 'email', name: 'email' },
     ];
-    
+
     const prompt = buildParsePrompt(fields, 'John Doe, john@example.com');
-    
+
     expect(prompt).toContain('firstName');
     expect(prompt).toContain('email');
   });
 
   it('includes field types in prompt', () => {
-    const fields: FieldInfo[] = [
-      { element: mockElement, type: 'date', name: 'birthDate' },
-    ];
-    
+    const fields: FieldInfo[] = [{ element: mockElement, type: 'date', name: 'birthDate' }];
+
     const prompt = buildParsePrompt(fields, 'Born on 1990-01-15');
-    
+
     expect(prompt).toContain('type: date');
     expect(prompt).toContain('Format: YYYY-MM-DD');
   });
 
   it('includes unstructured text in prompt', () => {
-    const fields: FieldInfo[] = [
-      { element: mockElement, type: 'text', name: 'name' },
-    ];
+    const fields: FieldInfo[] = [{ element: mockElement, type: 'text', name: 'name' }];
     const text = 'My name is Alice and I work at Acme Corp';
-    
+
     const prompt = buildParsePrompt(fields, text);
-    
+
     expect(prompt).toContain(text);
   });
 
   it('requests JSON output format', () => {
-    const fields: FieldInfo[] = [
-      { element: mockElement, type: 'text', name: 'field1' },
-    ];
-    
+    const fields: FieldInfo[] = [{ element: mockElement, type: 'text', name: 'field1' }];
+
     const prompt = buildParsePrompt(fields, 'test');
-    
+
     expect(prompt).toContain('JSON');
   });
 });

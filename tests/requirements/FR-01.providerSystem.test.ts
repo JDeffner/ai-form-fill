@@ -12,7 +12,6 @@ import { OpenAICompatibleProvider } from '../../lib/providers/openAICompatible';
 import { MockAIProvider } from '../mockProvider';
 
 describe('FR-01: Provider System', () => {
-
   // AC-1: An abstract AIProvider class exists with clearly defined method signatures.
   it('AC-1: Abstract AIProvider class exists with defined method signatures', () => {
     const provider = new MockAIProvider();

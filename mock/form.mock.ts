@@ -1,4 +1,4 @@
-import { defineMock } from 'vite-plugin-mock-dev-server'
+import { defineMock } from 'vite-plugin-mock-dev-server';
 
 let formSubmission: any;
 
@@ -9,13 +9,13 @@ export default defineMock([
     body(request) {
       formSubmission = request;
       return { request };
-    }
+    },
   },
   {
     url: '/api/form/view',
     method: 'GET',
     body: {
-      formSubmission
-    }
-  }
-])
+      formSubmission,
+    },
+  },
+]);

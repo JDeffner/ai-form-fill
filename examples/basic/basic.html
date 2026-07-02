@@ -9,30 +9,35 @@
   </head>
   <body>
     <div class="container">
-    <nav style="margin-bottom: 1.5rem;">
-        <ul style="list-style: none; display: flex; gap: 1rem; padding: 0; margin: 0;">
-            <li><a class="btn-secondary" href="../advanced/advanced.html">Advanced Demo (TS)</a></li>
-            <!-- <li><a class="btn-secondary" href="../basic/basic.html">Basic Demo (TS)</a></li> -->
-            <li><a class="btn-secondary" href="../basic-js/basicJS.html">Basic Demo (JS)</a></li>
-            <li><a class="btn-secondary" href="../prototype/proto.html">Prototype</a></li>
+      <nav style="margin-bottom: 1.5rem">
+        <ul style="list-style: none; display: flex; gap: 1rem; padding: 0; margin: 0">
+          <li><a class="btn-secondary" href="../advanced/advanced.html">Advanced Demo (TS)</a></li>
+          <!-- <li><a class="btn-secondary" href="../basic/basic.html">Basic Demo (TS)</a></li> -->
+          <li><a class="btn-secondary" href="../basic-js/basicJS.html">Basic Demo (JS)</a></li>
+          <li><a class="btn-secondary" href="../prototype/proto.html">Prototype</a></li>
         </ul>
-    </nav>
+      </nav>
       <header>
         <h1>Simple Demo</h1>
         <p class="subtitle">Basic example of AI-powered form filling</p>
       </header>
 
       <div class="content">
-        <!-- Configuration Panel --> 
+        <!-- Configuration Panel -->
         <section class="panel">
           <h2>Input Text</h2>
           <div class="test-section">
             <h3>Parse and Fill Form</h3>
-            <textarea id="aff-text" rows="8" placeholder="Hi, my name is John Doe. You can reach me at john.doe@example.com or call me at +1-555-123-4567. I live at 123 Main Street in New York, USA. I'm a software developer passionate about AI, music, and travel. I would like to receive the newsletter.">Hi, my name is Jim Raynor. You can reach me at jim.dope@starcraft.com or call me at +1-551-143-4567. I live at 1st Main Street in NYC, USA. I'm a software developer passionate about technology and music. I would like to subscribe to the newsletter and enable notifications. I'm male.
+            <textarea
+              id="aff-text"
+              rows="8"
+              placeholder="Hi, my name is John Doe. You can reach me at john.doe@example.com or call me at +1-555-123-4567. I live at 123 Main Street in New York, USA. I'm a software developer passionate about AI, music, and travel. I would like to receive the newsletter."
+            >
+Hi, my name is Jim Raynor. You can reach me at jim.dope@starcraft.com or call me at +1-551-143-4567. I live at 1st Main Street in NYC, USA. I'm a software developer passionate about technology and music. I would like to subscribe to the newsletter and enable notifications. I'm male.
             </textarea>
             <div class="button-row">
               <button id="aff-text-button" class="btn-primary">Parse & Fill Form</button>
-             
+
               <!-- <a href="../advanced/index.html"><button class="btn-secondary">Advanced Demo</button></a> -->
             </div>
           </div>
@@ -45,30 +50,42 @@
             <div class="form-row">
               <div class="form-group">
                 <label for="firstName">First Name *</label>
-                <input type="text" id="firstName" name="firstName" placeholder="First name" required />
+                <input
+                  type="text"
+                  id="firstName"
+                  name="firstName"
+                  placeholder="First name"
+                  required
+                />
               </div>
               <div class="form-group">
                 <label for="lastName">Last Name *</label>
                 <input type="text" id="lastName" name="lastName" placeholder="Last name" required />
               </div>
             </div>
-            
+
             <div class="form-row">
               <div class="form-group flex-2">
                 <label for="email">Email *</label>
-                <input type="email" id="email" name="email" placeholder="email@example.com" required />
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  placeholder="email@example.com"
+                  required
+                />
               </div>
               <div class="form-group flex-1">
                 <label for="phone">Phone</label>
                 <input type="tel" id="phone" name="phone" placeholder="+1234567890" />
               </div>
             </div>
-            
+
             <div class="form-group">
               <label for="address">Address</label>
               <input type="text" id="address" name="address" placeholder="Street address" />
             </div>
-            
+
             <div class="form-row">
               <div class="form-group flex-2">
                 <label for="city">City</label>
@@ -88,16 +105,26 @@
                 </select>
               </div>
             </div>
-            
+
             <div class="form-group">
               <label>Interests</label>
               <div class="checkbox-group">
                 <label>
-                  <input type="checkbox" id="interest_tech" name="interest_tech" value="technology" />
+                  <input
+                    type="checkbox"
+                    id="interest_tech"
+                    name="interest_tech"
+                    value="technology"
+                  />
                   Technology
                 </label>
                 <label>
-                  <input type="checkbox" id="interest_sports" name="interest_sports" value="sports" />
+                  <input
+                    type="checkbox"
+                    id="interest_sports"
+                    name="interest_sports"
+                    value="sports"
+                  />
                   Sports
                 </label>
                 <label>
@@ -109,12 +136,17 @@
                   Music
                 </label>
                 <label>
-                  <input type="checkbox" id="interest_travel" name="interest_travel" value="travel" />
+                  <input
+                    type="checkbox"
+                    id="interest_travel"
+                    name="interest_travel"
+                    value="travel"
+                  />
                   Travel
                 </label>
               </div>
             </div>
-            
+
             <div class="form-group">
               <label>Preferences</label>
               <div class="checkbox-group">
@@ -128,12 +160,17 @@
                 </label>
               </div>
             </div>
-            
+
             <div class="form-group">
               <label for="about">About Me</label>
-              <textarea id="about" name="about" rows="3" placeholder="Briefly introduce yourself"></textarea>
+              <textarea
+                id="about"
+                name="about"
+                rows="3"
+                placeholder="Briefly introduce yourself"
+              ></textarea>
             </div>
-            
+
             <div class="button-row">
               <button type="submit" class="btn-primary">Submit Form</button>
               <input id="clearButton" type="reset" class="btn-secondary" value="Clear Form" />
@@ -142,7 +179,7 @@
         </section>
       </div>
     </div>
-    
+
     <script type="module" src="./basic.ts"></script>
   </body>
 </html>

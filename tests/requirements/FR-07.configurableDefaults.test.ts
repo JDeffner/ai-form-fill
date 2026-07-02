@@ -10,7 +10,6 @@ import { affConfig } from '../../lib/core/config';
 import { LocalOllamaProvider } from '../../lib/providers/localOllama';
 
 describe('FR-07: Configurable Defaults', () => {
-
   // AC-1: Default values exist for provider endpoints, model identifiers and timeouts.
   it('AC-1: Default values exist for endpoints, models and timeouts', () => {
     expect(affConfig.ollama.apiEndpoint).toBeDefined();

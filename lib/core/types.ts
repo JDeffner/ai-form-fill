@@ -18,7 +18,7 @@ export type ChatRequest = {
   model: string;
   maxTokens?: number;
   /** JSON schema for structured output, when the provider supports it. */
-  format?: Record<string, any>;
+  format?: Record<string, unknown>;
 };
 
 /**
