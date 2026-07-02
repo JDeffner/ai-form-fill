@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.9.0 (unreleased)
+## 0.9.0 (2026-07-02)
 
 Clean rewrite relative to the published 1.0.1. The library has no users yet,
 so breaking changes ship without deprecated aliases or compatibility shims.

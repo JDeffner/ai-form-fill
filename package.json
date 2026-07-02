@@ -1,7 +1,7 @@
 {
   "name": "ai-form-fill",
   "description": "Framework-agnostic library for AI-powered form filling. Extract structured data from unstructured text and automatically fill forms using Ollama or any OpenAI-compatible provider (OpenAI, Perplexity, OpenRouter, ...).",
-  "version": "2.0.0",
+  "version": "0.9.0",
   "keywords": [
     "ai",
     "form",
