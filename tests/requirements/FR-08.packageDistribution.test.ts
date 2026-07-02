@@ -16,7 +16,7 @@ describe('FR-08: Package Distribution', () => {
 
   // AC-3: ES module imports work.
   it('AC-3: ES module imports work', async () => {
-    const { AIFormFill } = await import('../../lib/core/aiFormFill');
+    const { AIFormFill } = await import('../../lib/core/ai-form-fill');
     expect(AIFormFill).toBeDefined();
   });
 

@@ -6,8 +6,8 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { affConfig } from '../../lib/core/config';
-import { LocalOllamaProvider } from '../../lib/providers/localOllama';
+import { affConfig } from '../../lib/core/defaults';
+import { OllamaProvider } from '../../lib/providers/ollama';
 
 describe('FR-07: Configurable Defaults', () => {
   // AC-1: Default values exist for provider endpoints, model identifiers and timeouts.
@@ -21,7 +21,7 @@ describe('FR-07: Configurable Defaults', () => {
 
   // AC-2: Users can override default values through initialization parameters.
   it('AC-2: Users can override defaults through config objects', () => {
-    const customProvider = new LocalOllamaProvider({
+    const customProvider = new OllamaProvider({
       apiEndpoint: 'http://custom:8080',
       model: 'custom-model',
       timeout: 60000,
@@ -32,7 +32,7 @@ describe('FR-07: Configurable Defaults', () => {
 
   // AC-3: The library functions with minimal configuration.
   it('AC-3: Library functions with minimal configuration', () => {
-    const defaultProvider = new LocalOllamaProvider();
+    const defaultProvider = new OllamaProvider();
 
     expect(defaultProvider.getSelectedModel()).toBe(affConfig.ollama.model);
   });

@@ -3,7 +3,7 @@
  */
 
 import type { FieldInfo } from '../core/types';
-import { getFieldIdentifier } from './fieldUtils';
+import { getFieldIdentifier } from '../form/analyze';
 
 /**
  * Build a prompt for generating content for a single field, based on its label,
@@ -36,7 +36,10 @@ export function buildFieldPrompt(field: FieldInfo, context?: string): string {
  * Build a prompt that asks the AI to extract data from unstructured text and map
  * it onto the given form fields, returning a JSON object keyed by field name.
  */
-export function buildParsePrompt(clientFieldInfos: FieldInfo[], unstructuredText: string): string {
+export function buildExtractionPrompt(
+  clientFieldInfos: FieldInfo[],
+  unstructuredText: string,
+): string {
   let prompt =
     'Extract structured data from the following unstructured text and match it to the form fields.\n\n';
   prompt += 'Form fields:\n';
@@ -81,7 +84,7 @@ export const SYSTEM_PROMPTS = {
   FIELD_FILL:
     'You are a helpful assistant that generates appropriate content for form fields. Provide only the value to fill in the field, without any explanation or additional text.',
   /** Data extraction: return only valid JSON. */
-  PARSE_EXTRACT:
+  EXTRACT:
     'You are a helpful assistant that extracts structured data from unstructured text. You must respond ONLY with valid JSON, no explanations or markdown code blocks. If its a checkbox field, return "true" if it should be checked, otherwise return "false" or omit the field.',
 } as const;
 
@@ -89,7 +92,7 @@ export const SYSTEM_PROMPTS = {
  * Build a JSON Schema from form fields for structured AI output. Keys match
  * {@link getFieldIdentifier} so they line up with the fill step.
  */
-export function generateFormSchema(fields: FieldInfo[]): Record<string, unknown> {
+export function buildFormSchema(fields: FieldInfo[]): Record<string, unknown> {
   const properties: Record<string, unknown> = {};
 
   for (const field of fields) {

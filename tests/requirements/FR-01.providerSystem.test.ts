@@ -6,10 +6,10 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { AIProvider } from '../../lib/providers/aiProvider';
-import { LocalOllamaProvider } from '../../lib/providers/localOllama';
-import { OpenAICompatibleProvider } from '../../lib/providers/openAICompatible';
-import { MockAIProvider } from '../mockProvider';
+import { AIProvider } from '../../lib/providers/provider';
+import { OllamaProvider } from '../../lib/providers/ollama';
+import { OpenAICompatibleProvider } from '../../lib/providers/openai-compatible';
+import { MockAIProvider } from '../mock-provider';
 
 describe('FR-01: Provider System', () => {
   // AC-1: An abstract AIProvider class exists with clearly defined method signatures.
@@ -26,7 +26,7 @@ describe('FR-01: Provider System', () => {
 
   // AC-2: Provider implementations exist for a remote service and a local service.
   it('AC-2: Provider implementations exist for remote and local services', () => {
-    const localProvider = new LocalOllamaProvider();
+    const localProvider = new OllamaProvider();
     const remoteProvider = new OpenAICompatibleProvider('openai');
 
     expect(localProvider).toBeInstanceOf(AIProvider);

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildFieldPrompt, buildParsePrompt, SYSTEM_PROMPTS } from '../../lib/utils/prompts';
+import { buildFieldPrompt, buildExtractionPrompt, SYSTEM_PROMPTS } from '../../lib/prompt/build';
 import type { FieldInfo } from '../../lib/core/types';
 
 // Mock HTMLElement for tests
@@ -68,14 +68,14 @@ describe('buildFieldPrompt', () => {
   });
 });
 
-describe('buildParsePrompt', () => {
+describe('buildExtractionPrompt', () => {
   it('lists all field names in prompt', () => {
     const fields: FieldInfo[] = [
       { element: mockElement, type: 'text', name: 'firstName' },
       { element: mockElement, type: 'email', name: 'email' },
     ];
 
-    const prompt = buildParsePrompt(fields, 'John Doe, john@example.com');
+    const prompt = buildExtractionPrompt(fields, 'John Doe, john@example.com');
 
     expect(prompt).toContain('firstName');
     expect(prompt).toContain('email');
@@ -84,7 +84,7 @@ describe('buildParsePrompt', () => {
   it('includes field types in prompt', () => {
     const fields: FieldInfo[] = [{ element: mockElement, type: 'date', name: 'birthDate' }];
 
-    const prompt = buildParsePrompt(fields, 'Born on 1990-01-15');
+    const prompt = buildExtractionPrompt(fields, 'Born on 1990-01-15');
 
     expect(prompt).toContain('type: date');
     expect(prompt).toContain('Format: YYYY-MM-DD');
@@ -94,7 +94,7 @@ describe('buildParsePrompt', () => {
     const fields: FieldInfo[] = [{ element: mockElement, type: 'text', name: 'name' }];
     const text = 'My name is Alice and I work at Acme Corp';
 
-    const prompt = buildParsePrompt(fields, text);
+    const prompt = buildExtractionPrompt(fields, text);
 
     expect(prompt).toContain(text);
   });
@@ -102,7 +102,7 @@ describe('buildParsePrompt', () => {
   it('requests JSON output format', () => {
     const fields: FieldInfo[] = [{ element: mockElement, type: 'text', name: 'field1' }];
 
-    const prompt = buildParsePrompt(fields, 'test');
+    const prompt = buildExtractionPrompt(fields, 'test');
 
     expect(prompt).toContain('JSON');
   });
@@ -114,8 +114,8 @@ describe('SYSTEM_PROMPTS', () => {
     expect(typeof SYSTEM_PROMPTS.FIELD_FILL).toBe('string');
   });
 
-  it('has PARSE_EXTRACT prompt defined', () => {
-    expect(SYSTEM_PROMPTS.PARSE_EXTRACT).toBeDefined();
-    expect(SYSTEM_PROMPTS.PARSE_EXTRACT).toContain('JSON');
+  it('has EXTRACT prompt defined', () => {
+    expect(SYSTEM_PROMPTS.EXTRACT).toBeDefined();
+    expect(SYSTEM_PROMPTS.EXTRACT).toContain('JSON');
   });
 });

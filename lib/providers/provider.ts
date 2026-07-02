@@ -1,5 +1,5 @@
 import type { ChatRequest, ChatResponse } from '../core/types';
-import { affConfig } from '../core/config';
+import { affConfig } from '../core/defaults';
 
 /**
  * User-facing configuration options accepted by every provider.

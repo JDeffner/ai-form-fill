@@ -62,4 +62,4 @@ export type FieldInfo = {
 /**
  * Built-in provider names accepted by the {@link AIFormFill} constructor.
  */
-export type AvailableProviders = 'ollama' | 'openai' | 'perplexity' | 'openrouter';
+export type BuiltInProviderName = 'ollama' | 'openai' | 'perplexity' | 'openrouter';

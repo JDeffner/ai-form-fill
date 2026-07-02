@@ -7,15 +7,15 @@
 import {
   AIFormFill,
   AIProvider,
-  LocalOllamaProvider,
+  OllamaProvider,
   OpenAICompatibleProvider,
-  type AvailableProviders,
-} from '../../lib/core/main';
+  type BuiltInProviderName,
+} from '../../lib/index';
 import { showStatus, logResult, clearForm } from '../utils/ui-helpers';
 
 // State
 const listOfProviders: AIProvider[] = [
-  new LocalOllamaProvider(),
+  new OllamaProvider(),
   new OpenAICompatibleProvider('openai'),
   new OpenAICompatibleProvider('perplexity'),
   new OpenAICompatibleProvider('openrouter'),
@@ -62,7 +62,7 @@ async function loadModels() {
 
   try {
     showStatus('Loading models...', 'info');
-    const selectedProviderName = providerSelect.value as AvailableProviders;
+    const selectedProviderName = providerSelect.value as BuiltInProviderName;
     const selectedProvider = listOfProviders.find((p) => p.getName() === selectedProviderName);
     if (selectedProvider) aiFormFill.setProvider(selectedProvider);
 
@@ -170,7 +170,7 @@ async function fillSingleField() {
  */
 async function testAPI() {
   showStatus('Testing provider availability...');
-  const available = await aiFormFill.providerAvailable();
+  const available = await aiFormFill.isProviderAvailable();
   if (!available) {
     showStatus('Provider API is unavailable', 'error');
     logResult('Provider API is unavailable');

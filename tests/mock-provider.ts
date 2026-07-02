@@ -3,7 +3,7 @@
  * Returns predictable responses without network calls
  */
 
-import { AIProvider, type ProviderConfig, type ProviderType } from '../lib/providers/aiProvider';
+import { AIProvider, type ProviderConfig, type ProviderType } from '../lib/providers/provider';
 import type { ChatRequest, ChatResponse } from '../lib/core/types';
 
 export class MockAIProvider extends AIProvider {

@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { analyzeField, getFillTargets } from '../../lib/utils/fieldUtils';
+import { analyzeField, getFormFields } from '../../lib/form/analyze';
 
 beforeEach(() => {
   document.body.innerHTML = '';
@@ -23,7 +23,7 @@ describe('FR-02: Form Field Detection', () => {
     `;
     document.body.appendChild(form);
 
-    const targets = getFillTargets(form);
+    const targets = getFormFields(form);
 
     expect(targets.length).toBe(3);
     expect(targets.some((t) => t.type === 'text')).toBe(true);
@@ -63,7 +63,7 @@ describe('FR-02: Form Field Detection', () => {
     `;
     document.body.appendChild(form);
 
-    const targets = getFillTargets(form);
+    const targets = getFormFields(form);
 
     expect(targets.length).toBe(1);
     expect(targets[0].name).toBe('visible');

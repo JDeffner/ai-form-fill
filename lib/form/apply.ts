@@ -1,9 +1,10 @@
 /**
- * Utilities for reading form fields and writing values back to them.
+ * Writing side of the form engine: applying values to fields and dispatching
+ * the events framework reactivity listens for.
  */
 
-import type { FieldInfo } from '../core/types';
-import { affConfig } from '../core/config';
+import { affConfig } from '../core/defaults';
+import { getRadioLabel } from './analyze';
 
 /** AI responses that mean "no value", so the field is left untouched. */
 const EMPTY_VALUE_INDICATORS = [
@@ -31,16 +32,6 @@ function isEmptyValue(normalizedValue: string): boolean {
   return EMPTY_VALUE_INDICATORS.includes(
     normalizedValue as (typeof EMPTY_VALUE_INDICATORS)[number],
   );
-}
-
-/** Resolve the visible label of a radio button. */
-function getRadioLabel(radio: HTMLInputElement): string {
-  if (radio.id) {
-    const labelElement = document.querySelector(`label[for="${radio.id}"]`);
-    if (labelElement) return labelElement.textContent?.trim() || '';
-  }
-  const parentLabel = radio.closest('label');
-  return parentLabel ? parentLabel.textContent?.trim() || '' : '';
 }
 
 /**
@@ -100,83 +91,6 @@ function formatDateValue(value: string, inputType: string): string | null {
     default:
       return `${year}-${month}-${day}`;
   }
-}
-
-/**
- * Extract metadata (type, name, label, placeholder, hint) from a field element.
- */
-export function analyzeField(element: HTMLElement): FieldInfo {
-  const fieldInfo: FieldInfo = { element, type: 'text' };
-
-  if (element instanceof HTMLInputElement) {
-    fieldInfo.type = element.type;
-    fieldInfo.name = element.name;
-    fieldInfo.placeholder = element.placeholder;
-    fieldInfo.pattern = element.pattern;
-    if (element.type === 'checkbox') fieldInfo.placeholder = element.value || 'checkbox option';
-    if (element.type === 'radio') fieldInfo.placeholder = element.value || 'radio option';
-  } else if (element instanceof HTMLTextAreaElement) {
-    fieldInfo.type = 'textarea';
-    fieldInfo.name = element.name;
-    fieldInfo.placeholder = element.placeholder;
-  } else if (element instanceof HTMLSelectElement) {
-    fieldInfo.type = 'select';
-    fieldInfo.name = element.name;
-  }
-
-  if (element.id) {
-    const label = document.querySelector(`label[for="${element.id}"]`);
-    if (label) fieldInfo.label = label.textContent?.trim();
-  }
-  if (!fieldInfo.label) {
-    const parentLabel = element.closest('label');
-    if (parentLabel) fieldInfo.label = parentLabel.textContent?.trim();
-  }
-
-  const hint = element.dataset.affHint;
-  if (hint) fieldInfo.hint = hint;
-
-  return fieldInfo;
-}
-
-/**
- * Return every fillable field in a form. Radio buttons are grouped by name into
- * a single {@link FieldInfo} carrying all options.
- */
-export function getFillTargets(formElement: HTMLFormElement): FieldInfo[] {
-  const fields: FieldInfo[] = [];
-  const radioGroups = new Map<string, HTMLInputElement[]>();
-
-  const elements = formElement.querySelectorAll(
-    'input:not([type="submit"]):not([type="reset"]):not([type="button"]):not([type="hidden"]):not([type="image"]):not([type="file"]), textarea, select',
-  );
-
-  elements.forEach((element) => {
-    if (element instanceof HTMLInputElement && element.type === 'radio') {
-      if (element.name) {
-        if (!radioGroups.has(element.name)) radioGroups.set(element.name, []);
-        radioGroups.get(element.name)!.push(element);
-      }
-    } else if (element instanceof HTMLElement) {
-      fields.push(analyzeField(element));
-    }
-  });
-
-  for (const [, radioGroup] of radioGroups.entries()) {
-    if (radioGroup.length === 0) continue;
-    const fieldInfo = analyzeField(radioGroup[0]);
-    fieldInfo.options = radioGroup.map((radio) => ({
-      value: radio.value,
-      label: getRadioLabel(radio) || radio.value,
-    }));
-    for (const radio of radioGroup) {
-      const hint = radio.dataset.affHint;
-      if (hint) fieldInfo.hint = `${fieldInfo.hint ?? ''} ${hint}`.trim();
-    }
-    fields.push(fieldInfo);
-  }
-
-  return fields;
 }
 
 function setCheckboxValue(element: HTMLInputElement, normalizedValue: string): void {
@@ -249,10 +163,10 @@ function setSelectValue(
 }
 
 /**
- * Set a field's value and trigger change events for framework reactivity.
+ * Apply a value to a field and trigger change events for framework reactivity.
  * Handles text, checkbox, radio, date/time and select inputs.
  */
-export function setFieldValue(element: HTMLElement, value: string): void {
+export function applyFieldValue(element: HTMLElement, value: string): void {
   const normalizedValue = value.trim().toLowerCase();
   if (isEmptyValue(normalizedValue)) return;
 
@@ -279,12 +193,4 @@ export function setFieldValue(element: HTMLElement, value: string): void {
   } else if (element instanceof HTMLSelectElement) {
     setSelectValue(element, normalizedValue, value);
   }
-}
-
-/**
- * The best identifier for a field: name, then label, then placeholder,
- * else `'unknown'`.
- */
-export function getFieldIdentifier(field: FieldInfo): string {
-  return field.name || field.label || field.placeholder || 'unknown';
 }

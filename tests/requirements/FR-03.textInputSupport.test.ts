@@ -6,9 +6,9 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { AIFormFill } from '../../lib/core/aiFormFill';
-import { MockAIProvider } from '../mockProvider';
-import { setFieldValue } from '../../lib/utils/fieldUtils';
+import { AIFormFill } from '../../lib/core/ai-form-fill';
+import { MockAIProvider } from '../mock-provider';
+import { applyFieldValue } from '../../lib/form/apply';
 
 beforeEach(() => {
   document.body.innerHTML = '';
@@ -64,7 +64,7 @@ describe('FR-03: Text Input Support', () => {
     const input = document.createElement('input');
     input.type = 'text';
 
-    setFieldValue(input, 'Test Value');
+    applyFieldValue(input, 'Test Value');
 
     expect(input.value).toBe('Test Value');
   });

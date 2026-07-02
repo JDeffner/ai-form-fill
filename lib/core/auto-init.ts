@@ -1,5 +1,5 @@
-import { AIFormFill } from './aiFormFill';
-import { type AvailableProviders } from './types';
+import { AIFormFill } from './ai-form-fill';
+import { type BuiltInProviderName } from './types';
 
 // aff = a form fill
 export function initializeAFFQuick(formId: string = 'aff-form') {
@@ -7,7 +7,8 @@ export function initializeAFFQuick(formId: string = 'aff-form') {
   const affForm = document.getElementById(formId) as HTMLFormElement;
   const affUnstructuredTextArea = document.getElementById('aff-text') as HTMLTextAreaElement;
   const affFillButton = document.getElementById('aff-text-button') as HTMLButtonElement;
-  const affProvider = (affForm.getAttribute('data-aff-provider') || 'ollama') as AvailableProviders;
+  const affProvider = (affForm.getAttribute('data-aff-provider') ||
+    'ollama') as BuiltInProviderName;
 
   const affFormFill = new AIFormFill(affProvider, { debug: true });
 

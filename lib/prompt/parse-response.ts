@@ -6,7 +6,7 @@
  * Parses JSON from AI responses, handling markdown code blocks and formatting issues.
  * Returns empty object if parsing fails.
  */
-export function parseJsonResponse(aiResponse: string): Record<string, string> {
+export function parseModelResponse(aiResponse: string): Record<string, string> {
   try {
     // Clean up the response
     let cleanedResponse = aiResponse.trim();

@@ -6,8 +6,8 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { SYSTEM_PROMPTS } from '../../lib/utils/prompts';
-import { parseJsonResponse, isValidJson } from '../../lib/utils/jsonParser';
+import { SYSTEM_PROMPTS } from '../../lib/prompt/build';
+import { parseModelResponse, isValidJson } from '../../lib/prompt/parse-response';
 
 beforeEach(() => {
   document.body.innerHTML = '';
@@ -16,8 +16,8 @@ beforeEach(() => {
 describe('FR-09: Structured Outputs', () => {
   // AC-1: The library includes prompt templates that request JSON-formatted responses.
   it('AC-1: Prompt templates request JSON-formatted responses', () => {
-    expect(SYSTEM_PROMPTS.PARSE_EXTRACT).toBeDefined();
-    expect(SYSTEM_PROMPTS.PARSE_EXTRACT.toLowerCase()).toContain('json');
+    expect(SYSTEM_PROMPTS.EXTRACT).toBeDefined();
+    expect(SYSTEM_PROMPTS.EXTRACT.toLowerCase()).toContain('json');
   });
 
   // AC-2: AI responses are validated against the expected JSON structure before being applied.
@@ -29,6 +29,6 @@ describe('FR-09: Structured Outputs', () => {
     expect(isValidJson(invalidJson)).toBe(false);
 
     // Invalid JSON returns empty object, not applied to form
-    expect(parseJsonResponse(invalidJson)).toEqual({});
+    expect(parseModelResponse(invalidJson)).toEqual({});
   });
 });

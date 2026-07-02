@@ -14,8 +14,8 @@
  */
 
 import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
-import { AIFormFill } from '../../lib/core/aiFormFill';
-import { LocalOllamaProvider } from '../../lib/providers/localOllama';
+import { AIFormFill } from '../../lib/core/ai-form-fill';
+import { OllamaProvider } from '../../lib/providers/ollama';
 
 const TEST_TIMEOUT = 60000;
 const OLLAMA_ENDPOINT = 'http://localhost:11434';
@@ -24,7 +24,7 @@ const OLLAMA_MODEL = 'gemma3:4b';
 /**
  * Fails loudly when Ollama is down — these tests must never silently pass green.
  */
-async function requireOllama(provider: LocalOllamaProvider): Promise<void> {
+async function requireOllama(provider: OllamaProvider): Promise<void> {
   let available: boolean;
   try {
     available = await provider.isAvailable();
@@ -96,11 +96,11 @@ function getFormValues(form: HTMLFormElement) {
 }
 
 describe('Ollama Integration Tests', () => {
-  let provider: LocalOllamaProvider;
+  let provider: OllamaProvider;
   let aiFormFill: AIFormFill;
 
   beforeAll(async () => {
-    provider = new LocalOllamaProvider({
+    provider = new OllamaProvider({
       apiEndpoint: OLLAMA_ENDPOINT,
       model: OLLAMA_MODEL,
       timeout: TEST_TIMEOUT,
@@ -488,11 +488,11 @@ function getAdvancedFormValues(form: HTMLFormElement) {
 }
 
 describe('Advanced Form Integration Tests', () => {
-  let provider: LocalOllamaProvider;
+  let provider: OllamaProvider;
   let aiFormFill: AIFormFill;
 
   beforeAll(async () => {
-    provider = new LocalOllamaProvider({
+    provider = new OllamaProvider({
       apiEndpoint: OLLAMA_ENDPOINT,
       model: OLLAMA_MODEL,
       timeout: TEST_TIMEOUT,

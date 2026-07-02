@@ -1,51 +1,51 @@
 import { describe, it, expect } from 'vitest';
-import { parseJsonResponse, isValidJson } from '../../lib/utils/jsonParser';
+import { parseModelResponse, isValidJson } from '../../lib/prompt/parse-response';
 
-describe('parseJsonResponse', () => {
+describe('parseModelResponse', () => {
   it('parses valid JSON object', () => {
     const input = '{"name": "John", "email": "john@example.com"}';
-    const result = parseJsonResponse(input);
+    const result = parseModelResponse(input);
 
     expect(result).toEqual({ name: 'John', email: 'john@example.com' });
   });
 
   it('handles JSON wrapped in markdown code blocks', () => {
     const input = '```json\n{"firstName": "Jane", "age": "25"}\n```';
-    const result = parseJsonResponse(input);
+    const result = parseModelResponse(input);
 
     expect(result).toEqual({ firstName: 'Jane', age: '25' });
   });
 
   it('handles plain markdown code blocks without language specifier', () => {
     const input = '```\n{"city": "Berlin"}\n```';
-    const result = parseJsonResponse(input);
+    const result = parseModelResponse(input);
 
     expect(result).toEqual({ city: 'Berlin' });
   });
 
   it('converts non-string values to strings', () => {
     const input = '{"count": 42, "active": true, "score": 3.14}';
-    const result = parseJsonResponse(input);
+    const result = parseModelResponse(input);
 
     expect(result).toEqual({ count: '42', active: 'true', score: '3.14' });
   });
 
   it('returns empty object for malformed JSON', () => {
     const input = '{ invalid json }';
-    const result = parseJsonResponse(input);
+    const result = parseModelResponse(input);
 
     expect(result).toEqual({});
   });
 
   it('returns empty object for empty string', () => {
-    const result = parseJsonResponse('');
+    const result = parseModelResponse('');
 
     expect(result).toEqual({});
   });
 
   it('handles whitespace around JSON', () => {
     const input = '   \n  {"trimmed": "value"}  \n  ';
-    const result = parseJsonResponse(input);
+    const result = parseModelResponse(input);
 
     expect(result).toEqual({ trimmed: 'value' });
   });

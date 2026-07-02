@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { AIFormFill } from '../../lib/core/aiFormFill';
-import { MockAIProvider } from '../mockProvider';
+import { AIFormFill } from '../../lib/core/ai-form-fill';
+import { MockAIProvider } from '../mock-provider';
 
 beforeEach(() => {
   document.body.innerHTML = '';

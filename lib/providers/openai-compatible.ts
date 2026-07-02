@@ -1,6 +1,6 @@
 import type { ChatRequest, ChatResponse } from '../core/types';
-import { AIProvider, type ProviderConfig, type ProviderType } from './aiProvider';
-import { affConfig } from '../core/config';
+import { AIProvider, type ProviderConfig, type ProviderType } from './provider';
+import { affConfig } from '../core/defaults';
 
 /**
  * Standard OpenAI chat-completions response shape. OpenAI, Perplexity and

@@ -6,7 +6,8 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { setFieldValue, getFillTargets } from '../../lib/utils/fieldUtils';
+import { getFormFields } from '../../lib/form/analyze';
+import { applyFieldValue } from '../../lib/form/apply';
 
 beforeEach(() => {
   document.body.innerHTML = '';
@@ -24,7 +25,7 @@ describe('FR-04: Select Element Support', () => {
     `;
     document.body.appendChild(form);
 
-    const targets = getFillTargets(form);
+    const targets = getFormFields(form);
 
     expect(targets.length).toBe(1);
     expect(targets[0].type).toBe('select');
@@ -39,10 +40,10 @@ describe('FR-04: Select Element Support', () => {
       <option value="us">United States</option>
     `;
 
-    setFieldValue(select, 'us');
+    applyFieldValue(select, 'us');
     expect(select.value).toBe('us');
 
-    setFieldValue(select, 'Germany');
+    applyFieldValue(select, 'Germany');
     expect(select.value).toBe('de');
   });
 
@@ -54,10 +55,10 @@ describe('FR-04: Select Element Support', () => {
       <option value="us">United States</option>
     `;
 
-    setFieldValue(select, 'germany');
+    applyFieldValue(select, 'germany');
     expect(select.value).toBe('de');
 
-    setFieldValue(select, 'UNITED STATES');
+    applyFieldValue(select, 'UNITED STATES');
     expect(select.value).toBe('us');
   });
 });

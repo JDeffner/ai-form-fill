@@ -7,25 +7,21 @@ import type {
   ChatMessage,
   ChatRequest,
   AIFormFillConfig,
-  AvailableProviders,
+  BuiltInProviderName,
 } from './types';
-import { AIProvider, type ProviderConfig } from '../providers/aiProvider';
-import {
-  analyzeField,
-  getFillTargets,
-  setFieldValue,
-  getFieldIdentifier,
-} from '../utils/fieldUtils';
+import { AIProvider, type ProviderConfig } from '../providers/provider';
+import { analyzeField, getFormFields, getFieldIdentifier } from '../form/analyze';
+import { applyFieldValue } from '../form/apply';
 import {
   buildFieldPrompt,
-  buildParsePrompt,
+  buildExtractionPrompt,
   SYSTEM_PROMPTS,
-  generateFormSchema,
-} from '../utils/prompts';
-import { parseJsonResponse } from '../utils/jsonParser';
-import { LocalOllamaProvider } from '../providers/localOllama';
-import { OpenAICompatibleProvider } from '../providers/openAICompatible';
-import { affConfig } from './config';
+  buildFormSchema,
+} from '../prompt/build';
+import { parseModelResponse } from '../prompt/parse-response';
+import { OllamaProvider } from '../providers/ollama';
+import { OpenAICompatibleProvider } from '../providers/openai-compatible';
+import { affConfig } from './defaults';
 
 /**
  * AI-powered form filling.
@@ -43,7 +39,7 @@ export class AIFormFill {
    * @param options - Field targeting, debug, and provider overrides.
    */
   constructor(
-    provider: AvailableProviders | AIProvider,
+    provider: BuiltInProviderName | AIProvider,
     options?: AIFormFillConfig & Partial<ProviderConfig>,
   ) {
     if (options?.debug !== undefined) {
@@ -77,7 +73,7 @@ export class AIFormFill {
         model: this.provider.getSelectedModel(),
       });
       if (response.content) {
-        setFieldValue(element, response.content.trim());
+        applyFieldValue(element, response.content.trim());
       }
       if (affConfig.debug) console.log('Field filled with:', response.content);
     } catch (error) {
@@ -92,21 +88,21 @@ export class AIFormFill {
    * @param unstructuredText - Source text (resume, email, description, ...).
    */
   async parseAndFillForm(formElement: HTMLFormElement, unstructuredText: string): Promise<void> {
-    const allTargets = getFillTargets(formElement);
+    const allTargets = getFormFields(formElement);
     const targets = this.selectedFields
       ? allTargets.filter((f: FieldInfo) => f.name && this.selectedFields!.includes(f.name))
       : allTargets;
 
     const chatRequest: ChatRequest = {
       messages: [
-        { role: 'system', content: SYSTEM_PROMPTS.PARSE_EXTRACT },
-        { role: 'user', content: buildParsePrompt(targets, unstructuredText) },
+        { role: 'system', content: SYSTEM_PROMPTS.EXTRACT },
+        { role: 'user', content: buildExtractionPrompt(targets, unstructuredText) },
       ],
       model: this.provider.getSelectedModel(),
     };
 
     if (this.provider.supportsStructuredOutput()) {
-      chatRequest.format = generateFormSchema(targets);
+      chatRequest.format = buildFormSchema(targets);
     }
 
     let extractedData: Record<string, string>;
@@ -116,7 +112,7 @@ export class AIFormFill {
         if (affConfig.debug) console.warn('No content received from AI provider.');
         return;
       }
-      extractedData = parseJsonResponse(response.content);
+      extractedData = parseModelResponse(response.content);
     } catch (error) {
       if (affConfig.debug) console.error('Error calling AI provider:', error);
       return;
@@ -128,7 +124,7 @@ export class AIFormFill {
       const key = getFieldIdentifier(field);
       if (key && extractedData[key]) {
         try {
-          setFieldValue(field.element, extractedData[key]);
+          applyFieldValue(field.element, extractedData[key]);
         } catch (error) {
           if (affConfig.debug) console.error(`Failed to fill field "${key}":`, error);
         }
@@ -162,7 +158,7 @@ export class AIFormFill {
   }
 
   /** Whether the current provider is reachable. */
-  providerAvailable(): Promise<boolean> {
+  isProviderAvailable(): Promise<boolean> {
     return this.provider.isAvailable();
   }
 
@@ -178,7 +174,7 @@ export class AIFormFill {
 
   /** Build a built-in provider from its name. */
   private static createProvider(
-    name: AvailableProviders,
+    name: BuiltInProviderName,
     options?: Partial<ProviderConfig>,
   ): AIProvider {
     const config: ProviderConfig = {
@@ -187,7 +183,7 @@ export class AIFormFill {
       timeout: options?.timeout,
     };
     return name === 'ollama'
-      ? new LocalOllamaProvider(config)
+      ? new OllamaProvider(config)
       : new OpenAICompatibleProvider(name, config);
   }
 }

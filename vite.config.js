@@ -10,7 +10,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 export default defineConfig({
   build: {
     lib: {
-      entry: resolve(__dirname, 'lib/core/main.ts'),
+      entry: resolve(__dirname, 'lib/index.ts'),
       name: 'AIFormFill',
       // the proper extensions will be added
       fileName: 'ai-form-fill',

@@ -1,4 +1,4 @@
-import { initializeAFFQuick } from '../../lib/core/main';
+import { initializeAFFQuick } from '../../lib/index';
 
 /**
  * Simple Test Application for AI Form Input

@@ -6,9 +6,9 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { parseJsonResponse } from '../../lib/utils/jsonParser';
-import { AIFormFill } from '../../lib/core/aiFormFill';
-import { MockAIProvider } from '../mockProvider';
+import { parseModelResponse } from '../../lib/prompt/parse-response';
+import { AIFormFill } from '../../lib/core/ai-form-fill';
+import { MockAIProvider } from '../mock-provider';
 
 beforeEach(() => {
   document.body.innerHTML = '';
@@ -18,16 +18,16 @@ describe('FR-06: JSON Response Parsing', () => {
   // AC-1: Valid JSON responses are parsed correctly without loss of information.
   it('AC-1: Valid JSON is parsed correctly', () => {
     const json = '{"firstName": "John", "lastName": "Doe"}';
-    const result = parseJsonResponse(json);
+    const result = parseModelResponse(json);
 
     expect(result).toEqual({ firstName: 'John', lastName: 'Doe' });
   });
 
   // AC-2: Parse errors do not crash the application; an empty or error result is returned.
   it('AC-2: Parse errors return empty object without crashing', () => {
-    expect(() => parseJsonResponse('{ invalid }')).not.toThrow();
-    expect(parseJsonResponse('{ invalid }')).toEqual({});
-    expect(parseJsonResponse('')).toEqual({});
+    expect(() => parseModelResponse('{ invalid }')).not.toThrow();
+    expect(parseModelResponse('{ invalid }')).toEqual({});
+    expect(parseModelResponse('')).toEqual({});
   });
 
   // AC-3: Each key in the JSON maps to the correct form field by name.

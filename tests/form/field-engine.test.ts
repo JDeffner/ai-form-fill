@@ -1,10 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import {
-  analyzeField,
-  getFillTargets,
-  setFieldValue,
-  getFieldIdentifier,
-} from '../../lib/utils/fieldUtils';
+import { analyzeField, getFormFields, getFieldIdentifier } from '../../lib/form/analyze';
+import { applyFieldValue } from '../../lib/form/apply';
 
 beforeEach(() => {
   document.body.innerHTML = '';
@@ -67,7 +63,7 @@ describe('analyzeField', () => {
   });
 });
 
-describe('getFillTargets', () => {
+describe('getFormFields', () => {
   it('finds all input fields in a form', () => {
     const form = document.createElement('form');
     form.innerHTML = `
@@ -77,7 +73,7 @@ describe('getFillTargets', () => {
     `;
     document.body.appendChild(form);
 
-    const targets = getFillTargets(form);
+    const targets = getFormFields(form);
 
     expect(targets).toHaveLength(3);
   });
@@ -91,7 +87,7 @@ describe('getFillTargets', () => {
     `;
     document.body.appendChild(form);
 
-    const targets = getFillTargets(form);
+    const targets = getFormFields(form);
 
     expect(targets).toHaveLength(1);
     expect(targets[0].name).toBe('visible');
@@ -107,7 +103,7 @@ describe('getFillTargets', () => {
     `;
     document.body.appendChild(form);
 
-    const targets = getFillTargets(form);
+    const targets = getFormFields(form);
 
     expect(targets).toHaveLength(1);
     expect(targets[0].type).toBe('select');
@@ -122,7 +118,7 @@ describe('getFillTargets', () => {
     `;
     document.body.appendChild(form);
 
-    const targets = getFillTargets(form);
+    const targets = getFormFields(form);
 
     // Radio buttons with same name should be grouped into one FieldInfo
     expect(targets).toHaveLength(1);
@@ -131,12 +127,12 @@ describe('getFillTargets', () => {
   });
 });
 
-describe('setFieldValue', () => {
+describe('applyFieldValue', () => {
   it('sets text input value', () => {
     const input = document.createElement('input');
     input.type = 'text';
 
-    setFieldValue(input, 'Hello World');
+    applyFieldValue(input, 'Hello World');
 
     expect(input.value).toBe('Hello World');
   });
@@ -144,7 +140,7 @@ describe('setFieldValue', () => {
   it('sets textarea value', () => {
     const textarea = document.createElement('textarea');
 
-    setFieldValue(textarea, 'Long text content');
+    applyFieldValue(textarea, 'Long text content');
 
     expect(textarea.value).toBe('Long text content');
   });
@@ -153,7 +149,7 @@ describe('setFieldValue', () => {
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
 
-    setFieldValue(checkbox, 'true');
+    applyFieldValue(checkbox, 'true');
 
     expect(checkbox.checked).toBe(true);
   });
@@ -163,7 +159,7 @@ describe('setFieldValue', () => {
     checkbox.type = 'checkbox';
     checkbox.checked = true;
 
-    setFieldValue(checkbox, 'false');
+    applyFieldValue(checkbox, 'false');
 
     expect(checkbox.checked).toBe(false);
   });
@@ -175,7 +171,7 @@ describe('setFieldValue', () => {
       <option value="us">USA</option>
     `;
 
-    setFieldValue(select, 'us');
+    applyFieldValue(select, 'us');
 
     expect(select.value).toBe('us');
   });
@@ -187,7 +183,7 @@ describe('setFieldValue', () => {
       <option value="us">United States</option>
     `;
 
-    setFieldValue(select, 'united states');
+    applyFieldValue(select, 'united states');
 
     expect(select.value).toBe('us');
   });
@@ -196,7 +192,7 @@ describe('setFieldValue', () => {
     const input = document.createElement('input');
     input.value = 'original';
 
-    setFieldValue(input, '');
+    applyFieldValue(input, '');
 
     expect(input.value).toBe('original');
   });
@@ -205,7 +201,7 @@ describe('setFieldValue', () => {
     const input = document.createElement('input');
     input.value = 'original';
 
-    setFieldValue(input, 'null');
+    applyFieldValue(input, 'null');
 
     expect(input.value).toBe('original');
   });

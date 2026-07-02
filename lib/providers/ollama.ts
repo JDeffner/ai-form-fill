@@ -5,9 +5,9 @@
  * Use this as a template for other local REST runtimes (LM Studio, LocalAI, ...).
  */
 
-import { affConfig } from '../core/config';
+import { affConfig } from '../core/defaults';
 import type { ChatRequest, ChatResponse } from '../core/types';
-import { AIProvider, type ProviderConfig, type ProviderType } from './aiProvider';
+import { AIProvider, type ProviderConfig, type ProviderType } from './provider';
 
 /** Ollama chat response shape. */
 export type OllamaResponse = {
@@ -29,14 +29,14 @@ export interface OllamaModel {
  *
  * @example
  * ```typescript
- * const provider = new LocalOllamaProvider({
+ * const provider = new OllamaProvider({
  *   apiEndpoint: 'http://localhost:11434',
  *   model: 'gemma3:4b',
  * });
  * ```
  * @see {@link https://docs.ollama.com/api | Ollama API Documentation}
  */
-export class LocalOllamaProvider extends AIProvider {
+export class OllamaProvider extends AIProvider {
   protected readonly providerName: string = 'ollama';
   protected readonly providerType: ProviderType = 'local';
   protected override supportsStructured: boolean = true;

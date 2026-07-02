@@ -5,9 +5,10 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { AIFormFill } from '../../lib/core/aiFormFill';
-import { MockAIProvider } from '../mockProvider';
-import { setFieldValue, getFillTargets } from '../../lib/utils/fieldUtils';
+import { AIFormFill } from '../../lib/core/ai-form-fill';
+import { MockAIProvider } from '../mock-provider';
+import { getFormFields } from '../../lib/form/analyze';
+import { applyFieldValue } from '../../lib/form/apply';
 
 beforeEach(() => {
   document.body.innerHTML = '';
@@ -23,7 +24,7 @@ describe('FR-05: Checkbox Support', () => {
     `;
     document.body.appendChild(form);
 
-    const targets = getFillTargets(form);
+    const targets = getFormFields(form);
 
     expect(targets.length).toBe(2);
     expect(targets.some((t) => t.type === 'checkbox')).toBe(true);
@@ -34,13 +35,13 @@ describe('FR-05: Checkbox Support', () => {
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
 
-    setFieldValue(checkbox, 'true');
+    applyFieldValue(checkbox, 'true');
     expect(checkbox.checked).toBe(true);
 
-    setFieldValue(checkbox, 'false');
+    applyFieldValue(checkbox, 'false');
     expect(checkbox.checked).toBe(false);
 
-    setFieldValue(checkbox, 'yes');
+    applyFieldValue(checkbox, 'yes');
     expect(checkbox.checked).toBe(true);
   });
 
