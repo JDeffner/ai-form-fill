@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ai-form-fill - Voice Input Demo</title>
+    <link rel="stylesheet" href="../styles.css" />
+  </head>
+  <body>
+    <div class="container">
+      <nav style="margin-bottom: 1.5rem">
+        <ul style="list-style: none; display: flex; gap: 1rem; padding: 0; margin: 0">
+          <li><a class="btn-secondary" href="/">All demos</a></li>
+        </ul>
+      </nav>
+      <header>
+        <h1>Voice Input Demo</h1>
+        <p class="subtitle">
+          Speech becomes text (Web Speech API), text fills the form (ai-form-fill). The core library
+          stays text-in only - voice is this thin layer on top.
+        </p>
+      </header>
+
+      <div class="content">
+        <section class="panel">
+          <h2>Speak or type</h2>
+          <div class="test-section">
+            <div class="button-row">
+              <button id="mic-button" class="btn-primary">🎤 Start dictation</button>
+            </div>
+            <p class="info" id="mic-status">
+              Dictation uses the browser's Web Speech API (best supported in Chrome).
+            </p>
+            <textarea
+              id="aff-text"
+              rows="8"
+              placeholder="Click the microphone and introduce yourself, or type here..."
+            ></textarea>
+            <div class="button-row">
+              <button id="aff-text-button" class="btn-primary">Fill Form</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2>Form</h2>
+          <form id="aff-form" data-aff-provider="ollama">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="firstName">First Name</label>
+                <input type="text" id="firstName" name="firstName" placeholder="First name" />
+              </div>
+              <div class="form-group">
+                <label for="lastName">Last Name</label>
+                <input type="text" id="lastName" name="lastName" placeholder="Last name" />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="email">Email</label>
+              <input type="email" id="email" name="email" placeholder="email@example.com" />
+            </div>
+            <div class="form-group">
+              <label for="city">City</label>
+              <input type="text" id="city" name="city" placeholder="City" />
+            </div>
+            <div class="form-group">
+              <label for="about">About</label>
+              <textarea id="about" name="about" rows="3" placeholder="About you"></textarea>
+            </div>
+          </form>
+        </section>
+      </div>
+    </div>
+
+    <script type="module" src="./voice.ts"></script>
+  </body>
+</html>
