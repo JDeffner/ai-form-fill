@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { parseModelResponse, isValidJson } from '../../lib/prompt/parse-response';
+import { ResponseParseError } from '../../lib/core/errors';
 
 describe('parseModelResponse', () => {
   it('parses valid JSON object', () => {
@@ -23,24 +24,32 @@ describe('parseModelResponse', () => {
     expect(result).toEqual({ city: 'Berlin' });
   });
 
-  it('converts non-string values to strings', () => {
-    const input = '{"count": 42, "active": true, "score": 3.14}';
+  it('preserves JSON value types instead of flattening to strings', () => {
+    const input = '{"count": 42, "active": true, "score": 3.14, "tags": ["a", "b"]}';
     const result = parseModelResponse(input);
 
-    expect(result).toEqual({ count: '42', active: 'true', score: '3.14' });
+    expect(result).toEqual({ count: 42, active: true, score: 3.14, tags: ['a', 'b'] });
   });
 
-  it('returns empty object for malformed JSON', () => {
+  it('throws ResponseParseError for malformed JSON, carrying the raw output', () => {
     const input = '{ invalid json }';
-    const result = parseModelResponse(input);
 
-    expect(result).toEqual({});
+    expect(() => parseModelResponse(input)).toThrow(ResponseParseError);
+    try {
+      parseModelResponse(input);
+    } catch (error) {
+      expect((error as ResponseParseError).raw).toBe(input);
+    }
   });
 
-  it('returns empty object for empty string', () => {
-    const result = parseModelResponse('');
+  it('throws ResponseParseError for an empty string', () => {
+    expect(() => parseModelResponse('')).toThrow(ResponseParseError);
+  });
 
-    expect(result).toEqual({});
+  it('throws ResponseParseError for non-object JSON (arrays, scalars)', () => {
+    expect(() => parseModelResponse('[1, 2, 3]')).toThrow(ResponseParseError);
+    expect(() => parseModelResponse('"just a string"')).toThrow(ResponseParseError);
+    expect(() => parseModelResponse('null')).toThrow(ResponseParseError);
   });
 
   it('handles whitespace around JSON', () => {

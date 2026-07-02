@@ -13,12 +13,14 @@ import {
 } from '../../lib/index';
 import { showStatus, logResult, clearForm } from '../utils/ui-helpers';
 
-// State
+// State. The remote providers point at the dev-server passthrough proxies
+// (mock/*.mock.ts) so API keys stay server-side; in production this would be
+// your own proxy URL.
 const listOfProviders: AIProvider[] = [
   new OllamaProvider(),
-  new OpenAICompatibleProvider('openai'),
-  new OpenAICompatibleProvider('perplexity'),
-  new OpenAICompatibleProvider('openrouter'),
+  new OpenAICompatibleProvider('openai', { baseUrl: '/api/openai' }),
+  new OpenAICompatibleProvider('perplexity', { baseUrl: '/api/perplexity' }),
+  new OpenAICompatibleProvider('openrouter', { baseUrl: '/api/openrouter' }),
 ];
 const aiFormFill: AIFormFill = new AIFormFill(listOfProviders[0], { debug: true });
 let selectedElement: HTMLElement | null = null;
@@ -136,10 +138,16 @@ async function extractAndInsertData() {
   const form = document.getElementById('testForm') as HTMLFormElement;
   try {
     showStatus('Parsing text and filling form...', 'info');
-    logResult('Starting parse and fill...');
-    await aiFormFill.parseAndFillForm(form, text);
-    showStatus('API call complete', 'info');
-    logResult('API call complete');
+    logResult('Starting fill...');
+    const result = await aiFormFill.fillForm(form, text);
+    showStatus(`Filled ${result.filled.length} field(s)`, 'success');
+    logResult(`Filled: ${result.filled.map((f) => f.key).join(', ') || '(none)'}`);
+    if (result.skipped.length > 0) {
+      logResult(`Skipped: ${result.skipped.map((s) => `${s.key} (${s.reason})`).join(', ')}`);
+    }
+    if (result.unmatchedKeys.length > 0) {
+      logResult(`Unmatched keys from model: ${result.unmatchedKeys.join(', ')}`);
+    }
   } catch (error) {
     console.error('Error filling form:', error);
     showStatus('Error filling form', 'error');
@@ -155,9 +163,14 @@ async function fillSingleField() {
   try {
     showStatus('Filling field...', 'info');
     logResult(`Filling: ${selectedElement.getAttribute('name') || selectedElement.id}`);
-    await aiFormFill.fillSingleField(selectedElement);
-    showStatus('Field filled successfully!', 'success');
-    logResult('Field filled!');
+    const result = await aiFormFill.fillField(selectedElement);
+    if (result) {
+      showStatus('Field filled successfully!', 'success');
+      logResult(`Field filled with: ${result.value}`);
+    } else {
+      showStatus('Model produced no usable value', 'error');
+      logResult('Model produced no usable value for this field');
+    }
   } catch (error) {
     console.error('Error filling field:', error);
     showStatus('Error filling field', 'error');

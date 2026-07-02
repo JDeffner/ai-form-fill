@@ -36,7 +36,7 @@ describe('FR-03: Text Input Support', () => {
     document.body.appendChild(form);
 
     const aiFormFill = new AIFormFill(mockProvider);
-    await aiFormFill.parseAndFillForm(form, 'John, john@example.com, 25, Developer');
+    await aiFormFill.fillForm(form, 'John, john@example.com, 25, Developer');
 
     expect(form.querySelector<HTMLInputElement>('[name="name"]')?.value).toBe('John');
     expect(form.querySelector<HTMLInputElement>('[name="email"]')?.value).toBe('john@example.com');
@@ -53,7 +53,7 @@ describe('FR-03: Text Input Support', () => {
     document.body.appendChild(form);
 
     const aiFormFill = new AIFormFill(mockProvider);
-    await aiFormFill.parseAndFillForm(form, '42');
+    await aiFormFill.fillForm(form, '42');
 
     const input = form.querySelector<HTMLInputElement>('[name="quantity"]');
     expect(parseInt(input?.value || '', 10)).toBe(42);
@@ -78,7 +78,7 @@ describe('FR-03: Text Input Support', () => {
     document.body.appendChild(form);
 
     const aiFormFill = new AIFormFill(mockProvider);
-    await aiFormFill.parseAndFillForm(form, 'New Name');
+    await aiFormFill.fillForm(form, 'New Name');
 
     expect(form.querySelector<HTMLInputElement>('[name="name"]')?.value).toBe('New Name');
   });

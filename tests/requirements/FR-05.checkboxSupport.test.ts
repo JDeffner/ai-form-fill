@@ -62,7 +62,7 @@ describe('FR-05: Checkbox Support', () => {
     document.body.appendChild(form);
 
     const aiFormFill = new AIFormFill(mockProvider);
-    await aiFormFill.parseAndFillForm(form, 'subscribe, no terms');
+    await aiFormFill.fillForm(form, 'subscribe, no terms');
 
     expect(form.querySelector<HTMLInputElement>('[name="newsletter"]')?.checked).toBe(true);
     expect(form.querySelector<HTMLInputElement>('[name="terms"]')?.checked).toBe(false);

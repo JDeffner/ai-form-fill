@@ -7,6 +7,7 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { parseModelResponse } from '../../lib/prompt/parse-response';
+import { ResponseParseError } from '../../lib/core/errors';
 import { AIFormFill } from '../../lib/core/ai-form-fill';
 import { MockAIProvider } from '../mock-provider';
 
@@ -24,10 +25,20 @@ describe('FR-06: JSON Response Parsing', () => {
   });
 
   // AC-2: Parse errors do not crash the application; an empty or error result is returned.
-  it('AC-2: Parse errors return empty object without crashing', () => {
-    expect(() => parseModelResponse('{ invalid }')).not.toThrow();
-    expect(parseModelResponse('{ invalid }')).toEqual({});
-    expect(parseModelResponse('')).toEqual({});
+  it('AC-2: Parse errors yield a typed error result instead of crashing', async () => {
+    // Parsing surfaces a typed, catchable error carrying the raw output...
+    expect(() => parseModelResponse('{ invalid }')).toThrow(ResponseParseError);
+    expect(() => parseModelResponse('')).toThrow(ResponseParseError);
+
+    // ...and fillForm rejects with it instead of failing silently.
+    const mockProvider = new MockAIProvider('{ invalid }');
+    const form = document.createElement('form');
+    form.innerHTML = `<input type="text" name="name" value="untouched">`;
+    document.body.appendChild(form);
+
+    const aiFormFill = new AIFormFill(mockProvider);
+    await expect(aiFormFill.fillForm(form, 'x')).rejects.toThrow(ResponseParseError);
+    expect(form.querySelector<HTMLInputElement>('[name="name"]')?.value).toBe('untouched');
   });
 
   // AC-3: Each key in the JSON maps to the correct form field by name.
@@ -47,7 +58,7 @@ describe('FR-06: JSON Response Parsing', () => {
     document.body.appendChild(form);
 
     const aiFormFill = new AIFormFill(mockProvider);
-    await aiFormFill.parseAndFillForm(form, 'John Doe');
+    await aiFormFill.fillForm(form, 'John Doe');
 
     expect(form.querySelector<HTMLInputElement>('[name="firstName"]')?.value).toBe('John');
     expect(form.querySelector<HTMLInputElement>('[name="lastName"]')?.value).toBe('Doe');
@@ -65,7 +76,7 @@ describe('FR-06: JSON Response Parsing', () => {
     document.body.appendChild(form);
 
     const aiFormFill = new AIFormFill(mockProvider);
-    await aiFormFill.parseAndFillForm(form, 'John');
+    await aiFormFill.fillForm(form, 'John');
 
     expect(form.querySelector<HTMLInputElement>('[name="firstName"]')?.value).toBe('John');
     expect(form.querySelector<HTMLInputElement>('[name="lastName"]')?.value).toBe('Unchanged');
@@ -85,7 +96,7 @@ describe('FR-06: JSON Response Parsing', () => {
     document.body.appendChild(form);
 
     const aiFormFill = new AIFormFill(mockProvider);
-    await aiFormFill.parseAndFillForm(form, 'John');
+    await aiFormFill.fillForm(form, 'John');
 
     expect(form.querySelector<HTMLInputElement>('[name="name"]')?.value).toBe('John');
     expect(form.querySelector('[name="extraField"]')).toBeNull();

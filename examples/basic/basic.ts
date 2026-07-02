@@ -1,11 +1,11 @@
-import { initializeAFFQuick } from '../../lib/index';
+import { autoInit } from '../../lib/index';
 
 /**
  * Simple Test Application for AI Form Input
  */
 
 // The only thing needed to initialize the form filling functionality
-initializeAFFQuick();
+autoInit({ debug: true });
 
 const form = document.getElementById('aff-form') as HTMLFormElement;
 

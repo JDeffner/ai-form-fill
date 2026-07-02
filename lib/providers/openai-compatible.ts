@@ -1,11 +1,18 @@
+/**
+ * One provider for every OpenAI-compatible service, speaking the standard
+ * chat-completions wire format directly.
+ */
+
 import type { ChatRequest, ChatResponse } from '../core/types';
 import { AIProvider, type ProviderConfig, type ProviderType } from './provider';
-import { affConfig } from '../core/defaults';
+import { AFF_DEFAULTS } from '../core/defaults';
+import { AFFError, ProviderError } from '../core/errors';
+import { requestJson } from './http';
 
 /**
  * Standard OpenAI chat-completions response shape. OpenAI, Perplexity and
  * OpenRouter all return this format, which is why a single provider can serve
- * all three.
+ * all of them.
  */
 export type OpenAIResponse = {
   id: string;
@@ -24,27 +31,65 @@ export type OpenAIResponse = {
   };
 };
 
+/** Standard `GET /models` response shape. */
+export type OpenAIModelsResponse = {
+  object: string;
+  data: Array<{ id: string; object?: string }>;
+};
+
 /**
- * Built-in presets for OpenAI-compatible services. The preset is used as the
- * route segment on your backend proxy (`/<preset>/chat`) and to look up the
- * default model in {@link affConfig}.
+ * Built-in presets for OpenAI-compatible services. A preset supplies a default
+ * `baseUrl` and model (see {@link AFF_DEFAULTS}).
  */
 export type OpenAICompatiblePreset = 'openai' | 'perplexity' | 'openrouter';
 
 /**
- * One provider for every OpenAI-compatible service.
+ * Configuration for {@link OpenAICompatibleProvider}.
+ */
+export interface OpenAICompatibleConfig extends ProviderConfig {
+  /**
+   * API key sent as `Authorization: Bearer <key>`.
+   *
+   * **Do not ship API keys in frontend code.** In the browser this option
+   * throws unless {@link allowApiKeyInBrowser} is set; the production setup is
+   * pointing {@link ProviderConfig.baseUrl | baseUrl} at your own
+   * OpenAI-compatible passthrough proxy that injects the key server-side.
+   */
+  apiKey?: string;
+  /**
+   * Explicit opt-in to use {@link apiKey} in a browser context. Only for local
+   * prototyping — anyone can read the key from the page.
+   */
+  allowApiKeyInBrowser?: boolean;
+  /** Extra headers to send with every request. */
+  headers?: Record<string, string>;
+}
+
+function isBrowser(): boolean {
+  return typeof window !== 'undefined' && typeof window.document !== 'undefined';
+}
+
+/**
+ * Provider for OpenAI and any OpenAI-compatible service.
  *
- * OpenAI, Perplexity and OpenRouter share the same request and response format,
- * so they only differ by a name and a default model. Requests are sent to your
- * own backend proxy at `${apiEndpoint}/${name}/chat` so the API key never
- * reaches the browser.
+ * Requests use the standard wire format: `POST {baseUrl}/chat/completions`
+ * and `GET {baseUrl}/models`. Structured output is requested via
+ * `response_format: { type: 'json_schema', ... }`.
  *
  * @example
  * ```typescript
- * const openai = new OpenAICompatibleProvider('openai');
- * const router = new OpenAICompatibleProvider('openrouter', { model: 'anthropic/claude-3.5-sonnet' });
+ * // A preset, via your own passthrough proxy (recommended for production):
+ * const openai = new OpenAICompatibleProvider('openai', { baseUrl: '/api/openai' });
+ * // Direct with a key (prototyping only!):
+ * const router = new OpenAICompatibleProvider('openrouter', {
+ *   apiKey: '...',
+ *   allowApiKeyInBrowser: true,
+ * });
  * // Any other OpenAI-compatible service:
- * const custom = new OpenAICompatibleProvider('myservice', { apiEndpoint: '/api', model: 'x' });
+ * const local = new OpenAICompatibleProvider('lmstudio', {
+ *   baseUrl: 'http://localhost:1234/v1',
+ *   model: 'qwen2.5-7b-instruct',
+ * });
  * ```
  */
 export class OpenAICompatibleProvider extends AIProvider {
@@ -52,102 +97,111 @@ export class OpenAICompatibleProvider extends AIProvider {
   protected readonly providerType: ProviderType = 'remote';
   protected override supportsStructured: boolean = true;
 
-  private readonly chatEndpoint: string;
-  private readonly listModelsEndpoint: string;
-  private readonly availabilityEndpoint: string;
+  private readonly apiKey?: string;
+  private readonly extraHeaders?: Record<string, string>;
 
   /**
    * @param name - A preset (`openai` | `perplexity` | `openrouter`) or any
-   *   custom route name handled by your proxy.
-   * @param config - Optional endpoint / model / timeout overrides.
+   *   name for a custom OpenAI-compatible service (requires `baseUrl`).
+   * @param config - baseUrl / apiKey / model / timeout / headers overrides.
    */
-  constructor(name: OpenAICompatiblePreset | (string & {}) = 'openai', config?: ProviderConfig) {
-    const presetModels: Record<string, string> = {
-      openai: affConfig.openai.model,
-      perplexity: affConfig.perplexity.model,
-      openrouter: affConfig.openrouter.model,
+  constructor(
+    name: OpenAICompatiblePreset | (string & {}) = 'openai',
+    config?: OpenAICompatibleConfig,
+  ) {
+    const presets: Record<OpenAICompatiblePreset, { baseUrl: string; model: string }> = {
+      openai: AFF_DEFAULTS.openai,
+      perplexity: AFF_DEFAULTS.perplexity,
+      openrouter: AFF_DEFAULTS.openrouter,
     };
+    const preset = (presets as Record<string, { baseUrl: string; model: string } | undefined>)[
+      name
+    ];
+
+    const baseUrl = config?.baseUrl ?? preset?.baseUrl;
+    if (!baseUrl) {
+      throw new AFFError(
+        `No baseUrl for provider "${name}". Non-preset providers require { baseUrl }.`,
+      );
+    }
+
     super({
-      apiEndpoint: config?.apiEndpoint || affConfig.apiBase,
-      model: config?.model || presetModels[name] || '',
-      timeout: config?.timeout || affConfig.timeout,
+      baseUrl,
+      model: config?.model ?? preset?.model ?? '',
+      timeout: config?.timeout,
+      fetch: config?.fetch,
     });
     this.providerName = name;
-    this.chatEndpoint = `${this.apiEndpoint}/${name}/chat`;
-    this.listModelsEndpoint = `${this.apiEndpoint}/${name}/models`;
-    this.availabilityEndpoint = `${this.apiEndpoint}/${name}/available`;
+
+    if (config?.apiKey && isBrowser() && !config.allowApiKeyInBrowser) {
+      throw new AFFError(
+        'Refusing to use an API key in the browser: it would be visible to anyone. ' +
+          'Point baseUrl at a server-side proxy instead, or pass allowApiKeyInBrowser: true ' +
+          'for local prototyping only.',
+      );
+    }
+    this.apiKey = config?.apiKey;
+    this.extraHeaders = config?.headers;
+  }
+
+  private buildHeaders(): Record<string, string> {
+    return {
+      ...(this.apiKey ? { Authorization: `Bearer ${this.apiKey}` } : {}),
+      ...this.extraHeaders,
+    };
   }
 
   override async chat(request: ChatRequest): Promise<ChatResponse> {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), this.timeout);
-
-    try {
-      const response = await fetch(this.chatEndpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(request),
-        signal: controller.signal,
-      });
-
-      if (!response.ok) {
-        throw new Error(
-          `${this.providerName} API error: ${response.status} ${response.statusText}`,
-        );
-      }
-
-      const body = (await response.json()) as OpenAIResponse;
-      if (affConfig.debug) console.log(`${this.providerName} response body:`, body);
-
-      if (!body.choices?.length) {
-        throw new Error(`${this.providerName} returned no choices`);
-      }
-
-      return {
-        content: body.choices[0].message.content,
-        model: body.model,
-        finishReason: body.choices[0].finish_reason,
+    const body: Record<string, unknown> = {
+      model: request.model,
+      messages: request.messages,
+    };
+    if (request.maxTokens !== undefined) body.max_tokens = request.maxTokens;
+    if (request.format) {
+      body.response_format = {
+        type: 'json_schema',
+        json_schema: { name: 'form_fields', schema: request.format },
       };
-    } catch (error) {
-      if (error instanceof Error) {
-        if (error.name === 'AbortError') {
-          throw new Error(`${this.providerName} request timed out after ${this.timeout}ms`, {
-            cause: error,
-          });
-        }
-        if (error.message.includes('fetch')) {
-          throw new Error(
-            `Failed to connect to ${this.providerName}. Check your network connection.`,
-            { cause: error },
-          );
-        }
-      }
-      throw error;
-    } finally {
-      clearTimeout(timeoutId);
     }
+
+    const data = await requestJson<OpenAIResponse>(`${this.baseUrl}/chat/completions`, {
+      method: 'POST',
+      body,
+      headers: this.buildHeaders(),
+      timeout: this.timeout,
+      signal: request.signal,
+      provider: this.providerName,
+      fetchImpl: this.fetchImpl,
+    });
+
+    const choice = data.choices?.[0];
+    if (!choice) {
+      throw new ProviderError(`${this.providerName}: response contained no choices`, {
+        provider: this.providerName,
+      });
+    }
+
+    return {
+      content: choice.message?.content ?? null,
+      model: data.model,
+      finishReason: choice.finish_reason,
+    };
   }
 
   override async listModels(): Promise<string[]> {
-    try {
-      const response = await fetch(this.listModelsEndpoint, { method: 'POST' });
-      if (!response.ok) {
-        throw new Error(
-          `${this.providerName} API error: ${response.status} ${response.statusText}`,
-        );
-      }
-      const body = (await response.json()) as { models: string[] };
-      return body.models ?? [];
-    } catch (error) {
-      if (affConfig.debug) console.error(`Error fetching models from ${this.providerName}:`, error);
-      return [];
-    }
+    const data = await requestJson<OpenAIModelsResponse>(`${this.baseUrl}/models`, {
+      headers: this.buildHeaders(),
+      timeout: this.timeout,
+      provider: this.providerName,
+      fetchImpl: this.fetchImpl,
+    });
+    return (data.data ?? []).map((model) => model.id);
   }
 
   override async isAvailable(): Promise<boolean> {
     try {
-      const response = await fetch(this.availabilityEndpoint, { method: 'POST' });
-      return response.ok;
+      await this.listModels();
+      return true;
     } catch {
       return false;
     }

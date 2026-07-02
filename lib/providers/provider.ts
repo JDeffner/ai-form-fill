@@ -1,16 +1,18 @@
 import type { ChatRequest, ChatResponse } from '../core/types';
-import { affConfig } from '../core/defaults';
+import { AFF_DEFAULTS } from '../core/defaults';
 
 /**
  * User-facing configuration options accepted by every provider.
  */
 export interface ProviderConfig {
-  /** Base URL the provider talks to (a local runtime, or your backend proxy). */
-  apiEndpoint?: string;
+  /** Base URL the provider talks to (a local runtime, an API, or your proxy). */
+  baseUrl?: string;
   /** Model identifier to use for requests. */
   model?: string;
   /** Request timeout in milliseconds. */
   timeout?: number;
+  /** Custom fetch implementation (testing, polyfills). */
+  fetch?: typeof fetch;
 }
 
 /**
@@ -25,8 +27,10 @@ export type ProviderType = 'local' | 'remote';
  * A provider is responsible for:
  * - making the network call to its service,
  * - translating the common {@link ChatRequest} / {@link ChatResponse} shapes
- *   to and from the service's own format,
+ *   to and from the service's own wire format,
  * - reporting which models it offers and whether it is reachable.
+ *
+ * Network failures surface as {@link ProviderError}.
  */
 export abstract class AIProvider {
   /** Stable, lowercase identifier for the provider (e.g. `ollama`). */
@@ -37,25 +41,32 @@ export abstract class AIProvider {
   protected supportsStructured: boolean = false;
 
   protected selectedModel: string;
-  protected apiEndpoint: string;
+  protected baseUrl: string;
   protected timeout: number;
+  protected fetchImpl?: typeof fetch;
 
   constructor(config?: ProviderConfig) {
-    this.apiEndpoint = config?.apiEndpoint || '';
-    this.selectedModel = config?.model || '';
-    this.timeout = config?.timeout || affConfig.timeout;
+    // Trailing slashes would break endpoint concatenation.
+    this.baseUrl = (config?.baseUrl ?? '').replace(/\/+$/, '');
+    this.selectedModel = config?.model ?? '';
+    this.timeout = config?.timeout ?? AFF_DEFAULTS.timeout;
+    this.fetchImpl = config?.fetch;
   }
 
   /**
    * Send a chat request and return the normalised response.
-   * @param request - Messages, model and optional structured-output schema.
+   * @param request - Messages, model, optional schema and abort signal.
+   * @throws ProviderError on network/HTTP/timeout failures.
    */
   abstract chat(request: ChatRequest): Promise<ChatResponse>;
 
-  /** List the model identifiers this provider currently offers. */
+  /**
+   * List the model identifiers this provider currently offers.
+   * @throws ProviderError when the list cannot be fetched.
+   */
   abstract listModels(): Promise<string[]>;
 
-  /** Resolve to `true` if the provider is reachable. */
+  /** Resolve to `true` if the provider is reachable. Never throws. */
   abstract isAvailable(): Promise<boolean>;
 
   /** The provider's identifier (e.g. `ollama`, `openrouter`). */
@@ -74,27 +85,30 @@ export abstract class AIProvider {
   }
 
   /**
-   * Select a model, validating against {@link listModels} when possible.
-   * Falls back to setting it unvalidated if the list cannot be fetched.
-   * @returns `true` if the model was set.
+   * Select a model.
+   *
+   * By default the name is validated against {@link listModels}: the model is
+   * only set — and `true` returned — when it is actually offered. When the
+   * model list cannot be fetched, nothing is set and `false` is returned.
+   *
+   * Pass `{ validate: false }` to set the model unvalidated (always `true`),
+   * e.g. for providers whose model list endpoint is unavailable.
    */
-  async setSelectedModel(modelName: string): Promise<boolean> {
+  async setSelectedModel(modelName: string, options?: { validate?: boolean }): Promise<boolean> {
     if (!modelName) return false;
-    try {
-      const models = await this.listModels();
-      if (models.includes(modelName)) {
-        this.selectedModel = modelName;
-        return true;
-      }
-      if (affConfig.debug) {
-        console.warn(`Model "${modelName}" not found. Available: ${models.join(', ')}`);
-      }
-      return false;
-    } catch (err) {
-      if (affConfig.debug) console.warn('Could not validate model:', err);
+    if (options?.validate === false) {
       this.selectedModel = modelName;
       return true;
     }
+    let models: string[];
+    try {
+      models = await this.listModels();
+    } catch {
+      return false;
+    }
+    if (!models.includes(modelName)) return false;
+    this.selectedModel = modelName;
+    return true;
   }
 
   /** Whether the provider supports structured (JSON schema) output. */

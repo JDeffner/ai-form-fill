@@ -6,8 +6,10 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { SYSTEM_PROMPTS } from '../../lib/prompt/build';
+import { SYSTEM_PROMPTS, buildFormSchema } from '../../lib/prompt/build';
 import { parseModelResponse, isValidJson } from '../../lib/prompt/parse-response';
+import { ResponseParseError } from '../../lib/core/errors';
+import { getFormFields } from '../../lib/form/analyze';
 
 beforeEach(() => {
   document.body.innerHTML = '';
@@ -28,7 +30,32 @@ describe('FR-09: Structured Outputs', () => {
     expect(isValidJson(validJson)).toBe(true);
     expect(isValidJson(invalidJson)).toBe(false);
 
-    // Invalid JSON returns empty object, not applied to form
-    expect(parseModelResponse(invalidJson)).toEqual({});
+    // Invalid JSON raises a typed error and is never applied to the form.
+    expect(() => parseModelResponse(invalidJson)).toThrow(ResponseParseError);
+  });
+
+  // AC-3: A JSON schema is generated from the form, with exact option values as enums.
+  it('AC-3: Generated schema constrains option fields via enums', () => {
+    const form = document.createElement('form');
+    form.innerHTML = `
+      <select name="gender">
+        <option value="">Select</option>
+        <option value="male">Male</option>
+        <option value="female">Female</option>
+      </select>
+      <input type="checkbox" name="interests" value="tech">
+      <input type="checkbox" name="interests" value="music">
+    `;
+    document.body.appendChild(form);
+
+    const schema = buildFormSchema(getFormFields(form));
+    const properties = schema.properties as Record<string, Record<string, unknown>>;
+
+    expect(properties.gender).toEqual({ type: 'string', enum: ['male', 'female'] });
+    expect(properties.interests).toEqual({
+      type: 'array',
+      items: { type: 'string', enum: ['tech', 'music'] },
+    });
+    expect(schema.additionalProperties).toBe(false);
   });
 });

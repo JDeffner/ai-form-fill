@@ -35,7 +35,7 @@ describe('FR-10: Customisable Filled Fields', () => {
     const aiFormFill = new AIFormFill(mockProvider, {
       targetFields: ['firstName', 'email'],
     });
-    await aiFormFill.parseAndFillForm(form, 'John Doe john@example.com');
+    await aiFormFill.fillForm(form, 'John Doe john@example.com');
 
     expect(form.querySelector<HTMLInputElement>('[name="firstName"]')?.value).toBe('John');
     expect(form.querySelector<HTMLInputElement>('[name="email"]')?.value).toBe('john@example.com');
@@ -59,7 +59,7 @@ describe('FR-10: Customisable Filled Fields', () => {
     const aiFormFill = new AIFormFill(mockProvider, {
       targetFields: ['firstName'],
     });
-    await aiFormFill.parseAndFillForm(form, 'John');
+    await aiFormFill.fillForm(form, 'John');
 
     expect(form.querySelector<HTMLInputElement>('[name="firstName"]')?.value).toBe('John');
     expect(form.querySelector<HTMLInputElement>('[name="lastName"]')?.value).toBe('Unchanged');

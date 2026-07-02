@@ -4,11 +4,16 @@
  */
 
 // Core
-export { AIFormFill } from './core/ai-form-fill';
-export { affConfig } from './core/defaults';
+export { AIFormFill, type AIFormFillOptions, type FillOptions } from './core/ai-form-fill';
+export { autoInit, type AutoInitOptions } from './core/auto-init';
+export { AFF_DEFAULTS } from './core/defaults';
+export { AFFError, ProviderError, ResponseParseError } from './core/errors';
 export type {
   AIFormFillConfig,
   FieldInfo,
+  FieldOption,
+  FillResult,
+  SkipReason,
   BuiltInProviderName,
   ChatRequest,
   ChatResponse,
@@ -22,11 +27,13 @@ export { OllamaProvider } from './providers/ollama';
 export {
   OpenAICompatibleProvider,
   type OpenAICompatiblePreset,
+  type OpenAICompatibleConfig,
 } from './providers/openai-compatible';
+export { requestJson, type RequestJsonOptions } from './providers/http';
 
 // Form engine
-export { analyzeField, getFormFields, getFieldIdentifier } from './form/analyze';
-export { applyFieldValue } from './form/apply';
+export { analyzeField, getFormFields } from './form/analyze';
+export { applyFieldValue, type ApplyResult } from './form/apply';
 
 // Prompt & schema building, response parsing
 export {
@@ -36,6 +43,3 @@ export {
   buildFormSchema,
 } from './prompt/build';
 export { parseModelResponse, isValidJson } from './prompt/parse-response';
-
-// Quick setup
-export { initializeAFFQuick } from './core/auto-init';

@@ -1,10 +1,18 @@
 /**
  * Writing side of the form engine: applying values to fields and dispatching
  * the events framework reactivity listens for.
+ *
+ * Values are written through the native prototype setters so that controlled
+ * React components (which override `value`/`checked` with their own tracker)
+ * register the change as well.
  */
 
-import { affConfig } from '../core/defaults';
-import { getRadioLabel } from './analyze';
+import type { SkipReason } from '../core/types';
+import { getInputLabel } from './analyze';
+
+/** Outcome of {@link applyFieldValue}. */
+export type ApplyResult =
+  { applied: true; value: string | string[] } | { applied: false; reason: SkipReason };
 
 /** AI responses that mean "no value", so the field is left untouched. */
 const EMPTY_VALUE_INDICATORS = [
@@ -19,8 +27,12 @@ const EMPTY_VALUE_INDICATORS = [
   'missing',
 ] as const;
 
-/** Values that mean a checkbox should be checked. */
+/** Values that mean a checkbox should be checked / unchecked. */
 const TRUTHY_VALUES = ['true', 'yes', '1', 'checked', 'on'] as const;
+const FALSY_VALUES = ['false', 'no', '0', 'unchecked', 'off'] as const;
+
+const applied = (value: string | string[]): ApplyResult => ({ applied: true, value });
+const skipped = (reason: SkipReason): ApplyResult => ({ applied: false, reason });
 
 /** Dispatch input and change events so framework reactivity picks up the value. */
 function dispatchFieldEvents(element: HTMLElement): void {
@@ -28,169 +40,307 @@ function dispatchFieldEvents(element: HTMLElement): void {
   element.dispatchEvent(new Event('change', { bubbles: true }));
 }
 
-function isEmptyValue(normalizedValue: string): boolean {
+/** Lowercased, whitespace-collapsed comparison form. */
+function normalize(text: string): string {
+  return text.trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+function isEmptyText(text: string): boolean {
   return EMPTY_VALUE_INDICATORS.includes(
-    normalizedValue as (typeof EMPTY_VALUE_INDICATORS)[number],
+    normalize(text) as (typeof EMPTY_VALUE_INDICATORS)[number],
   );
+}
+
+/** Coerce a scalar model value to a string; `null` for arrays/objects. */
+function coerceScalar(value: unknown): string | null {
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  return null;
 }
 
 /**
- * Parse various date formats into the value expected by an HTML date/time input.
- * @returns The formatted value, or `null` if parsing failed.
+ * Set `value` through the native prototype setter so React's value tracker
+ * (which shadows the property on the instance) sees the change.
  */
-function formatDateValue(value: string, inputType: string): string | null {
-  let date: Date | null = null;
-  const trimmedValue = value.trim();
-
-  if (/^\d{4}-\d{2}-\d{2}/.test(trimmedValue)) {
-    date = new Date(trimmedValue);
-  } else if (/^\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4}$/.test(trimmedValue)) {
-    const parts = trimmedValue.split(/[/.-]/);
-    const month = parseInt(parts[0], 10);
-    const day = parseInt(parts[1], 10);
-    let year = parseInt(parts[2], 10);
-    if (year < 100) year += 2000;
-    date = new Date(year, month - 1, day);
-  } else {
-    const parsed = Date.parse(trimmedValue);
-    if (!isNaN(parsed)) date = new Date(parsed);
-  }
-
-  if (inputType === 'time') {
-    const timeMatch = trimmedValue.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?(?:\s*(am|pm))?/i);
-    if (timeMatch) {
-      let hours = parseInt(timeMatch[1], 10);
-      const minutes = timeMatch[2];
-      const ampm = timeMatch[4]?.toLowerCase();
-      if (ampm === 'pm' && hours < 12) hours += 12;
-      if (ampm === 'am' && hours === 12) hours = 0;
-      return `${hours.toString().padStart(2, '0')}:${minutes}`;
-    }
-    return null;
-  }
-
-  if (!date || isNaN(date.getTime())) return null;
-
-  const year = date.getFullYear();
-  const month = (date.getMonth() + 1).toString().padStart(2, '0');
-  const day = date.getDate().toString().padStart(2, '0');
-  const hours = date.getHours().toString().padStart(2, '0');
-  const minutes = date.getMinutes().toString().padStart(2, '0');
-
-  switch (inputType) {
-    case 'datetime-local':
-      return `${year}-${month}-${day}T${hours}:${minutes}`;
-    case 'month':
-      return `${year}-${month}`;
-    case 'week': {
-      const startOfYear = new Date(year, 0, 1);
-      const days = Math.floor((date.getTime() - startOfYear.getTime()) / (24 * 60 * 60 * 1000));
-      const weekNumber = Math.ceil((days + startOfYear.getDay() + 1) / 7);
-      return `${year}-W${weekNumber.toString().padStart(2, '0')}`;
-    }
-    default:
-      return `${year}-${month}-${day}`;
-  }
-}
-
-function setCheckboxValue(element: HTMLInputElement, normalizedValue: string): void {
-  element.checked = TRUTHY_VALUES.includes(normalizedValue as (typeof TRUTHY_VALUES)[number]);
-  dispatchFieldEvents(element);
-}
-
-function setRadioValue(element: HTMLInputElement, normalizedValue: string): void {
-  const form = element.closest('form');
-  if (!form || !element.name) return;
-
-  const radios = form.querySelectorAll<HTMLInputElement>(
-    `input[type="radio"][name="${element.name}"]`,
-  );
-  for (const radio of radios) {
-    const radioLabel = getRadioLabel(radio).toLowerCase();
-    const radioValue = radio.value.toLowerCase();
-    if (
-      radioValue === normalizedValue ||
-      radioLabel === normalizedValue ||
-      radioValue.includes(normalizedValue) ||
-      radioLabel.includes(normalizedValue) ||
-      normalizedValue.includes(radioValue) ||
-      normalizedValue.includes(radioLabel)
-    ) {
-      radio.checked = true;
-      dispatchFieldEvents(radio);
-      break;
-    }
-  }
-}
-
-function setDateValue(element: HTMLInputElement, value: string): void {
-  const formattedValue = formatDateValue(value, element.type);
-  if (formattedValue) {
-    element.value = formattedValue;
-    dispatchFieldEvents(element);
-  } else if (affConfig.debug) {
-    console.warn(`Could not parse date value "${value}" for ${element.type} input`);
-  }
-}
-
-function setSelectValue(
-  element: HTMLSelectElement,
-  normalizedValue: string,
-  originalValue: string,
+function setNativeValue(
+  element: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement,
+  value: string,
 ): void {
-  let option = Array.from(element.options).find(
-    (opt) =>
-      opt.value.toLowerCase() === normalizedValue || opt.text.toLowerCase() === normalizedValue,
-  );
-  if (!option) {
-    option = Array.from(element.options).find(
-      (opt) =>
-        opt.value.toLowerCase().includes(normalizedValue) ||
-        opt.text.toLowerCase().includes(normalizedValue) ||
-        normalizedValue.includes(opt.value.toLowerCase()) ||
-        normalizedValue.includes(opt.text.toLowerCase()),
-    );
+  const prototype =
+    element instanceof HTMLInputElement
+      ? HTMLInputElement.prototype
+      : element instanceof HTMLTextAreaElement
+        ? HTMLTextAreaElement.prototype
+        : HTMLSelectElement.prototype;
+  const descriptor = Object.getOwnPropertyDescriptor(prototype, 'value');
+  if (descriptor?.set) {
+    descriptor.set.call(element, value);
+  } else {
+    element.value = value;
   }
-  if (option) {
-    element.value = option.value;
-    dispatchFieldEvents(element);
-  } else if (affConfig.debug) {
-    console.warn(
-      `No matching option for select. Value: "${originalValue}", Options:`,
-      Array.from(element.options).map((opt) => `${opt.value} (${opt.text})`),
-    );
+}
+
+/** Same as {@link setNativeValue}, for the `checked` property. */
+function setNativeChecked(element: HTMLInputElement, checked: boolean): void {
+  const descriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'checked');
+  if (descriptor?.set) {
+    descriptor.set.call(element, checked);
+  } else {
+    element.checked = checked;
   }
 }
 
 /**
- * Apply a value to a field and trigger change events for framework reactivity.
- * Handles text, checkbox, radio, date/time and select inputs.
+ * Ordered option matching (no substring matching, see B1):
+ * 1. exact `value`,
+ * 2. exact label,
+ * 3. case/whitespace-insensitive equality on value or label.
  */
-export function applyFieldValue(element: HTMLElement, value: string): void {
-  const normalizedValue = value.trim().toLowerCase();
-  if (isEmptyValue(normalizedValue)) return;
+function matchesOption(candidate: string, optionValue: string, optionLabel: string): boolean {
+  if (candidate === optionValue) return true;
+  if (candidate === optionLabel) return true;
+  const normalized = normalize(candidate);
+  return normalized === normalize(optionValue) || normalized === normalize(optionLabel);
+}
+
+/** Pick the first option matching `candidate`, honoring the pass order. */
+function findOption<T>(
+  candidate: string,
+  options: T[],
+  getValue: (option: T) => string,
+  getLabel: (option: T) => string,
+): T | undefined {
+  const exactValue = options.find((option) => getValue(option) === candidate);
+  if (exactValue) return exactValue;
+  const exactLabel = options.find((option) => getLabel(option) === candidate);
+  if (exactLabel) return exactLabel;
+  const normalized = normalize(candidate);
+  return options.find(
+    (option) =>
+      normalize(getValue(option)) === normalized || normalize(getLabel(option)) === normalized,
+  );
+}
+
+// --- Date/time validation (strict ISO, see B2) -----------------------------
+
+const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/;
+const DATETIME_RE = /^(\d{4})-(\d{2})-(\d{2})T([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/;
+const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/;
+const MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
+const WEEK_RE = /^\d{4}-W(0[1-9]|[1-4]\d|5[0-3])$/;
+
+/** True when year/month/day form a real calendar date. */
+function isRealDate(year: number, month: number, day: number): boolean {
+  const date = new Date(year, month - 1, day);
+  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
+}
+
+/** Validate an ISO value for a date/time input type; `null` when invalid. */
+function validateDateLike(value: string, inputType: string): string | null {
+  const trimmed = value.trim();
+  switch (inputType) {
+    case 'date': {
+      const match = DATE_RE.exec(trimmed);
+      if (!match) return null;
+      return isRealDate(Number(match[1]), Number(match[2]), Number(match[3])) ? trimmed : null;
+    }
+    case 'datetime-local': {
+      const match = DATETIME_RE.exec(trimmed);
+      if (!match) return null;
+      return isRealDate(Number(match[1]), Number(match[2]), Number(match[3])) ? trimmed : null;
+    }
+    case 'time': {
+      // Normalize an unambiguous single-digit hour ("9:30" -> "09:30").
+      const padded = /^\d:/.test(trimmed) ? `0${trimmed}` : trimmed;
+      return TIME_RE.test(padded) ? padded : null;
+    }
+    case 'month':
+      return MONTH_RE.test(trimmed) ? trimmed : null;
+    case 'week':
+      return WEEK_RE.test(trimmed) ? trimmed : null;
+    default:
+      return null;
+  }
+}
+
+// --- Per-type application ---------------------------------------------------
+
+function applyText(element: HTMLInputElement | HTMLTextAreaElement, value: unknown): ApplyResult {
+  const text = coerceScalar(value);
+  if (text === null) return skipped('unsupported-value');
+  if (isEmptyText(text)) return skipped('empty-value');
+  setNativeValue(element, text);
+  dispatchFieldEvents(element);
+  return applied(text);
+}
+
+function applyDateLike(element: HTMLInputElement, value: unknown): ApplyResult {
+  const text = coerceScalar(value);
+  if (text === null) return skipped('unsupported-value');
+  if (isEmptyText(text)) return skipped('empty-value');
+  const validated = validateDateLike(text, element.type);
+  if (validated === null) return skipped('invalid-date-format');
+  setNativeValue(element, validated);
+  dispatchFieldEvents(element);
+  return applied(validated);
+}
+
+/** All checkboxes belonging to the same group as `element` (same form+name). */
+function getCheckboxGroup(element: HTMLInputElement): HTMLInputElement[] {
+  const form = element.closest('form');
+  if (!form || !element.name) return [element];
+  return Array.from(
+    form.querySelectorAll<HTMLInputElement>(`input[type="checkbox"][name="${element.name}"]`),
+  );
+}
+
+function applyCheckbox(element: HTMLInputElement, value: unknown): ApplyResult {
+  const group = getCheckboxGroup(element);
+
+  // Multi-option group: the value is a list of option values/labels to check.
+  if (group.length > 1 || Array.isArray(value)) {
+    const rawValues = Array.isArray(value) ? value : [value];
+    const candidates = rawValues
+      .map(coerceScalar)
+      .filter((text): text is string => text !== null && !isEmptyText(text));
+    if (candidates.length === 0) return skipped('empty-value');
+
+    const checkedValues: string[] = [];
+    for (const checkbox of group) {
+      const optionValue = checkbox.value || 'on';
+      const optionLabel = getInputLabel(checkbox) || optionValue;
+      const shouldCheck = candidates.some((candidate) =>
+        matchesOption(candidate, optionValue, optionLabel),
+      );
+      if (shouldCheck !== checkbox.checked) {
+        setNativeChecked(checkbox, shouldCheck);
+        dispatchFieldEvents(checkbox);
+      }
+      if (shouldCheck) checkedValues.push(optionValue);
+    }
+    if (checkedValues.length === 0) return skipped('no-matching-option');
+    return applied(checkedValues);
+  }
+
+  // Single checkbox: boolean semantics.
+  if (typeof value === 'boolean') {
+    setNativeChecked(element, value);
+    dispatchFieldEvents(element);
+    return applied(String(value));
+  }
+  const text = coerceScalar(value);
+  if (text === null) return skipped('unsupported-value');
+  if (text.trim() === '') return skipped('empty-value');
+  const normalized = normalize(text);
+  let checked: boolean;
+  if (TRUTHY_VALUES.includes(normalized as (typeof TRUTHY_VALUES)[number])) checked = true;
+  else if (FALSY_VALUES.includes(normalized as (typeof FALSY_VALUES)[number])) checked = false;
+  // The model may answer with the checkbox's own value ("technology") to mean "check it".
+  else if (matchesOption(text, element.value || 'on', getInputLabel(element))) checked = true;
+  else if (isEmptyText(text)) return skipped('empty-value');
+  else return skipped('unsupported-value');
+  setNativeChecked(element, checked);
+  dispatchFieldEvents(element);
+  return applied(String(checked));
+}
+
+function applyRadio(element: HTMLInputElement, value: unknown): ApplyResult {
+  const text = coerceScalar(value);
+  if (text === null) return skipped('unsupported-value');
+  if (isEmptyText(text)) return skipped('empty-value');
+
+  const form = element.closest('form');
+  const radios =
+    form && element.name
+      ? Array.from(
+          form.querySelectorAll<HTMLInputElement>(`input[type="radio"][name="${element.name}"]`),
+        )
+      : [element];
+
+  const match = findOption(
+    text,
+    radios,
+    (radio) => radio.value,
+    (radio) => getInputLabel(radio) || radio.value,
+  );
+  if (!match) return skipped('no-matching-option');
+  setNativeChecked(match, true);
+  dispatchFieldEvents(match);
+  return applied(match.value);
+}
+
+function applySelect(element: HTMLSelectElement, value: unknown): ApplyResult {
+  if (element.multiple) return applyMultiSelect(element, value);
+
+  const text = coerceScalar(value);
+  if (text === null) return skipped('unsupported-value');
+  if (isEmptyText(text)) return skipped('empty-value');
+
+  const options = Array.from(element.options).filter((option) => option.value !== '');
+  const match = findOption(
+    text,
+    options,
+    (option) => option.value,
+    (option) => option.textContent?.trim() || option.value,
+  );
+  if (!match) return skipped('no-matching-option');
+  setNativeValue(element, match.value);
+  dispatchFieldEvents(element);
+  return applied(match.value);
+}
+
+function applyMultiSelect(element: HTMLSelectElement, value: unknown): ApplyResult {
+  const rawValues = Array.isArray(value) ? value : [value];
+  const candidates = rawValues
+    .map(coerceScalar)
+    .filter((text): text is string => text !== null && !isEmptyText(text));
+  if (candidates.length === 0) return skipped('empty-value');
+
+  const options = Array.from(element.options).filter((option) => option.value !== '');
+  const selectedValues: string[] = [];
+  for (const option of options) {
+    const label = option.textContent?.trim() || option.value;
+    const selected = candidates.some((candidate) => matchesOption(candidate, option.value, label));
+    option.selected = selected;
+    if (selected) selectedValues.push(option.value);
+  }
+  if (selectedValues.length === 0) return skipped('no-matching-option');
+  dispatchFieldEvents(element);
+  return applied(selectedValues);
+}
+
+/**
+ * Apply a model value to a field and trigger change events for framework
+ * reactivity. Handles text, checkbox (single and group), radio, date/time and
+ * select (single and multiple) inputs.
+ *
+ * Never throws for value problems — returns a discriminated result instead so
+ * callers can report per-field outcomes.
+ */
+export function applyFieldValue(element: HTMLElement, value: unknown): ApplyResult {
+  if (value === null || value === undefined) return skipped('empty-value');
 
   if (element instanceof HTMLInputElement) {
     switch (element.type) {
       case 'checkbox':
-        setCheckboxValue(element, normalizedValue);
-        break;
+        return applyCheckbox(element, value);
       case 'radio':
-        setRadioValue(element, normalizedValue);
-        break;
+        return applyRadio(element, value);
       case 'date':
       case 'datetime-local':
       case 'time':
-        setDateValue(element, value);
-        break;
+      case 'month':
+      case 'week':
+        return applyDateLike(element, value);
       default:
-        element.value = value;
-        dispatchFieldEvents(element);
+        return applyText(element, value);
     }
-  } else if (element instanceof HTMLTextAreaElement) {
-    element.value = value;
-    dispatchFieldEvents(element);
-  } else if (element instanceof HTMLSelectElement) {
-    setSelectValue(element, normalizedValue, value);
   }
+  if (element instanceof HTMLTextAreaElement) {
+    return applyText(element, value);
+  }
+  if (element instanceof HTMLSelectElement) {
+    return applySelect(element, value);
+  }
+  return skipped('unsupported-value');
 }

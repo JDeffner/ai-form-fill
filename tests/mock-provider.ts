@@ -9,12 +9,15 @@ import type { ChatRequest, ChatResponse } from '../lib/core/types';
 export class MockAIProvider extends AIProvider {
   protected providerName = 'mock';
   protected providerType: ProviderType = 'local';
+  protected override supportsStructured = true;
 
   private mockResponse: string;
+  /** The last request passed to chat(), for prompt/schema assertions. */
+  lastRequest?: ChatRequest;
 
   constructor(mockResponse: string = '{}', config?: Partial<ProviderConfig>) {
     super({
-      apiEndpoint: 'http://mock.local',
+      baseUrl: 'http://mock.local',
       model: 'mock-model',
       ...config,
     });
@@ -28,7 +31,8 @@ export class MockAIProvider extends AIProvider {
     this.mockResponse = response;
   }
 
-  async chat(_params: ChatRequest): Promise<ChatResponse> {
+  async chat(request: ChatRequest): Promise<ChatResponse> {
+    this.lastRequest = request;
     return {
       content: this.mockResponse,
       model: 'mock-model',
@@ -42,13 +46,5 @@ export class MockAIProvider extends AIProvider {
 
   async isAvailable(): Promise<boolean> {
     return true;
-  }
-
-  getName(): string {
-    return this.providerName;
-  }
-
-  getType(): ProviderType {
-    return this.providerType;
   }
 }

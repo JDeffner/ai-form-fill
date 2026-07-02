@@ -1,37 +1,38 @@
 /**
- * Global defaults for the library. Mutate any field to change behaviour for all
- * instances created afterwards.
+ * Frozen library defaults. These are used as constructor fallbacks; all actual
+ * configuration is per-instance and resolved once at construction time.
  *
  * @example
  * ```typescript
- * import { affConfig } from 'ai-form-fill';
+ * import { AFF_DEFAULTS, OllamaProvider } from 'ai-form-fill';
  *
- * affConfig.ollama.model = 'mistral';          // change a default model
- * affConfig.apiBase = 'https://my-app.com/api'; // point remote providers at your proxy
- * affConfig.debug = true;                        // turn on logging everywhere
+ * // Override a default per instance:
+ * const provider = new OllamaProvider({ model: 'mistral' });
+ * // Read a default:
+ * console.log(AFF_DEFAULTS.ollama.baseUrl); // http://localhost:11434
  * ```
  */
-export const affConfig = {
-  /**
-   * Base URL of your backend proxy for all remote (OpenAI-compatible)
-   * providers. Each provider appends `/<name>/chat` etc. to this.
-   */
-  apiBase: 'http://localhost:5173/api',
-
+export const AFF_DEFAULTS = Object.freeze({
   /** Default request timeout in milliseconds. */
   timeout: 30000,
 
-  /** Enable console logging across the library. */
-  debug: false,
-
-  /** Ollama runs locally, so it has its own endpoint. */
-  ollama: {
-    apiEndpoint: 'http://localhost:11434',
+  /** Ollama runs locally and is talked to directly. */
+  ollama: Object.freeze({
+    baseUrl: 'http://localhost:11434',
     model: 'gemma3:4b',
-  },
+  }),
 
-  /** Default model for each built-in remote preset. */
-  openai: { model: 'gpt-5-nano' },
-  perplexity: { model: 'sonar' },
-  openrouter: { model: 'openai/gpt-4o-mini' },
-};
+  /** Built-in OpenAI-compatible presets: default base URL and model. */
+  openai: Object.freeze({
+    baseUrl: 'https://api.openai.com/v1',
+    model: 'gpt-5-nano',
+  }),
+  perplexity: Object.freeze({
+    baseUrl: 'https://api.perplexity.ai',
+    model: 'sonar',
+  }),
+  openrouter: Object.freeze({
+    baseUrl: 'https://openrouter.ai/api/v1',
+    model: 'openai/gpt-4o-mini',
+  }),
+} as const);

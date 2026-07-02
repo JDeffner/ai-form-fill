@@ -101,7 +101,7 @@ describe('Ollama Integration Tests', () => {
 
   beforeAll(async () => {
     provider = new OllamaProvider({
-      apiEndpoint: OLLAMA_ENDPOINT,
+      baseUrl: OLLAMA_ENDPOINT,
       model: OLLAMA_MODEL,
       timeout: TEST_TIMEOUT,
     });
@@ -118,7 +118,7 @@ describe('Ollama Integration Tests', () => {
       const form = createParagliderForm();
       const input = 'Ozone, Enzo, 123456789, 2023-07-10, This is a test remark.';
 
-      await aiFormFill.parseAndFillForm(form, input);
+      await aiFormFill.fillForm(form, input);
       const values = getFormValues(form);
 
       expect(values.manufacturer).toBe('ozone');
@@ -136,7 +136,7 @@ describe('Ollama Integration Tests', () => {
       const form = createParagliderForm();
       const input = 'Nova, Mentor, , 2023-06-15, This is another test remark.';
 
-      await aiFormFill.parseAndFillForm(form, input);
+      await aiFormFill.fillForm(form, input);
       const values = getFormValues(form);
 
       expect(values.manufacturer).toBe('nova');
@@ -154,7 +154,7 @@ describe('Ollama Integration Tests', () => {
       const form = createParagliderForm();
       const input = 'Gin, Bonanza, 1122334455, , Good condition, no problems.';
 
-      await aiFormFill.parseAndFillForm(form, input);
+      await aiFormFill.fillForm(form, input);
       const values = getFormValues(form);
 
       expect(values.manufacturer).toBe('gin');
@@ -172,7 +172,7 @@ describe('Ollama Integration Tests', () => {
       const form = createParagliderForm();
       const input = 'Ozone, Rush, 54321, 2023-04-25, ';
 
-      await aiFormFill.parseAndFillForm(form, input);
+      await aiFormFill.fillForm(form, input);
       const values = getFormValues(form);
 
       expect(values.manufacturer).toBe('ozone');
@@ -189,7 +189,7 @@ describe('Ollama Integration Tests', () => {
       const form = createParagliderForm();
       const input = ', , 9988776655, 2023-03-15, Slight wear visible.';
 
-      await aiFormFill.parseAndFillForm(form, input);
+      await aiFormFill.fillForm(form, input);
       const values = getFormValues(form);
 
       // Manufacturer and model should remain at default (empty)
@@ -208,7 +208,7 @@ describe('Ollama Integration Tests', () => {
       const form = createParagliderForm();
       const input = ', , , , Only a remark here.';
 
-      await aiFormFill.parseAndFillForm(form, input);
+      await aiFormFill.fillForm(form, input);
       const values = getFormValues(form);
 
       expect(values.manufacturer).toBe('');
@@ -226,7 +226,7 @@ describe('Ollama Integration Tests', () => {
       const form = createParagliderForm();
       const input = ', , 1122334455, , ';
 
-      await aiFormFill.parseAndFillForm(form, input);
+      await aiFormFill.fillForm(form, input);
       const values = getFormValues(form);
 
       expect(values.manufacturer).toBe('');
@@ -244,7 +244,7 @@ describe('Ollama Integration Tests', () => {
       const form = createParagliderForm();
       const input = 'test';
 
-      await aiFormFill.parseAndFillForm(form, input);
+      await aiFormFill.fillForm(form, input);
       const values = getFormValues(form);
 
       expect(values.manufacturer).toBe('');
@@ -264,7 +264,7 @@ describe('Ollama Integration Tests', () => {
       the serial number is 987654321. The last maintenance date was 2023-06-15. 
       Remarks on condition: This is another test remark.`;
 
-      await aiFormFill.parseAndFillForm(form, input);
+      await aiFormFill.fillForm(form, input);
       const values = getFormValues(form);
 
       expect(values.manufacturer).toBe('nova');
@@ -284,7 +284,7 @@ describe('Ollama Integration Tests', () => {
       serial number is missing, Last maintenance date: 2023-05-20, 
       Condition: Good condition, no problems.`;
 
-      await aiFormFill.parseAndFillForm(form, input);
+      await aiFormFill.fillForm(form, input);
       const values = getFormValues(form);
 
       expect(values.manufacturer).toBe('gin');
@@ -303,7 +303,7 @@ describe('Ollama Integration Tests', () => {
       const input = `Information: Ozone produces the model Rush with serial number 54321. 
       The last maintenance date was 2023-04-25. There are no further remarks.`;
 
-      await aiFormFill.parseAndFillForm(form, input);
+      await aiFormFill.fillForm(form, input);
       const values = getFormValues(form);
 
       expect(values.manufacturer).toBe('ozone');
@@ -323,7 +323,7 @@ describe('Ollama Integration Tests', () => {
       Model is Ion, Serial number is 9988776655, the last maintenance date was 2023-03-15. 
       Remark: Slight wear visible.`;
 
-      await aiFormFill.parseAndFillForm(form, input);
+      await aiFormFill.fillForm(form, input);
       const values = getFormValues(form);
 
       expect(values.manufacturer).toBe('nova');
@@ -342,7 +342,7 @@ describe('Ollama Integration Tests', () => {
       const input = `Paraglider information: Manufacturer: Gin, Model: Atlas, 
       serial number is missing, Last maintenance date: 2023-02-10, No further remarks.`;
 
-      await aiFormFill.parseAndFillForm(form, input);
+      await aiFormFill.fillForm(form, input);
       const values = getFormValues(form);
 
       expect(values.manufacturer).toBe('gin');
@@ -366,7 +366,7 @@ describe('Ollama Integration Tests', () => {
       and found no major problems. The colors are still vibrant and the 
       materials seem to be in good condition.`;
 
-      await aiFormFill.parseAndFillForm(form, input);
+      await aiFormFill.fillForm(form, input);
       const values = getFormValues(form);
 
       expect(values.manufacturer).toBe('ozone');
@@ -493,7 +493,7 @@ describe('Advanced Form Integration Tests', () => {
 
   beforeAll(async () => {
     provider = new OllamaProvider({
-      apiEndpoint: OLLAMA_ENDPOINT,
+      baseUrl: OLLAMA_ENDPOINT,
       model: OLLAMA_MODEL,
       timeout: TEST_TIMEOUT,
     });
@@ -515,7 +515,7 @@ describe('Advanced Form Integration Tests', () => {
       My interests include technology, music, and travel. Please subscribe me to the newsletter.
       About me: I am a passionate software developer with 7 years of experience.`;
 
-      await aiFormFill.parseAndFillForm(form, input);
+      await aiFormFill.fillForm(form, input);
       const values = getAdvancedFormValues(form);
 
       expect(values.firstName.toLowerCase()).toBe('john');
@@ -548,7 +548,7 @@ describe('Advanced Form Integration Tests', () => {
       at Alexanderplatz 5. I'm a woman, born on March 20th, 1988. I'm interested in a part-time
       position since I have a mid-level experience of about 4 years. I love sports and arts!`;
 
-      await aiFormFill.parseAndFillForm(form, input);
+      await aiFormFill.fillForm(form, input);
       const values = getAdvancedFormValues(form);
 
       expect(values.firstName.toLowerCase()).toBe('jane');
@@ -571,7 +571,7 @@ describe('Advanced Form Integration Tests', () => {
       const form = createAdvancedForm();
       const input = `Alice Johnson, alice@test.com`;
 
-      await aiFormFill.parseAndFillForm(form, input);
+      await aiFormFill.fillForm(form, input);
       const values = getAdvancedFormValues(form);
 
       expect(values.firstName.toLowerCase()).toBe('alice');
@@ -591,7 +591,7 @@ describe('Advanced Form Integration Tests', () => {
       const input = `Contact: Bob Williams, bob.williams@mail.com, Phone: +44 20 7946 0958, 
       Address: 10 Downing Street, London, UK`;
 
-      await aiFormFill.parseAndFillForm(form, input);
+      await aiFormFill.fillForm(form, input);
       const values = getAdvancedFormValues(form);
 
       expect(values.firstName.toLowerCase()).toBe('bob');
@@ -613,7 +613,7 @@ describe('Advanced Form Integration Tests', () => {
       about 1 year of work. I'm interested in technology and would like to receive notifications 
       about new opportunities. I can start on 2024-03-15 and prefer morning calls around 09:30.`;
 
-      await aiFormFill.parseAndFillForm(form, input);
+      await aiFormFill.fillForm(form, input);
       const values = getAdvancedFormValues(form);
 
       expect(values.employmentType).toBe('contract');
@@ -636,7 +636,7 @@ describe('Advanced Form Integration Tests', () => {
       My interests span technology, travel, and music. Don't subscribe me to any newsletters.
       About me: Experienced full-stack developer specializing in React and Node.js.`;
 
-      await aiFormFill.parseAndFillForm(form, input);
+      await aiFormFill.fillForm(form, input);
       const values = getAdvancedFormValues(form);
 
       expect(values.firstName.toLowerCase()).toBe('max');
@@ -665,7 +665,7 @@ describe('Advanced Form Integration Tests', () => {
       Please contact me in the afternoon around 3 PM. I identify as other gender.
       I'm interested in arts and music. Looking for full-time work as I'm mid-level (3 years exp).`;
 
-      await aiFormFill.parseAndFillForm(form, input);
+      await aiFormFill.fillForm(form, input);
       const values = getAdvancedFormValues(form);
 
       expect(values.firstName.toLowerCase()).toBe('yuki');
@@ -700,7 +700,7 @@ describe('Advanced Form Integration Tests', () => {
       
       About me: Battle-hardened professional with experience in high-pressure situations.`;
 
-      await aiFormFill.parseAndFillForm(form, input);
+      await aiFormFill.fillForm(form, input);
       const values = getAdvancedFormValues(form);
 
       expect(values.firstName.toLowerCase()).toBe('sarah');
@@ -740,7 +740,7 @@ describe('Advanced Form Integration Tests', () => {
       - Interests: Technology, Travel
       - Newsletter: Yes`;
 
-      await aiFormFill.parseAndFillForm(form, input);
+      await aiFormFill.fillForm(form, input);
       const values = getAdvancedFormValues(form);
 
       expect(values.firstName.toLowerCase()).toBe('david');
@@ -766,7 +766,7 @@ describe('Advanced Form Integration Tests', () => {
       const input = `I'm really into technology, sports, arts, and music. 
       Please send me the newsletter and enable all notifications!`;
 
-      await aiFormFill.parseAndFillForm(form, input);
+      await aiFormFill.fillForm(form, input);
       const values = getAdvancedFormValues(form);
 
       expect(values.interest_tech).toBe(true);
@@ -789,7 +789,7 @@ describe('Advanced Form Integration Tests', () => {
       const input = `Lorem ipsum dolor sit amet, consectetur adipiscing elit. 
       Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.`;
 
-      await aiFormFill.parseAndFillForm(form, input);
+      await aiFormFill.fillForm(form, input);
       const values = getAdvancedFormValues(form);
 
       // All fields should remain empty/unchecked
@@ -808,7 +808,7 @@ describe('Advanced Form Integration Tests', () => {
       const form = createAdvancedForm();
       const input = `Please contact me at contact@example.org or call +1 212 555 1234`;
 
-      await aiFormFill.parseAndFillForm(form, input);
+      await aiFormFill.fillForm(form, input);
       const values = getAdvancedFormValues(form);
 
       expect(values.email).toBe('contact@example.org');
@@ -828,7 +828,7 @@ describe('Advanced Form Integration Tests', () => {
       I have led multiple successful product launches and enjoy working with cross-functional teams.
       My background includes both technical and business roles, giving me a unique perspective.`;
 
-      await aiFormFill.parseAndFillForm(form, input);
+      await aiFormFill.fillForm(form, input);
       const values = getAdvancedFormValues(form);
 
       expect(values.firstName.toLowerCase()).toBe('emily');
@@ -847,7 +847,7 @@ describe('Advanced Form Integration Tests', () => {
       Email: hans.schmidt@web.de, Tel: +49 30 12345678
       Männlich, geboren am 15.03.1980`;
 
-      await aiFormFill.parseAndFillForm(form, input);
+      await aiFormFill.fillForm(form, input);
       const values = getAdvancedFormValues(form);
 
       expect(values.firstName.toLowerCase()).toBe('hans');
@@ -868,7 +868,7 @@ describe('Advanced Form Integration Tests', () => {
       const input = `Tom Hardy, tom@movies.com. I love everything - technology, sports, arts, 
       music, and travel! Sign me up for the newsletter and all notifications please!`;
 
-      await aiFormFill.parseAndFillForm(form, input);
+      await aiFormFill.fillForm(form, input);
       const values = getAdvancedFormValues(form);
 
       expect(values.firstName.toLowerCase()).toBe('tom');

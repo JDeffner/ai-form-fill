@@ -1,37 +1,39 @@
 /**
- * Utility functions for parsing JSON responses from AI providers
+ * Parsing of model output into a field-value map.
  */
+
+import { ResponseParseError } from '../core/errors';
 
 /**
- * Parses JSON from AI responses, handling markdown code blocks and formatting issues.
- * Returns empty object if parsing fails.
+ * Parse a model response into a key → value map, tolerating markdown code
+ * fences around the JSON. Values keep their JSON types (string, number,
+ * boolean, array) — coercion happens at fill time, per field type.
+ *
+ * @throws ResponseParseError when the response is not valid JSON or not a
+ *   JSON object; the error carries the raw model output.
  */
-export function parseModelResponse(aiResponse: string): Record<string, string> {
+export function parseModelResponse(rawResponse: string): Record<string, unknown> {
+  const cleaned = rawResponse
+    .trim()
+    .replace(/```json\n?/g, '')
+    .replace(/```\n?/g, '')
+    .trim();
+
+  let parsed: unknown;
   try {
-    // Clean up the response
-    let cleanedResponse = aiResponse.trim();
-
-    // Remove markdown code blocks
-    cleanedResponse = cleanedResponse
-      .replace(/```json\n?/g, '')
-      .replace(/```\n?/g, '')
-      .trim();
-
-    // Parse JSON
-    const responseAsJson = JSON.parse(cleanedResponse) as Record<string, unknown>;
-
-    // Convert all values to strings
-    const result: Record<string, string> = {};
-    for (const [fieldName, fieldValue] of Object.entries(responseAsJson)) {
-      result[fieldName] = String(fieldValue);
-    }
-
-    return result;
+    parsed = JSON.parse(cleaned);
   } catch (error) {
-    console.error('Failed to parse JSON response:', error);
-    console.error('Response was:', aiResponse);
-    return {};
+    throw new ResponseParseError('Model response is not valid JSON', {
+      raw: rawResponse,
+      cause: error,
+    });
   }
+
+  if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    throw new ResponseParseError('Model response is not a JSON object', { raw: rawResponse });
+  }
+
+  return parsed as Record<string, unknown>;
 }
 
 /**

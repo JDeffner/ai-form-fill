@@ -5,9 +5,10 @@
  * Use this as a template for other local REST runtimes (LM Studio, LocalAI, ...).
  */
 
-import { affConfig } from '../core/defaults';
+import { AFF_DEFAULTS } from '../core/defaults';
 import type { ChatRequest, ChatResponse } from '../core/types';
 import { AIProvider, type ProviderConfig, type ProviderType } from './provider';
+import { requestJson } from './http';
 
 /** Ollama chat response shape. */
 export type OllamaResponse = {
@@ -30,7 +31,7 @@ export interface OllamaModel {
  * @example
  * ```typescript
  * const provider = new OllamaProvider({
- *   apiEndpoint: 'http://localhost:11434',
+ *   baseUrl: 'http://localhost:11434',
  *   model: 'gemma3:4b',
  * });
  * ```
@@ -41,83 +42,52 @@ export class OllamaProvider extends AIProvider {
   protected readonly providerType: ProviderType = 'local';
   protected override supportsStructured: boolean = true;
 
-  private readonly chatEndpoint: string;
-  private readonly tagsEndpoint: string;
-
   constructor(config?: ProviderConfig) {
     super({
-      apiEndpoint: config?.apiEndpoint || affConfig.ollama.apiEndpoint,
-      model: config?.model || affConfig.ollama.model,
-      timeout: config?.timeout || affConfig.timeout,
+      baseUrl: config?.baseUrl ?? AFF_DEFAULTS.ollama.baseUrl,
+      model: config?.model ?? AFF_DEFAULTS.ollama.model,
+      timeout: config?.timeout,
+      fetch: config?.fetch,
     });
-    this.chatEndpoint = `${this.apiEndpoint}/api/chat`;
-    this.tagsEndpoint = `${this.apiEndpoint}/api/tags`;
   }
 
   override async chat(request: ChatRequest): Promise<ChatResponse> {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), this.timeout);
+    const data = await requestJson<OllamaResponse>(`${this.baseUrl}/api/chat`, {
+      method: 'POST',
+      body: {
+        model: request.model,
+        messages: request.messages,
+        stream: false,
+        // Ollama takes a JSON schema in the top-level `format` field.
+        ...(request.format ? { format: request.format } : {}),
+        ...(request.maxTokens ? { options: { num_predict: request.maxTokens } } : {}),
+      },
+      timeout: this.timeout,
+      signal: request.signal,
+      provider: this.providerName,
+      fetchImpl: this.fetchImpl,
+    });
 
-    try {
-      const response = await fetch(this.chatEndpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: request.model,
-          messages: request.messages,
-          stream: false,
-          // Ollama takes a JSON schema in the top-level `format` field.
-          ...(request.format ? { format: request.format } : {}),
-          options: { num_predict: request.maxTokens },
-        }),
-        signal: controller.signal,
-      });
-
-      if (!response.ok) {
-        throw new Error(`Ollama API error: ${response.status} ${response.statusText}`);
-      }
-
-      const data = (await response.json()) as OllamaResponse;
-      return {
-        content: data.message.content,
-        model: data.model,
-        finishReason: data.done ? 'stop' : 'length',
-      };
-    } catch (error) {
-      if (error instanceof Error) {
-        if (error.name === 'AbortError') {
-          throw new Error(`Ollama request timed out after ${this.timeout}ms`, { cause: error });
-        }
-        if (error.message.includes('fetch')) {
-          throw new Error(`Failed to connect to Ollama at ${this.apiEndpoint}. Is Ollama running?`, {
-            cause: error,
-          });
-        }
-      }
-      throw error;
-    } finally {
-      clearTimeout(timeoutId);
-    }
+    return {
+      content: data.message?.content ?? null,
+      model: data.model,
+      finishReason: data.done ? 'stop' : 'length',
+    };
   }
 
   override async listModels(): Promise<string[]> {
-    try {
-      const response = await fetch(this.tagsEndpoint);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch models: ${response.statusText}`);
-      }
-      const data = (await response.json()) as { models: OllamaModel[] };
-      return (data.models ?? []).map((model) => model.name);
-    } catch (error) {
-      if (affConfig.debug) console.error('Error listing Ollama models:', error);
-      return [];
-    }
+    const data = await requestJson<{ models: OllamaModel[] }>(`${this.baseUrl}/api/tags`, {
+      timeout: this.timeout,
+      provider: this.providerName,
+      fetchImpl: this.fetchImpl,
+    });
+    return (data.models ?? []).map((model) => model.name);
   }
 
   override async isAvailable(): Promise<boolean> {
     try {
-      const response = await fetch(this.tagsEndpoint);
-      return response.ok;
+      await this.listModels();
+      return true;
     } catch {
       return false;
     }

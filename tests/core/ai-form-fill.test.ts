@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { AIFormFill } from '../../lib/core/ai-form-fill';
+import { ResponseParseError } from '../../lib/core/errors';
 import { MockAIProvider } from '../mock-provider';
 
 beforeEach(() => {
@@ -14,10 +15,11 @@ describe('AIFormFill', () => {
       const aiFormFill = new AIFormFill(mockProvider);
 
       expect(aiFormFill).toBeDefined();
+      expect(aiFormFill.getProvider()).toBe(mockProvider);
     });
   });
 
-  describe('parseAndFillForm', () => {
+  describe('fillForm', () => {
     it('fills text fields from mock AI response', async () => {
       const mockProvider = new MockAIProvider(
         JSON.stringify({
@@ -36,22 +38,23 @@ describe('AIFormFill', () => {
       document.body.appendChild(form);
 
       const aiFormFill = new AIFormFill(mockProvider);
-      await aiFormFill.parseAndFillForm(form, 'John Doe, email: john@example.com');
+      const result = await aiFormFill.fillForm(form, 'John Doe, email: john@example.com');
 
-      const firstName = form.querySelector<HTMLInputElement>('[name="firstName"]');
-      const lastName = form.querySelector<HTMLInputElement>('[name="lastName"]');
-      const email = form.querySelector<HTMLInputElement>('[name="email"]');
-
-      expect(firstName?.value).toBe('John');
-      expect(lastName?.value).toBe('Doe');
-      expect(email?.value).toBe('john@example.com');
+      expect(form.querySelector<HTMLInputElement>('[name="firstName"]')?.value).toBe('John');
+      expect(form.querySelector<HTMLInputElement>('[name="lastName"]')?.value).toBe('Doe');
+      expect(form.querySelector<HTMLInputElement>('[name="email"]')?.value).toBe(
+        'john@example.com',
+      );
+      expect(result.filled.map((f) => f.key).sort()).toEqual(['email', 'firstName', 'lastName']);
+      expect(result.skipped).toEqual([]);
+      expect(result.unmatchedKeys).toEqual([]);
     });
 
     it('fills checkbox fields from mock AI response', async () => {
       const mockProvider = new MockAIProvider(
         JSON.stringify({
-          newsletter: 'true',
-          terms: 'false',
+          newsletter: true,
+          terms: false,
         }),
       );
 
@@ -63,21 +66,14 @@ describe('AIFormFill', () => {
       document.body.appendChild(form);
 
       const aiFormFill = new AIFormFill(mockProvider);
-      await aiFormFill.parseAndFillForm(form, 'Subscribe to newsletter');
+      await aiFormFill.fillForm(form, 'Subscribe to newsletter');
 
-      const newsletter = form.querySelector<HTMLInputElement>('[name="newsletter"]');
-      const terms = form.querySelector<HTMLInputElement>('[name="terms"]');
-
-      expect(newsletter?.checked).toBe(true);
-      expect(terms?.checked).toBe(false);
+      expect(form.querySelector<HTMLInputElement>('[name="newsletter"]')?.checked).toBe(true);
+      expect(form.querySelector<HTMLInputElement>('[name="terms"]')?.checked).toBe(false);
     });
 
     it('fills select fields from mock AI response', async () => {
-      const mockProvider = new MockAIProvider(
-        JSON.stringify({
-          country: 'Germany',
-        }),
-      );
+      const mockProvider = new MockAIProvider(JSON.stringify({ country: 'Germany' }));
 
       const form = document.createElement('form');
       form.innerHTML = `
@@ -90,11 +86,10 @@ describe('AIFormFill', () => {
       document.body.appendChild(form);
 
       const aiFormFill = new AIFormFill(mockProvider);
-      await aiFormFill.parseAndFillForm(form, 'I live in Germany');
+      const result = await aiFormFill.fillForm(form, 'I live in Germany');
 
-      const country = form.querySelector<HTMLSelectElement>('[name="country"]');
-
-      expect(country?.value).toBe('de');
+      expect(form.querySelector<HTMLSelectElement>('[name="country"]')?.value).toBe('de');
+      expect(result.filled[0]).toMatchObject({ key: 'country', value: 'de' });
     });
 
     it('only fills specified fields when targetFields option is set', async () => {
@@ -115,18 +110,15 @@ describe('AIFormFill', () => {
       const aiFormFill = new AIFormFill(mockProvider, {
         targetFields: ['firstName'],
       });
-      await aiFormFill.parseAndFillForm(form, 'John Doe');
+      const result = await aiFormFill.fillForm(form, 'John Doe');
 
-      const firstName = form.querySelector<HTMLInputElement>('[name="firstName"]');
-      const lastName = form.querySelector<HTMLInputElement>('[name="lastName"]');
-
-      expect(firstName?.value).toBe('John');
-      // lastName should not be filled because it's not in targetFields
-      // The mock returns it, but the filter should exclude it from the prompt
-      expect(lastName?.value).toBe('');
+      expect(form.querySelector<HTMLInputElement>('[name="firstName"]')?.value).toBe('John');
+      // lastName is not targeted: untouched, and its key counts as unmatched.
+      expect(form.querySelector<HTMLInputElement>('[name="lastName"]')?.value).toBe('');
+      expect(result.unmatchedKeys).toContain('lastName');
     });
 
-    it('ignores extra keys in AI response that do not match form fields', async () => {
+    it('reports extra keys in AI response as unmatchedKeys', async () => {
       const mockProvider = new MockAIProvider(
         JSON.stringify({
           name: 'John',
@@ -136,36 +128,126 @@ describe('AIFormFill', () => {
       );
 
       const form = document.createElement('form');
-      form.innerHTML = `
-        <input type="text" name="name">
-      `;
+      form.innerHTML = `<input type="text" name="name">`;
       document.body.appendChild(form);
 
       const aiFormFill = new AIFormFill(mockProvider);
-      // This should not throw
-      await aiFormFill.parseAndFillForm(form, 'John');
+      const result = await aiFormFill.fillForm(form, 'John');
 
-      const name = form.querySelector<HTMLInputElement>('[name="name"]');
-      expect(name?.value).toBe('John');
+      expect(form.querySelector<HTMLInputElement>('[name="name"]')?.value).toBe('John');
+      expect(result.unmatchedKeys.sort()).toEqual(['anotherExtra', 'extraField']);
     });
 
-    it('handles malformed AI response gracefully', async () => {
+    it('rejects with ResponseParseError on malformed AI response', async () => {
       const mockProvider = new MockAIProvider('not valid json');
 
       const form = document.createElement('form');
-      form.innerHTML = `
-        <input type="text" name="name" value="original">
-      `;
+      form.innerHTML = `<input type="text" name="name" value="original">`;
       document.body.appendChild(form);
 
       const aiFormFill = new AIFormFill(mockProvider);
 
-      // Should not throw
-      await aiFormFill.parseAndFillForm(form, 'test');
+      await expect(aiFormFill.fillForm(form, 'test')).rejects.toThrow(ResponseParseError);
+      // Original value remains unchanged after the error.
+      expect(form.querySelector<HTMLInputElement>('[name="name"]')?.value).toBe('original');
+    });
 
-      const name = form.querySelector<HTMLInputElement>('[name="name"]');
-      // Original value should remain unchanged after error
-      expect(name?.value).toBe('original');
+    it('rejects with ResponseParseError carrying the raw output', async () => {
+      const mockProvider = new MockAIProvider('garbage output');
+      const form = document.createElement('form');
+      form.innerHTML = `<input type="text" name="name">`;
+      document.body.appendChild(form);
+
+      const aiFormFill = new AIFormFill(mockProvider);
+      const error = await aiFormFill.fillForm(form, 'x').catch((e: unknown) => e);
+
+      expect(error).toBeInstanceOf(ResponseParseError);
+      expect((error as ResponseParseError).raw).toBe('garbage output');
+    });
+
+    it('rejects with ResponseParseError on empty provider content', async () => {
+      const mockProvider = new MockAIProvider('');
+      const form = document.createElement('form');
+      form.innerHTML = `<input type="text" name="name">`;
+      document.body.appendChild(form);
+
+      const aiFormFill = new AIFormFill(mockProvider);
+      await expect(aiFormFill.fillForm(form, 'x')).rejects.toThrow(ResponseParseError);
+    });
+
+    it('collects mixed success and skip outcomes in the FillResult', async () => {
+      const raw = JSON.stringify({
+        name: 'John',
+        birthDate: '15.03.1990', // not ISO -> skipped
+        country: 'Atlantis', // no such option -> skipped
+      });
+      const mockProvider = new MockAIProvider(raw);
+
+      const form = document.createElement('form');
+      form.innerHTML = `
+        <input type="text" name="name">
+        <input type="date" name="birthDate">
+        <select name="country">
+          <option value="de">Germany</option>
+          <option value="us">USA</option>
+        </select>
+      `;
+      document.body.appendChild(form);
+
+      const aiFormFill = new AIFormFill(mockProvider);
+      const result = await aiFormFill.fillForm(form, 'text');
+
+      expect(result.filled.map((f) => f.key)).toEqual(['name']);
+      expect(result.skipped).toEqual(
+        expect.arrayContaining([
+          { key: 'birthDate', reason: 'invalid-date-format' },
+          { key: 'country', reason: 'no-matching-option' },
+        ]),
+      );
+      expect(result.raw).toBe(raw);
+    });
+
+    it('sends the form schema to structured-output providers', async () => {
+      const mockProvider = new MockAIProvider(JSON.stringify({ name: 'x' }));
+      const form = document.createElement('form');
+      form.innerHTML = `<input type="text" name="name">`;
+      document.body.appendChild(form);
+
+      const aiFormFill = new AIFormFill(mockProvider);
+      await aiFormFill.fillForm(form, 'x');
+
+      expect(mockProvider.lastRequest?.format).toMatchObject({
+        type: 'object',
+        additionalProperties: false,
+      });
+    });
+  });
+
+  describe('fillField', () => {
+    it('applies the model value and returns it', async () => {
+      const mockProvider = new MockAIProvider('Jane Doe');
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.name = 'fullName';
+      document.body.appendChild(input);
+
+      const aiFormFill = new AIFormFill(mockProvider);
+      const result = await aiFormFill.fillField(input);
+
+      expect(input.value).toBe('Jane Doe');
+      expect(result).toEqual({ value: 'Jane Doe' });
+    });
+
+    it('returns null when the model produced no usable value', async () => {
+      const mockProvider = new MockAIProvider('   ');
+      const input = document.createElement('input');
+      input.type = 'text';
+      document.body.appendChild(input);
+
+      const aiFormFill = new AIFormFill(mockProvider);
+      const result = await aiFormFill.fillField(input);
+
+      expect(result).toBeNull();
     });
   });
 });
