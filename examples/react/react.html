@@ -3,24 +3,38 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ai-form-fill - React Demo</title>
-    <link rel="stylesheet" href="../styles.css" />
+    <title>ai-form-fill — react demo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,600&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/examples/styles.css" />
   </head>
   <body>
     <div class="container">
-      <nav style="margin-bottom: 1.5rem">
-        <ul style="list-style: none; display: flex; gap: 1rem; padding: 0; margin: 0">
-          <li><a class="btn-secondary" href="/">All demos</a></li>
+      <nav class="site-nav" aria-label="Demos">
+        <a class="site-nav__brand" href="/">
+          <span class="site-nav__mark">aff</span>
+          <span class="site-nav__name">ai-form-fill</span>
+        </a>
+        <ul class="site-nav__links">
+          <li><a href="/examples/basic/basic.html">Basic</a></li>
+          <li><a href="/examples/advanced/advanced.html">Advanced</a></li>
+          <li><a href="/examples/voice/voice.html">Voice</a></li>
+          <li><a href="/examples/react/react.html" aria-current="page">React</a></li>
         </ul>
       </nav>
       <header>
-        <h1>React Demo</h1>
+        <p class="eyebrow">[ 04 ] React demo</p>
+        <h1>Controlled components still update</h1>
         <p class="subtitle">
-          Controlled React components: values are written through the native prototype setters, so
-          React's state updates on AI fill exactly like on typing.
+          Values are written through the native prototype setters, so React's state updates on AI
+          fill exactly like on typing.
         </p>
       </header>
-      <div class="content">
+      <div class="content content--solo">
         <div id="root"></div>
       </div>
     </div>

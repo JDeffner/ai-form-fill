@@ -3,47 +3,115 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ai-form-fill — Demos</title>
-    <link rel="stylesheet" href="/styles.css" />
+    <title>ai-form-fill — demos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,600&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/examples/styles.css" />
   </head>
   <body>
     <div class="container">
-      <header>
-        <h1>ai-form-fill</h1>
-        <p class="subtitle">Framework-agnostic AI-powered form filling — demo pages</p>
-      </header>
-      <div class="content">
-        <section class="panel">
-          <h2>Examples</h2>
-          <ul
-            style="
-              list-style: none;
-              display: flex;
-              flex-direction: column;
-              gap: 1rem;
-              padding: 0;
-              margin: 0;
-            "
-          >
-            <li>
-              <a class="btn-primary" href="/examples/basic/basic.html">Basic demo</a>
-              — one-line <code>autoInit()</code> setup
-            </li>
-            <li>
-              <a class="btn-primary" href="/examples/advanced/advanced.html">Advanced demo</a>
-              — provider/model switching, single-field fill, debug log
-            </li>
-            <li>
-              <a class="btn-primary" href="/examples/voice/voice.html">Voice input demo</a>
-              — Web Speech API transcript into <code>fillForm</code>
-            </li>
-            <li>
-              <a class="btn-primary" href="/examples/react/react.html">React demo</a>
-              — controlled components receive AI-filled values
-            </li>
-          </ul>
-        </section>
+      <nav class="site-nav" aria-label="Demos">
+        <a class="site-nav__brand" href="/">
+          <span class="site-nav__mark">aff</span>
+          <span class="site-nav__name">ai-form-fill</span>
+        </a>
+        <ul class="site-nav__links">
+          <li><a href="/examples/basic/basic.html">Basic</a></li>
+          <li><a href="/examples/advanced/advanced.html">Advanced</a></li>
+          <li><a href="/examples/voice/voice.html">Voice</a></li>
+          <li><a href="/examples/react/react.html">React</a></li>
+        </ul>
+      </nav>
+
+      <section class="hero">
+        <div class="hero__lead">
+          <p class="eyebrow">[ ai-form-fill / demos ]</p>
+          <h1>Unstructured text, <em>resolved</em> into form fields.</h1>
+          <p class="subtitle">
+            Paste a paragraph, a resume, an email — the library extracts structured data and fills
+            the matching fields. Framework-agnostic, runs locally on Ollama or against any
+            OpenAI-compatible provider.
+          </p>
+        </div>
+        <dl class="hero__meta">
+          <div class="hero__stat">
+            <dt>Runtime dependencies</dt>
+            <dd>0</dd>
+          </div>
+          <div class="hero__stat">
+            <dt>Providers</dt>
+            <dd>Ollama + OpenAI-compatible</dd>
+          </div>
+          <div class="hero__stat">
+            <dt>License</dt>
+            <dd>MIT</dd>
+          </div>
+        </dl>
+      </section>
+
+      <p class="section-label">Select a demo</p>
+
+      <div class="demo-grid">
+        <a class="demo-card" style="--i: 0" href="/examples/basic/basic.html">
+          <span class="demo-card__idx" aria-hidden="true">01</span>
+          <span>
+            <span class="demo-card__title">Basic</span>
+            <span class="demo-card__desc">
+              The one-line <code>autoInit()</code> setup. A contact form filled from a short
+              introduction.
+            </span>
+            <span class="demo-card__go">Open ↗</span>
+          </span>
+        </a>
+
+        <a class="demo-card" style="--i: 1" href="/examples/advanced/advanced.html">
+          <span class="demo-card__idx" aria-hidden="true">02</span>
+          <span>
+            <span class="demo-card__title">Advanced</span>
+            <span class="demo-card__desc">
+              Switch providers and models, fill a single field, and read the full
+              <code>FillResult</code> in a debug log.
+            </span>
+            <span class="demo-card__go">Open ↗</span>
+          </span>
+        </a>
+
+        <a class="demo-card" style="--i: 2" href="/examples/voice/voice.html">
+          <span class="demo-card__idx" aria-hidden="true">03</span>
+          <span>
+            <span class="demo-card__title">Voice</span>
+            <span class="demo-card__desc">
+              Dictate with the Web Speech API; the transcript flows into the same
+              <code>fillForm</code> call. Text-in stays the core.
+            </span>
+            <span class="demo-card__go">Open ↗</span>
+          </span>
+        </a>
+
+        <a class="demo-card" style="--i: 3" href="/examples/react/react.html">
+          <span class="demo-card__idx" aria-hidden="true">04</span>
+          <span>
+            <span class="demo-card__title">React</span>
+            <span class="demo-card__desc">
+              Controlled components: AI-filled values update React state exactly like typing, via
+              native setters.
+            </span>
+            <span class="demo-card__go">Open ↗</span>
+          </span>
+        </a>
       </div>
+
+      <footer class="site-foot">
+        <span>ai-form-fill — Bachelorarbeit artifact</span>
+        <span>
+          <a href="https://github.com/JDeffner/ai-form-fill">GitHub</a> ·
+          <a href="https://www.npmjs.com/package/ai-form-fill">npm</a>
+        </span>
+      </footer>
     </div>
   </body>
 </html>

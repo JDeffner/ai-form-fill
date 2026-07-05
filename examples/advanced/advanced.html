@@ -2,24 +2,37 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AI Form Input - Advanced Demo</title>
-    <link rel="stylesheet" href="../styles.css" />
+    <title>ai-form-fill — advanced demo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,600&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/examples/styles.css" />
   </head>
   <body>
     <div class="container">
-      <nav style="margin-bottom: 1.5rem">
-        <ul style="list-style: none; display: flex; gap: 1rem; padding: 0; margin: 0">
-          <li><a class="btn-secondary" href="/">All demos</a></li>
-          <li><a class="btn-secondary" href="../basic/basic.html">Basic Demo</a></li>
-          <li><a class="btn-secondary" href="../voice/voice.html">Voice Demo</a></li>
-          <li><a class="btn-secondary" href="../react/react.html">React Demo</a></li>
+      <nav class="site-nav" aria-label="Demos">
+        <a class="site-nav__brand" href="/">
+          <span class="site-nav__mark">aff</span>
+          <span class="site-nav__name">ai-form-fill</span>
+        </a>
+        <ul class="site-nav__links">
+          <li><a href="/examples/basic/basic.html">Basic</a></li>
+          <li><a href="/examples/advanced/advanced.html" aria-current="page">Advanced</a></li>
+          <li><a href="/examples/voice/voice.html">Voice</a></li>
+          <li><a href="/examples/react/react.html">React</a></li>
         </ul>
       </nav>
       <header>
-        <h1>Advanced Demo</h1>
-        <p class="subtitle">Full-featured test environment with provider selection and debugging</p>
+        <p class="eyebrow">[ 02 ] Advanced demo</p>
+        <h1>Provider switching and full results</h1>
+        <p class="subtitle">
+          Pick a provider and model, fill the whole form or a single field, and watch the
+          <code>FillResult</code> — filled, skipped and unmatched keys — in the debug log.
+        </p>
       </header>
 
       <div class="content">
