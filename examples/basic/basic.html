@@ -38,9 +38,8 @@
       <div class="content">
         <!-- Configuration Panel -->
         <section class="panel">
-          <h2>Input Text</h2>
+          <h2>Source text</h2>
           <div class="test-section">
-            <h3>Parse and Fill Form</h3>
             <textarea
               id="aff-text"
               rows="8"
@@ -49,17 +48,15 @@
 Hi, my name is Jim Raynor. You can reach me at jim.dope@starcraft.com or call me at +1-551-143-4567. I live at 1st Main Street in NYC, USA. I'm a software developer passionate about technology and music. I would like to subscribe to the newsletter and enable notifications. I'm male.
             </textarea>
             <div class="button-row">
-              <button id="aff-text-button" class="btn-primary">Parse & Fill Form</button>
-
-              <!-- <a href="../advanced/index.html"><button class="btn-secondary">Advanced Demo</button></a> -->
+              <button id="aff-text-button" class="btn-primary">Fill form</button>
             </div>
           </div>
         </section>
 
         <!-- Test Form Panel -->
         <section class="panel">
-          <h2>Test Form</h2>
-          <form id="aff-form" data-aff-provider="">
+          <h2>Form</h2>
+          <form id="aff-form" data-aff-provider="ollama">
             <div class="form-row">
               <div class="form-group">
                 <label for="firstName">First Name *</label>
@@ -185,8 +182,8 @@ Hi, my name is Jim Raynor. You can reach me at jim.dope@starcraft.com or call me
             </div>
 
             <div class="button-row">
-              <button type="submit" class="btn-primary">Submit Form</button>
-              <input id="clearButton" type="reset" class="btn-secondary" value="Clear Form" />
+              <button type="submit" class="btn-secondary">Submit</button>
+              <input id="clearButton" type="reset" class="btn-secondary" value="Clear" />
             </div>
           </form>
         </section>

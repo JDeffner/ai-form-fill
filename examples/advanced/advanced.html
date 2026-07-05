@@ -42,56 +42,49 @@
           <div class="config-form">
             <div class="form-row">
               <div class="form-group">
-                <label for="providerSelect">Provider:</label>
+                <label for="providerSelect">Provider</label>
                 <select id="providerSelect">
                   <option value="">Loading providers...</option>
                 </select>
               </div>
               <div class="form-group">
-                <label for="modelSelect">Model:</label>
+                <label for="modelSelect">Model</label>
                 <select id="modelSelect">
                   <option value="">Loading models...</option>
                 </select>
               </div>
-              <!-- <button id="refreshModels" class="btn-secondary btn-compact">🔄</button> -->
-            </div>
-
-            <div class="form-group">
-              <label>
-                <input type="checkbox" id="debugMode" checked />
-                Debug Mode (Console Logging)
-              </label>
             </div>
 
             <div class="button-row">
-              <button id="initButton" class="btn-primary">Initialize AI</button>
-              <button id="testApiButton" class="btn-secondary">Test API</button>
-              <a href="../basic/index.html"><button class="btn-secondary">Simple Demo</button></a>
+              <button id="initButton" class="btn-primary">Initialize</button>
+              <button id="testApiButton" class="btn-secondary">Test connection</button>
             </div>
             <div id="status" class="status"></div>
           </div>
 
           <div class="test-section">
-            <h3>Parse and Fill Form</h3>
+            <h3>Fill from text</h3>
             <textarea
               id="unstructuredText"
               rows="10"
               placeholder="Hi, my name is John Doe."
             ></textarea>
-            <button id="parseAndFillButton" class="btn-primary">Parse & Fill Form</button>
+            <button id="parseAndFillButton" class="btn-primary">Fill form</button>
           </div>
 
           <div class="test-section">
-            <h3>Fill Single Field</h3>
-            <p class="compact-text">Click a field, then:</p>
-            <button id="fillSingleButton" class="btn-primary">Fill Selected Field</button>
+            <h3>Fill a single field</h3>
+            <p class="compact-text">Click a field in the form, then:</p>
+            <div class="button-row">
+              <button id="fillSingleButton" class="btn-secondary">Fill selected field</button>
+            </div>
             <p class="info">Selected: <span id="selectedFieldInfo">None</span></p>
           </div>
         </section>
 
         <!-- Test Form Panel -->
         <section class="panel">
-          <h2>Test Form</h2>
+          <h2>Form</h2>
           <form id="testForm">
             <div class="form-row">
               <div class="form-group">
@@ -280,15 +273,15 @@
             </div>
 
             <div class="button-row">
-              <button type="submit" class="btn-primary">Submit Form</button>
-              <button id="clearButton" type="button" class="btn-secondary">Clear Form</button>
+              <button type="submit" class="btn-secondary">Submit</button>
+              <button id="clearButton" type="button" class="btn-secondary">Clear</button>
             </div>
           </form>
         </section>
 
         <!-- Results Panel -->
         <section class="panel panel-wide">
-          <h2>Debug Log</h2>
+          <h2>Debug log</h2>
           <div id="results" class="results">
             <p class="info">Results and debug information will appear here...</p>
           </div>

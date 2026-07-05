@@ -420,46 +420,51 @@ textarea:focus {
   display: flex;
   gap: 0.75rem;
   flex-wrap: wrap;
+  align-items: center;
 }
 
 .btn-primary,
 .btn-secondary,
 button[type='submit'],
 input[type='reset'] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font-family: var(--font-mono);
   font-weight: 600;
   font-size: 0.8rem;
+  line-height: 1;
   text-transform: uppercase;
   letter-spacing: 0.08em;
+  text-decoration: none;
   cursor: pointer;
   border-radius: var(--radius);
-  padding: 0.7rem 1.2rem;
+  padding: 0.65rem 1.1rem;
   transition:
     transform var(--dur-fast) var(--ease-out),
-    box-shadow var(--dur-fast) var(--ease-out),
     background var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
     color var(--dur-fast) var(--ease-out);
 }
 
+/* Flat, so buttons sit on an even baseline; the hard-offset-shadow signature
+   lives on the landing demo cards, not on in-form controls. */
 .btn-primary,
 button[type='submit'] {
   background: var(--accent);
   color: var(--on-accent);
-  border: 1.5px solid var(--ink);
-  box-shadow: 3px 3px 0 var(--ink);
+  border: 1.5px solid var(--accent);
 }
 
 .btn-primary:hover,
 button[type='submit']:hover {
   background: var(--accent-press);
-  transform: translate(1px, 1px);
-  box-shadow: 2px 2px 0 var(--ink);
+  border-color: var(--accent-press);
 }
 
 .btn-primary:active,
 button[type='submit']:active {
-  transform: translate(3px, 3px);
-  box-shadow: 0 0 0 var(--ink);
+  transform: translateY(1px);
 }
 
 .btn-secondary,
@@ -467,19 +472,17 @@ input[type='reset'] {
   background: var(--surface);
   color: var(--ink);
   border: 1.5px solid var(--ink);
-  box-shadow: 3px 3px 0 var(--rule);
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .btn-secondary:hover,
 input[type='reset']:hover {
   background: var(--ink);
   color: var(--paper);
-  transform: translate(1px, 1px);
-  box-shadow: 2px 2px 0 var(--rule);
+}
+
+.btn-secondary:active,
+input[type='reset']:active {
+  transform: translateY(1px);
 }
 
 .btn-compact {

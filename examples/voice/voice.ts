@@ -57,7 +57,7 @@ if (!SpeechRecognitionImpl) {
   };
   recognition.onend = () => {
     listening = false;
-    micButton.textContent = '🎤 Start dictation';
+    micButton.textContent = 'Start dictation';
     micStatus.textContent = 'Dictation stopped. Click "Fill Form" to apply the transcript.';
   };
 
@@ -68,7 +68,7 @@ if (!SpeechRecognitionImpl) {
     }
     listening = true;
     textArea.value = '';
-    micButton.textContent = '⏹ Stop dictation';
+    micButton.textContent = 'Stop dictation';
     micStatus.textContent = 'Listening... speak now.';
     recognition.start();
   });

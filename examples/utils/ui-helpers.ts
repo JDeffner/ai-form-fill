@@ -34,5 +34,5 @@ export function logResult(message: string) {
 export function clearForm(form: HTMLFormElement) {
   form.reset();
   showStatus('Form cleared', 'info');
-  logResult('🗑️ Form cleared');
+  logResult('Form cleared');
 }
