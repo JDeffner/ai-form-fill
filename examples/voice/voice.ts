@@ -5,6 +5,7 @@
  */
 
 import { autoInit } from '../../lib/index';
+import '../utils/enhance';
 
 // Standard quick-start wiring: #aff-form + #aff-text + #aff-text-button.
 autoInit({ debug: true });

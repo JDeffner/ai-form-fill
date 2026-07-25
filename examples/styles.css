@@ -35,10 +35,22 @@
   --rule-w: 1.5px;
   --radius: 3px;
   --space: 1.5rem;
+  /* One height for every single-line control. Selects and date/time inputs
+     have taller intrinsic content boxes than text inputs, so without this
+     they render 40/42/43px side by side and the row baseline goes ragged. */
+  --control-h: 2.625rem;
+  /* Checkbox/radio box. Sized off the mono label so the two share a baseline. */
+  --tick: 1.125rem;
 
   --dur-fast: 120ms;
   --dur: 240ms;
+  --dur-slow: 550ms;
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Cross-fade between demo pages (progressive enhancement, Chromium). */
+@view-transition {
+  navigation: auto;
 }
 
 * {
@@ -49,6 +61,18 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+  background-color: var(--paper);
+  /* Exposed drafting grid: faint ink rules across the whole sheet. */
+  background-image:
+    linear-gradient(to right, color-mix(in oklch, var(--ink) 4%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in oklch, var(--ink) 4%, transparent) 1px, transparent 1px);
+  background-size: 88px 88px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
 }
 
 body {
@@ -56,12 +80,24 @@ body {
   font-size: 1rem;
   line-height: 1.6;
   color: var(--ink);
-  background-color: var(--paper);
+  background: transparent;
   padding: clamp(1rem, 3vw, 2.5rem);
   max-width: 1180px;
   margin: 0 auto;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Paper grain: SVG noise overlay so the page reads as stock, not screen. */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+  opacity: 0.05;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
 }
 
 ::selection {
@@ -103,6 +139,49 @@ code {
   gap: var(--space);
 }
 
+/* ---- Entrance choreography ---------------------------------------------
+   Page blocks rise in reading order; the reduced-motion block at the end
+   collapses all of it to an instant render. */
+
+.container > * {
+  animation: rise var(--dur-slow) var(--ease-out) backwards;
+}
+
+.container > :nth-child(2) {
+  animation-delay: 70ms;
+}
+
+.container > :nth-child(3) {
+  animation-delay: 140ms;
+}
+
+.container > :nth-child(4) {
+  animation-delay: 210ms;
+}
+
+.container > :nth-child(5) {
+  animation-delay: 280ms;
+}
+
+/* Panels and demo cards stagger themselves; don't double-animate wrappers. */
+.container > .content,
+.container > .demo-grid {
+  animation: none;
+}
+
+.content > * {
+  animation: rise var(--dur-slow) var(--ease-out) backwards;
+  animation-delay: 140ms;
+}
+
+.content > :nth-child(2) {
+  animation-delay: 220ms;
+}
+
+.content > :nth-child(3) {
+  animation-delay: 300ms;
+}
+
 /* ---- Site navigation (identical on every page) ------------------------- */
 
 .site-nav {
@@ -132,6 +211,11 @@ code {
   background: var(--ink);
   color: var(--paper);
   padding: 0.05rem 0.4rem;
+  transition: background var(--dur-fast) var(--ease-out);
+}
+
+.site-nav__brand:hover .site-nav__mark {
+  background: var(--accent);
 }
 
 .site-nav__name {
@@ -305,12 +389,52 @@ textarea {
   font-size: 0.92rem;
   color: var(--ink);
   padding: 0.6rem 0.7rem;
-  border: 1.5px solid var(--rule);
+  border: var(--rule-w) solid var(--rule);
   border-radius: var(--radius);
   background: var(--paper);
   transition:
     border-color var(--dur-fast) var(--ease-out),
     box-shadow var(--dur-fast) var(--ease-out);
+}
+
+/* Every single-line control on one height, so a row of text + select + date +
+   time sits on a single baseline. Textareas are excluded: they size to rows. */
+.form-group input:not([type='checkbox']):not([type='radio']):not([type='range']),
+.form-group select {
+  height: var(--control-h);
+  padding-block: 0;
+  line-height: calc(var(--control-h) - 2 * var(--rule-w));
+}
+
+/* Native select chrome is the loudest OS artifact left in a designed form.
+   Replace it with a drawn chevron in ink. */
+.form-group select {
+  appearance: none;
+  padding-right: 2.1rem;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--ink-2) 50%),
+    linear-gradient(135deg, var(--ink-2) 50%, transparent 50%);
+  background-position:
+    calc(100% - 1.05rem) 55%,
+    calc(100% - 0.7rem) 55%;
+  background-size:
+    0.35rem 0.35rem,
+    0.35rem 0.35rem;
+  background-repeat: no-repeat;
+}
+
+/* The date/time pickers keep their native indicator; tint it to the accent
+   so it stops reading as browser default blue. */
+.form-group input[type='date']::-webkit-calendar-picker-indicator,
+.form-group input[type='time']::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.55;
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+
+.form-group input[type='date']:hover::-webkit-calendar-picker-indicator,
+.form-group input[type='time']:hover::-webkit-calendar-picker-indicator {
+  opacity: 1;
 }
 
 .form-group input::placeholder,
@@ -344,12 +468,70 @@ textarea:focus {
   cursor: pointer;
 }
 
+/* Drawn ticks. `accent-color` alone leaves the browser's own box, which is the
+   one place the OS still shows through an otherwise fully drawn page. These
+   are built from the same ink rule and vermilion as everything else. */
 .form-group input[type='checkbox'],
 .form-group input[type='radio'] {
-  width: 18px;
-  height: 18px;
-  accent-color: var(--accent);
+  appearance: none;
+  flex: none;
+  width: var(--tick);
+  height: var(--tick);
+  margin: 0;
+  display: grid;
+  place-content: center;
+  border: var(--rule-w) solid var(--ink-2);
+  background: var(--surface);
   cursor: pointer;
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    background var(--dur-fast) var(--ease-out);
+}
+
+.form-group input[type='checkbox'] {
+  border-radius: 2px;
+}
+
+.form-group input[type='radio'] {
+  border-radius: 50%;
+}
+
+.form-group input[type='checkbox']:hover,
+.form-group input[type='radio']:hover {
+  border-color: var(--ink);
+}
+
+.form-group input[type='checkbox']::before,
+.form-group input[type='radio']::before {
+  content: '';
+  transform: scale(0);
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+
+/* Checkmark drawn as a clipped square, so it stays crisp at any size. */
+.form-group input[type='checkbox']::before {
+  width: var(--tick);
+  height: var(--tick);
+  background: var(--on-accent);
+  clip-path: polygon(19% 47%, 33% 33%, 43% 55%, 68% 24%, 81% 36%, 44% 76%);
+}
+
+.form-group input[type='radio']::before {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--on-accent);
+}
+
+.form-group input[type='checkbox']:checked,
+.form-group input[type='radio']:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.form-group input[type='checkbox']:checked::before,
+.form-group input[type='radio']:checked::before {
+  transform: scale(1);
 }
 
 .form-group label:has(input[type='checkbox']) {
@@ -358,10 +540,13 @@ textarea:focus {
   gap: 0.5rem;
 }
 
+/* Top-aligned, not bottom-aligned. Groups in one row are rarely the same
+   height (a 4-item radio group beside a 3-item one), and flex-end pushed the
+   shorter group's label down so the two labels no longer lined up. */
 .form-row {
   display: flex;
   gap: 1rem;
-  align-items: flex-end;
+  align-items: start;
 }
 
 .form-row .form-group {
@@ -405,14 +590,7 @@ textarea:focus {
   cursor: pointer;
 }
 
-.checkbox-group input,
-.radio-group input {
-  width: 18px;
-  height: 18px;
-  margin: 0;
-  accent-color: var(--accent);
-  cursor: pointer;
-}
+/* Ticks inside a group inherit the drawn styling above; nothing to add. */
 
 /* ---- Buttons ----------------------------------------------------------- */
 
@@ -425,8 +603,8 @@ textarea:focus {
 
 .btn-primary,
 .btn-secondary,
-button[type='submit'],
-input[type='reset'] {
+:where(button[type='submit']),
+:where(input[type='reset']) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -448,40 +626,45 @@ input[type='reset'] {
 }
 
 /* Flat, so buttons sit on an even baseline; the hard-offset-shadow signature
-   lives on the landing demo cards, not on in-form controls. */
+   lives on the landing demo cards, not on in-form controls.
+   The bare-element fallbacks are wrapped in :where() so they contribute zero
+   specificity. Without it, `button[type='submit']` (0,1,1) outranks the
+   `.btn-secondary` class (0,1,0) and every secondary submit button in a form
+   renders vermilion, which is what was happening on the advanced demo. */
 .btn-primary,
-button[type='submit'] {
+:where(button[type='submit']) {
   background: var(--accent);
   color: var(--on-accent);
-  border: 1.5px solid var(--accent);
+  border: var(--rule-w) solid var(--accent);
 }
 
 .btn-primary:hover,
-button[type='submit']:hover {
+:where(button[type='submit']):hover {
   background: var(--accent-press);
   border-color: var(--accent-press);
+  transform: translateY(-1px);
 }
 
 .btn-primary:active,
-button[type='submit']:active {
+:where(button[type='submit']):active {
   transform: translateY(1px);
 }
 
 .btn-secondary,
-input[type='reset'] {
+:where(input[type='reset']) {
   background: var(--surface);
   color: var(--ink);
-  border: 1.5px solid var(--ink);
+  border: var(--rule-w) solid var(--ink);
 }
 
 .btn-secondary:hover,
-input[type='reset']:hover {
+:where(input[type='reset']):hover {
   background: var(--ink);
   color: var(--paper);
 }
 
 .btn-secondary:active,
-input[type='reset']:active {
+:where(input[type='reset']):active {
   transform: translateY(1px);
 }
 
@@ -503,6 +686,10 @@ input[type='reset']:active {
 
 .status:empty {
   display: none;
+}
+
+.status:not(:empty) {
+  animation: rise var(--dur) var(--ease-out) backwards;
 }
 
 .status.success {
@@ -565,9 +752,12 @@ input[type='reset']:active {
   font-family: var(--font-mono);
   font-size: 0.82rem;
   line-height: 1.5;
+  scrollbar-width: thin;
+  scrollbar-color: var(--rule) transparent;
 }
 
 .log-entry {
+  animation: rise var(--dur) var(--ease-out) backwards;
   padding: 0.5rem 0.6rem;
   margin-bottom: 0.5rem;
   background: var(--surface);
@@ -684,8 +874,8 @@ input[type='reset']:active {
   transition:
     transform var(--dur) var(--ease-out),
     box-shadow var(--dur) var(--ease-out);
-  animation: rise var(--dur) var(--ease-out) backwards;
-  animation-delay: calc(var(--i) * 55ms);
+  animation: rise var(--dur-slow) var(--ease-out) backwards;
+  animation-delay: calc(210ms + var(--i) * 55ms);
 }
 
 .demo-card:hover {
@@ -727,6 +917,11 @@ input[type='reset']:active {
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: var(--accent);
+  transition: transform var(--dur) var(--ease-out);
+}
+
+.demo-card:hover .demo-card__go {
+  transform: translateX(4px);
 }
 
 .site-foot {
@@ -753,8 +948,24 @@ input[type='reset']:active {
 @keyframes rise {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(14px);
   }
+}
+
+/* ---- AI fill feedback ---------------------------------------------------
+   Fields flash as the library resolves them (class applied by the demos'
+   shared enhance module on synthetic input events). */
+
+@keyframes aff-flash {
+  0% {
+    background-color: color-mix(in oklch, var(--accent) 16%, var(--paper));
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--accent) 28%, transparent);
+  }
+}
+
+.aff-flash {
+  animation: aff-flash 900ms var(--ease-out);
 }
 
 /* ---- Responsive -------------------------------------------------------- */
@@ -783,5 +994,10 @@ input[type='reset']:active {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none !important;
   }
 }

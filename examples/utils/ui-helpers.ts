@@ -24,7 +24,12 @@ export function logResult(message: string) {
   if (!resultsEl) return;
 
   const timestamp = new Date().toLocaleTimeString();
-  resultsEl.innerHTML += `<div class="log-entry">[${timestamp}] ${message}</div>`;
+  // insertAdjacentHTML keeps existing entries in place so only the new one
+  // runs its entrance animation (innerHTML += would re-animate all of them).
+  resultsEl.insertAdjacentHTML(
+    'beforeend',
+    `<div class="log-entry">[${timestamp}] ${message}</div>`,
+  );
   resultsEl.scrollTop = resultsEl.scrollHeight;
 }
 

@@ -12,6 +12,7 @@ import {
   type BuiltInProviderName,
 } from '../../lib/index';
 import { showStatus, logResult, clearForm } from '../utils/ui-helpers';
+import '../utils/enhance';
 
 // State. The remote providers point at the dev-server passthrough proxies
 // (mock/*.mock.ts) so API keys stay server-side; in production this would be

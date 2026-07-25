@@ -7,6 +7,7 @@
  */
 
 import { AIFormFill, type FillResult } from '../../lib/index';
+import '../utils/enhance';
 
 // CDN ESM builds — no react dependency in this repo.
 // @ts-expect-error remote ESM module without local types

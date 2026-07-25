@@ -1,4 +1,5 @@
 import { autoInit } from '../../lib/index';
+import '../utils/enhance';
 
 /**
  * Simple Test Application for AI Form Input
