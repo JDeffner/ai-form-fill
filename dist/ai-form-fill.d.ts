@@ -79,6 +79,24 @@ export declare class AIFormFill {
         value: string;
     } | null>;
     /**
+     * Parse unstructured text into field values **without touching the form**.
+     *
+     * This is the review path: show the user what the model produced, let them
+     * accept or edit it, and only then write it. Apply an accepted value with
+     * the exported `applyFieldValue(field.element, value)`.
+     *
+     * {@link fillForm} is exactly this call followed by applying every value.
+     *
+     * @param formElement - The form whose fields define the extraction schema.
+     * @param text - Source text (resume, email, description, ...).
+     * @param options - Optional abort signal.
+     * @returns The extracted record, the fields it was built from, and the raw
+     *   model output.
+     * @throws ProviderError when the provider request fails.
+     * @throws ResponseParseError when the model output is empty or not a JSON object.
+     */
+    extract(formElement: HTMLFormElement, text: string, options?: FillOptions): Promise<ExtractResult>;
+    /**
      * Parse unstructured text and fill every matching field in the form.
      *
      * @param formElement - The form to fill.
@@ -315,6 +333,19 @@ export declare type ChatResponse = {
     content: string | null;
     model?: string;
     finishReason?: string;
+};
+
+/**
+ * Outcome of a {@link AIFormFill.extract} call: what the model produced,
+ * before anything is written to the form.
+ */
+export declare type ExtractResult = {
+    /** The parsed model output, keyed by {@link FieldInfo.key}. */
+    data: Record<string, unknown>;
+    /** The fields the extraction schema was built from, in document order. */
+    fields: FieldInfo[];
+    /** The raw model output, for debugging. */
+    raw: string;
 };
 
 /**

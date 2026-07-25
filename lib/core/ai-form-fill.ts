@@ -2,7 +2,13 @@
  * Core entry point for the library.
  */
 
-import type { ChatRequest, AIFormFillConfig, BuiltInProviderName, FillResult } from './types';
+import type {
+  ChatRequest,
+  AIFormFillConfig,
+  BuiltInProviderName,
+  ExtractResult,
+  FillResult,
+} from './types';
 import { AIProvider } from '../providers/provider';
 import { analyzeField, getFormFields } from '../form/analyze';
 import { applyFieldValue } from '../form/apply';
@@ -100,21 +106,27 @@ export class AIFormFill {
   }
 
   /**
-   * Parse unstructured text and fill every matching field in the form.
+   * Parse unstructured text into field values **without touching the form**.
    *
-   * @param formElement - The form to fill.
+   * This is the review path: show the user what the model produced, let them
+   * accept or edit it, and only then write it. Apply an accepted value with
+   * the exported `applyFieldValue(field.element, value)`.
+   *
+   * {@link fillForm} is exactly this call followed by applying every value.
+   *
+   * @param formElement - The form whose fields define the extraction schema.
    * @param text - Source text (resume, email, description, ...).
    * @param options - Optional abort signal.
-   * @returns Which fields were filled, which were skipped and why, plus the
-   *   raw model output.
+   * @returns The extracted record, the fields it was built from, and the raw
+   *   model output.
    * @throws ProviderError when the provider request fails.
    * @throws ResponseParseError when the model output is empty or not a JSON object.
    */
-  async fillForm(
+  async extract(
     formElement: HTMLFormElement,
     text: string,
     options?: FillOptions,
-  ): Promise<FillResult> {
+  ): Promise<ExtractResult> {
     const allFields = getFormFields(formElement);
     const fields = this.targetFields
       ? allFields.filter((field) => this.targetFields!.includes(field.key))
@@ -139,6 +151,26 @@ export class AIFormFill {
     }
     const data = parseModelResponse(raw);
     this.log('Extracted data:', data);
+    return { data, fields, raw };
+  }
+
+  /**
+   * Parse unstructured text and fill every matching field in the form.
+   *
+   * @param formElement - The form to fill.
+   * @param text - Source text (resume, email, description, ...).
+   * @param options - Optional abort signal.
+   * @returns Which fields were filled, which were skipped and why, plus the
+   *   raw model output.
+   * @throws ProviderError when the provider request fails.
+   * @throws ResponseParseError when the model output is empty or not a JSON object.
+   */
+  async fillForm(
+    formElement: HTMLFormElement,
+    text: string,
+    options?: FillOptions,
+  ): Promise<FillResult> {
+    const { data, fields, raw } = await this.extract(formElement, text, options);
 
     const result: FillResult = { filled: [], skipped: [], unmatchedKeys: [], raw };
     const fieldKeys = new Set(fields.map((field) => field.key));

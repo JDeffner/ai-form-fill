@@ -223,6 +223,60 @@ describe('AIFormFill', () => {
     });
   });
 
+  describe('extract', () => {
+    it('returns the extracted data without writing to the form', async () => {
+      const mockProvider = new MockAIProvider(
+        JSON.stringify({ firstName: 'John', email: 'john@example.com' }),
+      );
+
+      const form = document.createElement('form');
+      form.innerHTML = `
+        <input type="text" name="firstName">
+        <input type="email" name="email">
+      `;
+      document.body.appendChild(form);
+
+      const aiFormFill = new AIFormFill(mockProvider);
+      const result = await aiFormFill.extract(form, 'John, john@example.com');
+
+      expect(result.data).toEqual({ firstName: 'John', email: 'john@example.com' });
+      expect(result.fields.map((f) => f.key)).toEqual(['firstName', 'email']);
+      expect(result.raw).toContain('john@example.com');
+
+      // The whole point: the form is untouched until the caller applies.
+      expect(form.querySelector<HTMLInputElement>('[name="firstName"]')?.value).toBe('');
+      expect(form.querySelector<HTMLInputElement>('[name="email"]')?.value).toBe('');
+    });
+
+    it('honours targetFields when building the schema', async () => {
+      const mockProvider = new MockAIProvider(JSON.stringify({ firstName: 'John' }));
+
+      const form = document.createElement('form');
+      form.innerHTML = `
+        <input type="text" name="firstName">
+        <input type="text" name="lastName">
+      `;
+      document.body.appendChild(form);
+
+      const aiFormFill = new AIFormFill(mockProvider, { targetFields: ['firstName'] });
+      const result = await aiFormFill.extract(form, 'John Doe');
+
+      expect(result.fields.map((f) => f.key)).toEqual(['firstName']);
+    });
+
+    it('rejects with ResponseParseError on an empty provider response', async () => {
+      const mockProvider = new MockAIProvider('');
+
+      const form = document.createElement('form');
+      form.innerHTML = `<input type="text" name="name">`;
+      document.body.appendChild(form);
+
+      const aiFormFill = new AIFormFill(mockProvider);
+
+      await expect(aiFormFill.extract(form, 'x')).rejects.toBeInstanceOf(ResponseParseError);
+    });
+  });
+
   describe('fillField', () => {
     it('applies the model value and returns it', async () => {
       const mockProvider = new MockAIProvider('Jane Doe');

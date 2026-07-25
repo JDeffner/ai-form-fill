@@ -10,6 +10,7 @@ export { AFF_DEFAULTS } from './core/defaults';
 export { AFFError, ProviderError, ResponseParseError } from './core/errors';
 export type {
   AIFormFillConfig,
+  ExtractResult,
   FieldInfo,
   FieldOption,
   FillResult,

@@ -1,5 +1,33 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **`AIFormFill.extract(form, text, opts?)`** returns the parsed model output
+  (`{ data, fields, raw }`) without writing anything to the form, so callers
+  can build a review-and-confirm step. `fillForm` is now implemented as
+  `extract` plus the apply loop, so the two cannot drift apart. New exported
+  type `ExtractResult`. Purely additive; no existing behaviour changes.
+
+### Fixed
+
+- **Demo pages: secondary submit buttons rendered as primary.** The bare
+  `button[type='submit']` fallback (0,1,1) outranked the `.btn-secondary`
+  class (0,1,0), so any secondary button that was also a submit button came
+  out vermilion. The element fallbacks are now wrapped in `:where()`.
+- **Demo pages: ragged control heights.** Text inputs, selects and date/time
+  inputs have different intrinsic content-box heights and rendered 40/42/43px
+  side by side. All single-line controls are now pinned to `--control-h`.
+- **Demo pages: native checkboxes, radios and select chrome.** `accent-color`
+  recolors the tick but leaves the operating system's own box, which was the
+  only undesigned surface left on the pages. Ticks and the select chevron are
+  now drawn from the same ink rule and vermilion as everything else.
+- **Demo pages: misaligned labels in mixed-height rows.** `.form-row` was
+  `align-items: flex-end`, which pushed the shorter group's label down
+  whenever two groups in a row differed in height (a 4-item radio group beside
+  a 3-item one). Now top-aligned.
+
 ## 0.9.0 (2026-07-02)
 
 Clean rewrite relative to the published 1.0.1. The library has no users yet,

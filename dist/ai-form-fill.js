@@ -1,4 +1,4 @@
-const x = Object.freeze({
+const w = Object.freeze({
   /** Default request timeout in milliseconds. */
   timeout: 3e4,
   /** Ollama runs locally and is talked to directly. */
@@ -28,7 +28,7 @@ class I {
   timeout;
   fetchImpl;
   constructor(e) {
-    this.baseUrl = (e?.baseUrl ?? "").replace(/\/+$/, ""), this.selectedModel = e?.model ?? "", this.timeout = e?.timeout ?? x.timeout, this.fetchImpl = e?.fetch;
+    this.baseUrl = (e?.baseUrl ?? "").replace(/\/+$/, ""), this.selectedModel = e?.model ?? "", this.timeout = e?.timeout ?? w.timeout, this.fetchImpl = e?.fetch;
   }
   /** The provider's identifier (e.g. `ollama`, `openrouter`). */
   getName() {
@@ -69,7 +69,7 @@ class I {
     return this.supportsStructured;
   }
 }
-function k(t) {
+function x(t) {
   if (t.id) {
     const r = document.querySelector(`label[for="${t.id}"]`);
     if (r) return r.textContent?.trim() || "";
@@ -119,14 +119,14 @@ function V(t) {
   const e = A(t[0]);
   return e.options = t.map((r) => ({
     value: r.value,
-    label: k(r) || r.value
+    label: x(r) || r.value
   })), _(e, t), e;
 }
 function B(t) {
   const e = A(t[0]);
   return e.multiple = !0, e.placeholder = void 0, e.options = t.map((r) => ({
     value: r.value || "on",
-    label: k(r) || r.value || "on"
+    label: x(r) || r.value || "on"
   })), _(e, t), e;
 }
 function K(t) {
@@ -177,19 +177,19 @@ const J = [
   "undefined",
   "unknown",
   "missing"
-], G = ["true", "yes", "1", "checked", "on"], W = ["false", "no", "0", "unchecked", "off"], m = (t) => ({ applied: !0, value: t }), c = (t) => ({ applied: !1, reason: t });
-function h(t) {
+], G = ["true", "yes", "1", "checked", "on"], W = ["false", "no", "0", "unchecked", "off"], f = (t) => ({ applied: !0, value: t }), c = (t) => ({ applied: !1, reason: t });
+function m(t) {
   t.dispatchEvent(new Event("input", { bubbles: !0 })), t.dispatchEvent(new Event("change", { bubbles: !0 }));
 }
-function y(t) {
+function h(t) {
   return t.trim().toLowerCase().replace(/\s+/g, " ");
 }
-function b(t) {
+function y(t) {
   return J.includes(
-    y(t)
+    h(t)
   );
 }
-function v(t) {
+function b(t) {
   return typeof t == "string" ? t : typeof t == "number" || typeof t == "boolean" ? String(t) : null;
 }
 function L(t, e) {
@@ -202,17 +202,17 @@ function $(t, e) {
 }
 function S(t, e, r) {
   if (t === e || t === r) return !0;
-  const o = y(t);
-  return o === y(e) || o === y(r);
+  const o = h(t);
+  return o === h(e) || o === h(r);
 }
 function C(t, e, r, o) {
   const a = e.find((s) => r(s) === t);
   if (a) return a;
   const i = e.find((s) => o(s) === t);
   if (i) return i;
-  const n = y(t);
+  const n = h(t);
   return e.find(
-    (s) => y(r(s)) === n || y(o(s)) === n
+    (s) => h(r(s)) === n || h(o(s)) === n
   );
 }
 const X = /^(\d{4})-(\d{2})-(\d{2})$/, Q = /^(\d{4})-(\d{2})-(\d{2})T([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/, Z = /^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/, q = /^\d{4}-(0[1-9]|1[0-2])$/, ee = /^\d{4}-W(0[1-9]|[1-4]\d|5[0-3])$/;
@@ -244,15 +244,15 @@ function te(t, e) {
   }
 }
 function P(t, e) {
-  const r = v(e);
-  return r === null ? c("unsupported-value") : b(r) ? c("empty-value") : (L(t, r), h(t), m(r));
+  const r = b(e);
+  return r === null ? c("unsupported-value") : y(r) ? c("empty-value") : (L(t, r), m(t), f(r));
 }
 function re(t, e) {
-  const r = v(e);
+  const r = b(e);
   if (r === null) return c("unsupported-value");
-  if (b(r)) return c("empty-value");
+  if (y(r)) return c("empty-value");
   const o = te(r, t.type);
-  return o === null ? c("invalid-date-format") : (L(t, o), h(t), m(o));
+  return o === null ? c("invalid-date-format") : (L(t, o), m(t), f(o));
 }
 function oe(t) {
   const e = t.closest("form");
@@ -263,66 +263,66 @@ function oe(t) {
 function ne(t, e) {
   const r = oe(t);
   if (r.length > 1 || Array.isArray(e)) {
-    const s = (Array.isArray(e) ? e : [e]).map(v).filter((u) => u !== null && !b(u));
+    const s = (Array.isArray(e) ? e : [e]).map(b).filter((l) => l !== null && !y(l));
     if (s.length === 0) return c("empty-value");
-    const p = [];
-    for (const u of r) {
-      const f = u.value || "on", g = k(u) || f, d = s.some(
-        (l) => S(l, f, g)
+    const u = [];
+    for (const l of r) {
+      const p = l.value || "on", k = x(l) || p, v = s.some(
+        (d) => S(d, p, k)
       );
-      d !== u.checked && ($(u, d), h(u)), d && p.push(f);
+      v !== l.checked && ($(l, v), m(l)), v && u.push(p);
     }
-    return p.length === 0 ? c("no-matching-option") : m(p);
+    return u.length === 0 ? c("no-matching-option") : f(u);
   }
   if (typeof e == "boolean")
-    return $(t, e), h(t), m(String(e));
-  const o = v(e);
+    return $(t, e), m(t), f(String(e));
+  const o = b(e);
   if (o === null) return c("unsupported-value");
   if (o.trim() === "") return c("empty-value");
-  const a = y(o);
+  const a = h(o);
   let i;
   if (G.includes(a)) i = !0;
   else if (W.includes(a)) i = !1;
-  else if (S(o, t.value || "on", k(t))) i = !0;
-  else return b(o) ? c("empty-value") : c("unsupported-value");
-  return $(t, i), h(t), m(String(i));
+  else if (S(o, t.value || "on", x(t))) i = !0;
+  else return y(o) ? c("empty-value") : c("unsupported-value");
+  return $(t, i), m(t), f(String(i));
 }
 function ae(t, e) {
-  const r = v(e);
+  const r = b(e);
   if (r === null) return c("unsupported-value");
-  if (b(r)) return c("empty-value");
+  if (y(r)) return c("empty-value");
   const o = t.closest("form"), a = o && t.name ? Array.from(
     o.querySelectorAll(`input[type="radio"][name="${t.name}"]`)
   ) : [t], i = C(
     r,
     a,
     (n) => n.value,
-    (n) => k(n) || n.value
+    (n) => x(n) || n.value
   );
-  return i ? ($(i, !0), h(i), m(i.value)) : c("no-matching-option");
+  return i ? ($(i, !0), m(i), f(i.value)) : c("no-matching-option");
 }
 function ie(t, e) {
   if (t.multiple) return se(t, e);
-  const r = v(e);
+  const r = b(e);
   if (r === null) return c("unsupported-value");
-  if (b(r)) return c("empty-value");
+  if (y(r)) return c("empty-value");
   const o = Array.from(t.options).filter((i) => i.value !== ""), a = C(
     r,
     o,
     (i) => i.value,
     (i) => i.textContent?.trim() || i.value
   );
-  return a ? (L(t, a.value), h(t), m(a.value)) : c("no-matching-option");
+  return a ? (L(t, a.value), m(t), f(a.value)) : c("no-matching-option");
 }
 function se(t, e) {
-  const o = (Array.isArray(e) ? e : [e]).map(v).filter((n) => n !== null && !b(n));
+  const o = (Array.isArray(e) ? e : [e]).map(b).filter((n) => n !== null && !y(n));
   if (o.length === 0) return c("empty-value");
   const a = Array.from(t.options).filter((n) => n.value !== ""), i = [];
   for (const n of a) {
-    const s = n.textContent?.trim() || n.value, p = o.some((u) => S(u, n.value, s));
-    n.selected = p, p && i.push(n.value);
+    const s = n.textContent?.trim() || n.value, u = o.some((l) => S(l, n.value, s));
+    n.selected = u, u && i.push(n.value);
   }
-  return i.length === 0 ? c("no-matching-option") : (h(t), m(i));
+  return i.length === 0 ? c("no-matching-option") : (m(t), f(i));
 }
 function U(t, e) {
   if (e == null) return c("empty-value");
@@ -453,7 +453,7 @@ class T extends Error {
     super(e, r), this.name = "AFFError";
   }
 }
-class w extends T {
+class g extends T {
   /** Name of the provider that failed (e.g. `ollama`, `openai`). */
   provider;
   /** HTTP status code, when the failure was an HTTP error response. */
@@ -492,45 +492,45 @@ function ye(t) {
   }
 }
 async function M(t, e) {
-  const { method: r = "GET", body: o, headers: a, timeout: i, signal: n, provider: s, fetchImpl: p } = e, u = p ?? fetch, f = new AbortController(), g = setTimeout(() => f.abort(), i), d = () => f.abort(n?.reason);
+  const { method: r = "GET", body: o, headers: a, timeout: i, signal: n, provider: s, fetchImpl: u } = e, l = u ?? fetch, p = new AbortController(), k = setTimeout(() => p.abort(), i), v = () => p.abort(n?.reason);
   if (n) {
     if (n.aborted)
-      throw clearTimeout(g), n.reason ?? new DOMException("Aborted", "AbortError");
-    n.addEventListener("abort", d, { once: !0 });
+      throw clearTimeout(k), n.reason ?? new DOMException("Aborted", "AbortError");
+    n.addEventListener("abort", v, { once: !0 });
   }
   try {
-    const l = await u(t, {
+    const d = await l(t, {
       method: r,
       headers: {
         ...o !== void 0 ? { "Content-Type": "application/json" } : {},
         ...a
       },
       body: o !== void 0 ? JSON.stringify(o) : void 0,
-      signal: f.signal
+      signal: p.signal
     });
-    if (!l.ok)
-      throw new w(
-        `${s}: HTTP ${l.status} ${l.statusText} from ${t}`,
-        { provider: s, status: l.status }
+    if (!d.ok)
+      throw new g(
+        `${s}: HTTP ${d.status} ${d.statusText} from ${t}`,
+        { provider: s, status: d.status }
       );
     try {
-      return await l.json();
+      return await d.json();
     } catch (N) {
-      throw new w(`${s}: invalid JSON in response from ${t}`, {
+      throw new g(`${s}: invalid JSON in response from ${t}`, {
         provider: s,
         cause: N
       });
     }
-  } catch (l) {
-    throw l instanceof w ? l : (typeof l == "object" && l !== null && "name" in l ? String(l.name) : "") === "AbortError" ? n?.aborted ? l : new w(`${s}: request timed out after ${i}ms`, {
+  } catch (d) {
+    throw d instanceof g ? d : (typeof d == "object" && d !== null && "name" in d ? String(d.name) : "") === "AbortError" ? n?.aborted ? d : new g(`${s}: request timed out after ${i}ms`, {
       provider: s,
-      cause: l
-    }) : new w(`${s}: failed to connect to ${t}`, {
+      cause: d
+    }) : new g(`${s}: failed to connect to ${t}`, {
       provider: s,
-      cause: l
+      cause: d
     });
   } finally {
-    clearTimeout(g), n?.removeEventListener("abort", d);
+    clearTimeout(k), n?.removeEventListener("abort", v);
   }
 }
 class fe extends I {
@@ -539,8 +539,8 @@ class fe extends I {
   supportsStructured = !0;
   constructor(e) {
     super({
-      baseUrl: e?.baseUrl ?? x.ollama.baseUrl,
-      model: e?.model ?? x.ollama.model,
+      baseUrl: e?.baseUrl ?? w.ollama.baseUrl,
+      model: e?.model ?? w.ollama.model,
       timeout: e?.timeout,
       fetch: e?.fetch
     });
@@ -598,9 +598,9 @@ class he extends I {
    */
   constructor(e = "openai", r) {
     const a = {
-      openai: x.openai,
-      perplexity: x.perplexity,
-      openrouter: x.openrouter
+      openai: w.openai,
+      perplexity: w.perplexity,
+      openrouter: w.openrouter
     }[e], i = r?.baseUrl ?? a?.baseUrl;
     if (!i)
       throw new T(
@@ -642,7 +642,7 @@ class he extends I {
       fetchImpl: this.fetchImpl
     }), a = o.choices?.[0];
     if (!a)
-      throw new w(`${this.providerName}: response contained no choices`, {
+      throw new g(`${this.providerName}: response contained no choices`, {
         provider: this.providerName
       });
     return {
@@ -706,6 +706,39 @@ class O {
     return n.applied ? (this.log(`Field "${o.key}" filled with:`, i), { value: i }) : (this.log(`Value for "${o.key}" not applied: ${n.reason}`, i), null);
   }
   /**
+   * Parse unstructured text into field values **without touching the form**.
+   *
+   * This is the review path: show the user what the model produced, let them
+   * accept or edit it, and only then write it. Apply an accepted value with
+   * the exported `applyFieldValue(field.element, value)`.
+   *
+   * {@link fillForm} is exactly this call followed by applying every value.
+   *
+   * @param formElement - The form whose fields define the extraction schema.
+   * @param text - Source text (resume, email, description, ...).
+   * @param options - Optional abort signal.
+   * @returns The extracted record, the fields it was built from, and the raw
+   *   model output.
+   * @throws ProviderError when the provider request fails.
+   * @throws ResponseParseError when the model output is empty or not a JSON object.
+   */
+  async extract(e, r, o) {
+    const a = z(e), i = this.targetFields ? a.filter((p) => this.targetFields.includes(p.key)) : a, n = {
+      messages: [
+        { role: "system", content: Y.EXTRACT },
+        { role: "user", content: ue(i, r) }
+      ],
+      model: this.provider.getSelectedModel(),
+      signal: o?.signal
+    };
+    this.provider.supportsStructuredOutput() && (n.format = de(i));
+    const u = (await this.provider.chat(n)).content ?? "";
+    if (!u.trim())
+      throw new F("Provider returned an empty response", { raw: u });
+    const l = pe(u);
+    return this.log("Extracted data:", l), { data: l, fields: i, raw: u };
+  }
+  /**
    * Parse unstructured text and fill every matching field in the form.
    *
    * @param formElement - The form to fill.
@@ -717,28 +750,14 @@ class O {
    * @throws ResponseParseError when the model output is empty or not a JSON object.
    */
   async fillForm(e, r, o) {
-    const a = z(e), i = this.targetFields ? a.filter((d) => this.targetFields.includes(d.key)) : a, n = {
-      messages: [
-        { role: "system", content: Y.EXTRACT },
-        { role: "user", content: ue(i, r) }
-      ],
-      model: this.provider.getSelectedModel(),
-      signal: o?.signal
-    };
-    this.provider.supportsStructuredOutput() && (n.format = de(i));
-    const p = (await this.provider.chat(n)).content ?? "";
-    if (!p.trim())
-      throw new F("Provider returned an empty response", { raw: p });
-    const u = pe(p);
-    this.log("Extracted data:", u);
-    const f = { filled: [], skipped: [], unmatchedKeys: [], raw: p }, g = new Set(i.map((d) => d.key));
-    f.unmatchedKeys = Object.keys(u).filter((d) => !g.has(d));
-    for (const d of i) {
-      if (!(d.key in u)) continue;
-      const l = U(d.element, u[d.key]);
-      l.applied ? f.filled.push({ key: d.key, element: d.element, value: l.value }) : f.skipped.push({ key: d.key, reason: l.reason });
+    const { data: a, fields: i, raw: n } = await this.extract(e, r, o), s = { filled: [], skipped: [], unmatchedKeys: [], raw: n }, u = new Set(i.map((l) => l.key));
+    s.unmatchedKeys = Object.keys(a).filter((l) => !u.has(l));
+    for (const l of i) {
+      if (!(l.key in a)) continue;
+      const p = U(l.element, a[l.key]);
+      p.applied ? s.filled.push({ key: l.key, element: l.element, value: p.value }) : s.skipped.push({ key: l.key, reason: p.reason });
     }
-    return this.log("Fill result:", f), f;
+    return this.log("Fill result:", s), s;
   }
   /**
    * List the models offered by the current provider.
@@ -810,25 +829,25 @@ function be(t = {}) {
   const i = r.dataset.affProvider?.trim().toLowerCase(), n = t.provider ?? (i || "ollama");
   if (!j.includes(n))
     return E(`unknown provider "${n}". Available: ${j.join(", ")}.`);
-  const s = t.model ?? r.dataset.affModel?.trim(), p = new O(n, {
+  const s = t.model ?? r.dataset.affModel?.trim(), u = new O(n, {
     debug: t.debug ?? !1,
     ...s ? { model: s } : {}
   });
   return a.addEventListener("click", () => {
-    const u = o.value.trim();
-    p.fillForm(r, u).catch((f) => {
-      console.error("[ai-form-fill] fillForm failed:", f);
+    const l = o.value.trim();
+    u.fillForm(r, l).catch((p) => {
+      console.error("[ai-form-fill] fillForm failed:", p);
     });
-  }), p;
+  }), u;
 }
 export {
   T as AFFError,
-  x as AFF_DEFAULTS,
+  w as AFF_DEFAULTS,
   O as AIFormFill,
   I as AIProvider,
   fe as OllamaProvider,
   he as OpenAICompatibleProvider,
-  w as ProviderError,
+  g as ProviderError,
   F as ResponseParseError,
   Y as SYSTEM_PROMPTS,
   A as analyzeField,

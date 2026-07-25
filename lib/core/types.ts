@@ -94,6 +94,19 @@ export type SkipReason =
   | 'unsupported-value';
 
 /**
+ * Outcome of a {@link AIFormFill.extract} call: what the model produced,
+ * before anything is written to the form.
+ */
+export type ExtractResult = {
+  /** The parsed model output, keyed by {@link FieldInfo.key}. */
+  data: Record<string, unknown>;
+  /** The fields the extraction schema was built from, in document order. */
+  fields: FieldInfo[];
+  /** The raw model output, for debugging. */
+  raw: string;
+};
+
+/**
  * Outcome of a {@link AIFormFill.fillForm} call.
  */
 export type FillResult = {

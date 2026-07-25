@@ -102,6 +102,29 @@ try {
 Per-field problems (an option that doesn't exist, a malformed date) never
 throw — they land in `result.skipped` with a reason.
 
+### Review before applying
+
+`fillForm` writes straight to the form. When you want the user to confirm
+first, call `extract` instead: same request, same parsing, but nothing is
+written. Apply what they accept with the exported `applyFieldValue`.
+
+```typescript
+import { AIFormFill, applyFieldValue } from 'ai-form-fill';
+
+const { data, fields } = await aiForm.extract(form, text);
+
+// data is keyed by field key: { firstName: 'John', email: 'john@example.com' }
+showReviewUI(data);
+
+// ...then apply only what the user accepted
+for (const field of fields) {
+  if (accepted.has(field.key)) applyFieldValue(field.element, data[field.key]);
+}
+```
+
+`fillForm` is exactly `extract` followed by applying every value, so the two
+never drift apart.
+
 ### Fill a single field
 
 ```typescript
@@ -246,7 +269,9 @@ Best supported in Chrome; other browsers fall back to typing.
   radius is limited by design — extracted values only land in form fields the
   user can review, constrained by the generated schema — but do **not**
   auto-submit forms after filling, and validate server-side as you would for
-  any user input.
+  any user input. When the form carries anything consequential, prefer
+  [`extract`](#review-before-applying) and an explicit confirmation step over
+  `fillForm`.
 
 ---
 
@@ -261,6 +286,7 @@ new AIFormFill(provider: BuiltInProviderName | AIProvider, options?: AIFormFillO
 | Method                                                  | Description                                                  |
 | ------------------------------------------------------- | ------------------------------------------------------------ |
 | `fillForm(form, text, opts?)`                           | Parse text, fill matching fields → `Promise<FillResult>`     |
+| `extract(form, text, opts?)`                            | Parse text only, form untouched → `Promise<ExtractResult>`   |
 | `fillField(element, opts?)`                             | Generate + apply content for one field → `{ value } \| null` |
 | `setProvider(provider)` / `getProvider()`               | Swap / read the active provider                              |
 | `setFields(keys)` / `getFields()`                       | Restrict which fields are filled                             |

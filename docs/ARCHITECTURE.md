@@ -31,6 +31,12 @@ lib/form/apply.ts        applyFieldValue(): per-type coercion, exact option
 FillResult               { filled, skipped(+reason), unmatchedKeys, raw }
 ```
 
+`extract()` is the same flow stopped one step early, at
+`Record<string, unknown>`: everything above the `fillForm()` loop, nothing
+below it. `fillForm()` is literally `extract()` plus the apply loop, so the two
+cannot drift. Callers that need a review step use `extract()` and then call
+`applyFieldValue` themselves.
+
 `fillField` is the single-field variant of the same flow: `analyzeField` →
 `buildFieldPrompt` → `chat` → `applyFieldValue`.
 
