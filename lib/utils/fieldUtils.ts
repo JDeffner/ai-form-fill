@@ -18,6 +18,23 @@ const EMPTY_VALUE_INDICATORS = [
  */
 const TRUTHY_VALUES = ['true', 'yes', '1', 'checked', 'on'] as const;
 
+/**
+ * Writes a value through the native prototype value setter.
+ *
+ * React tracks the DOM node's value; a plain `element.value = x` updates that
+ * tracker, so the input event that follows is treated as a no-op and the
+ * component state never changes. Going through the prototype setter leaves the
+ * tracker stale, which is what makes React pick the change up.
+ */
+function setNativeValue(element: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement, value: string): void {
+  const setter = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(element), 'value')?.set;
+  if (setter) {
+    setter.call(element, value);
+  } else {
+    element.value = value;
+  }
+}
+
 /** Dispatches input and change events to trigger framework reactivity. */
 function dispatchFieldEvents(element: HTMLElement): void {
   element.dispatchEvent(new Event('input', { bubbles: true }));
@@ -310,7 +327,7 @@ function setRadioValue(element: HTMLInputElement, normalizedValue: string): void
 function setDateValue(element: HTMLInputElement, value: string): void {
   const formattedValue = formatDateValue(value, element.type);
   if (formattedValue) {
-    element.value = formattedValue;
+    setNativeValue(element, formattedValue);
     dispatchFieldEvents(element);
   } else if (affConfig.formFillDebug) {
     console.warn(`Could not parse date value "${value}" for ${element.type} input`);
@@ -334,7 +351,7 @@ function setSelectValue(element: HTMLSelectElement, normalizedValue: string, ori
   }
   
   if (option) {
-    element.value = option.value;
+    setNativeValue(element, option.value);
     dispatchFieldEvents(element);
   } else if (affConfig.formFillDebug) {
     console.warn(
@@ -367,11 +384,11 @@ export function setFieldValue(element: HTMLElement, value: string): void {
         setDateValue(element, value);
         break;
       default:
-        element.value = value;
+        setNativeValue(element, value);
         dispatchFieldEvents(element);
     }
   } else if (element instanceof HTMLTextAreaElement) {
-    element.value = value;
+    setNativeValue(element, value);
     dispatchFieldEvents(element);
   } else if (element instanceof HTMLSelectElement) {
     setSelectValue(element, normalizedValue, value);
