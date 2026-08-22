@@ -9,6 +9,7 @@ export type {
   AIFormFillConfig,
   FieldInfo,
   AvailableProviders,
+  FillResult,
 } from './types';
 
 // Configuration
