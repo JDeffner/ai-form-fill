@@ -270,20 +270,28 @@ function setRadioValue(element: HTMLInputElement, normalizedValue: string): void
     `input[type="radio"][name="${element.name}"]`
   );
   
-  for (const radio of radios) {
-    const radioLabel = getRadioLabel(radio).toLowerCase();
-    const radioValue = radio.value.toLowerCase();
-    
-    if (radioValue === normalizedValue ||
-        radioLabel === normalizedValue ||
-        radioValue.includes(normalizedValue) ||
-        radioLabel.includes(normalizedValue) ||
-        normalizedValue.includes(radioValue) ||
-        normalizedValue.includes(radioLabel)) {
-      radio.checked = true;
-      dispatchFieldEvents(radio);
-      break;
-    }
+  const candidates = Array.from(radios).map((radio) => ({
+    radio,
+    label: getRadioLabel(radio).toLowerCase(),
+    value: radio.value.toLowerCase(),
+  }));
+
+  // Exact matches win, so "female" can no longer be swallowed by "male".
+  let match = candidates.find(
+    (c) => c.value === normalizedValue || c.label === normalizedValue
+  );
+
+  if (!match) {
+    match = candidates.find(
+      (c) =>
+        (!!c.value && (c.value.includes(normalizedValue) || normalizedValue.includes(c.value))) ||
+        (!!c.label && (c.label.includes(normalizedValue) || normalizedValue.includes(c.label)))
+    );
+  }
+
+  if (match) {
+    match.radio.checked = true;
+    dispatchFieldEvents(match.radio);
   }
 }
 
