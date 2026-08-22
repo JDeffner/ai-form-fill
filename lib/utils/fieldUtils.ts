@@ -29,6 +29,17 @@ function isEmptyValue(normalizedValue: string): boolean {
   return EMPTY_VALUE_INDICATORS.includes(normalizedValue as typeof EMPTY_VALUE_INDICATORS[number]);
 }
 
+/** Returns true if the field must not be written to (disabled or readonly). */
+function isWriteProtected(element: HTMLElement): boolean {
+  if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
+    return element.disabled || element.readOnly;
+  }
+  if (element instanceof HTMLSelectElement) {
+    return element.disabled;
+  }
+  return false;
+}
+
 /** Gets the label text for a radio button. */
 function getRadioLabel(radio: HTMLInputElement): string {
   if (radio.id) {
@@ -195,7 +206,7 @@ export function getFillTargets(formElement: HTMLFormElement): FieldInfo[] {
   
   // https://www.w3schools.com/html/html_form_input_types.asp
   const elements = formElement.querySelectorAll(
-    'input:not([type="submit"]):not([type="reset"]):not([type="button"]):not([type="hidden"]):not([type="image"]):not([type="file"]), textarea, select'
+    'input:not([type="submit"]):not([type="reset"]):not([type="button"]):not([type="hidden"]):not([type="image"]):not([type="file"]):not([disabled]):not([readonly]), textarea:not([disabled]):not([readonly]), select:not([disabled])'
   );
 
   elements.forEach((element) => {
@@ -340,6 +351,7 @@ export function setFieldValue(element: HTMLElement, value: string): void {
   const normalizedValue = value.trim().toLowerCase();
   
   if (isEmptyValue(normalizedValue)) return;
+  if (isWriteProtected(element)) return;
   
   if (element instanceof HTMLInputElement) {
     switch (element.type) {
