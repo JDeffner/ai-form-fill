@@ -8,9 +8,13 @@ import { affConfig } from '../core/config';
 /**
  * Values that indicate an empty or invalid AI response.
  * If the AI returns one of these, the field should not be filled.
+ *
+ * Kept deliberately small: "none", "unknown" and "n/a" are legitimate answers
+ * for many fields. The prompt asks the model to omit a key it cannot fill, and
+ * absent keys are already skipped when the form is filled.
  */
 const EMPTY_VALUE_INDICATORS = [
-  'null', '', 'n/a', 'none', 'no value', 'empty', 'undefined', 'unknown', 'missing'
+  '', 'null', 'undefined'
 ] as const;
 
 /**
