@@ -53,7 +53,7 @@ export function buildFieldPrompt(field: FieldInfo, context?: string): string {
   }
 
   if (field.type === 'checkbox') {
-    prompt = `${context}\nRandomly return "true" or "false", no explanations. Dont repeat your choice too often.`;
+    prompt += '\nDecide whether this checkbox should be checked. Return only "true" or "false", no explanations.';
   } else {
     prompt += '\nProvide a realistic and appropriate value for this field. Only return the value itself, no explanations.';
   }
