@@ -315,10 +315,10 @@ function setSelectValue(element: HTMLSelectElement, normalizedValue: string, ori
   
   if (!option) {
     option = Array.from(element.options).find(
-      (opt) => opt.value.toLowerCase().includes(normalizedValue) || 
-               opt.text.toLowerCase().includes(normalizedValue) ||
-               normalizedValue.includes(opt.value.toLowerCase()) ||
-               normalizedValue.includes(opt.text.toLowerCase())
+      (opt) => (!!opt.value && opt.value.toLowerCase().includes(normalizedValue)) ||
+               (!!opt.text.trim() && opt.text.toLowerCase().includes(normalizedValue)) ||
+               (!!opt.value && normalizedValue.includes(opt.value.toLowerCase())) ||
+               (!!opt.text.trim() && normalizedValue.includes(opt.text.toLowerCase()))
     );
   }
   
