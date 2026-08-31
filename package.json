@@ -57,6 +57,9 @@
     "vite-plugin-mock-dev-server": "^2.0.7",
     "vitest": "^4.0.18"
   },
-  "dependencies": {
+  "pnpm": {
+    "overrides": {
+      "postcss": ">=8.5.23"
+    }
   }
 }
