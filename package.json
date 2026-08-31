@@ -31,13 +31,13 @@
     "LICENSE"
   ],
   "types": "./dist/ai-form-input.d.ts",
-  "main": "./dist/ai-form-input.umd.cjs",
-  "module": "./dist/ai-form-input.js",
+  "main": "./dist/ai-form-fill.umd.cjs",
+  "module": "./dist/ai-form-fill.js",
   "exports": {
     ".": {
       "types": "./dist/ai-form-input.d.ts",
-      "import": "./dist/ai-form-input.js",
-      "require": "./dist/ai-form-input.umd.cjs"
+      "import": "./dist/ai-form-fill.js",
+      "require": "./dist/ai-form-fill.umd.cjs"
     }
   },
   "scripts": {

@@ -9,6 +9,7 @@ import type {
   ChatRequest,
   AIFormFillConfig,
   AvailableProviders,
+  FillResult,
 } from './types';
 import { AIProvider, type ProviderConfig } from '../providers/aiProvider';
 import { analyzeField, getFillTargets, setFieldValue, getFieldIdentifier } from '../utils/fieldUtils';
@@ -18,6 +19,11 @@ import { LocalOllamaProvider } from '../providers/localOllama';
 import { OpenAIProvider } from '../providers/openai';
 import { PerplexityProvider } from '../providers/perplexity';
 import { affConfig } from './config';
+
+/** Normalises an unknown thrown value into an Error. */
+function toError(error: unknown): Error {
+  return error instanceof Error ? error : new Error(String(error));
+}
 
 /**
  * Main class for AI-powered form input
@@ -62,7 +68,7 @@ export class AIFormFill {
    */
   async fillSingleField(
     element: HTMLElement,
-  ): Promise<void> {
+  ): Promise<FillResult> {
     const fieldInfo = analyzeField(element);
     
     if (affConfig.formFillDebug) {
@@ -84,6 +90,8 @@ export class AIFormFill {
       },
     ];
 
+    const identifier = getFieldIdentifier(fieldInfo);
+
     try {
       const response = await this.provider.chat({
         messages,
@@ -95,10 +103,14 @@ export class AIFormFill {
       if (affConfig.formFillDebug) {
         console.log('Field filled with:', response.content);
       }
+      return response.content
+        ? { filled: [identifier], skipped: [] }
+        : { filled: [], skipped: [identifier], error: new Error('No content received from the AI provider.') };
     } catch (error) {
       if (affConfig.formFillDebug) {
         console.error('Error during fillSingleField:', error);
       }
+      return { filled: [], skipped: [identifier], error: toError(error) };
     }
   }
 
@@ -112,7 +124,7 @@ export class AIFormFill {
   async parseAndFillForm(
     formElement: HTMLFormElement,
     unstructuredText: string,
-  ): Promise<void> {
+  ): Promise<FillResult> {
     const fillTargets = getFillTargets(formElement);
     
     if (affConfig.formFillDebug) {
@@ -167,13 +179,29 @@ export class AIFormFill {
 
       if (!response.content) {
         if (affConfig.formFillDebug) console.warn('No content received from AI provider.');
-        return;
+        return {
+          filled: [],
+          skipped: filteredFillTargets.map(getFieldIdentifier),
+          error: new Error('No content received from the AI provider.'),
+        };
       }
 
       extractedData = parseJsonResponse(response.content);
+
+      if (Object.keys(extractedData).length === 0) {
+        return {
+          filled: [],
+          skipped: filteredFillTargets.map(getFieldIdentifier),
+          error: new Error(`The AI response could not be parsed as JSON: ${response.content}`),
+        };
+      }
     } catch (error) {
       if (affConfig.formFillDebug) console.error('Error calling AI provider:', error);
-      return;
+      return {
+        filled: [],
+        skipped: filteredFillTargets.map(getFieldIdentifier),
+        error: toError(error),
+      };
     }
     
 
@@ -181,6 +209,10 @@ export class AIFormFill {
       console.log('Extracted data:', extractedData);
 
     // Fill the client form fields with the extracted data
+    const filled: string[] = [];
+    const skipped: string[] = [];
+    let fillError: Error | undefined;
+
     for (const field of filteredFillTargets) {
       const fieldName = getFieldIdentifier(field);
       if (fieldName 
@@ -188,13 +220,20 @@ export class AIFormFill {
       ) {
         try {
           setFieldValue(field.element, extractedData[fieldName]);
+          filled.push(fieldName);
         } catch (error) {
           if (affConfig.formFillDebug) {
             console.error(`Failed to fill field "${fieldName}":`, error);
           }
+          skipped.push(fieldName);
+          fillError = fillError ?? toError(error);
         }
+      } else {
+        skipped.push(fieldName);
       }
     }
+
+    return fillError ? { filled, skipped, error: fillError } : { filled, skipped };
   }
 
 
@@ -293,6 +332,13 @@ export class AIFormFill {
          * @extension Add more providers here as needed
          */
       };
-    return providerFactories[providerName]();
+    const key = String(providerName).toLowerCase() as AvailableProviders;
+    const factory = providerFactories[key];
+    if (!factory) {
+      throw new Error(
+        `Unknown AI provider "${providerName}". Valid providers are: ${Object.keys(providerFactories).join(', ')}.`
+      );
+    }
+    return factory();
   }
 }

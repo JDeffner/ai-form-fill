@@ -8,15 +8,36 @@ import { affConfig } from '../core/config';
 /**
  * Values that indicate an empty or invalid AI response.
  * If the AI returns one of these, the field should not be filled.
+ *
+ * Kept deliberately small: "none", "unknown" and "n/a" are legitimate answers
+ * for many fields. The prompt asks the model to omit a key it cannot fill, and
+ * absent keys are already skipped when the form is filled.
  */
 const EMPTY_VALUE_INDICATORS = [
-  'null', '', 'n/a', 'none', 'no value', 'empty', 'undefined', 'unknown', 'missing'
+  '', 'null', 'undefined'
 ] as const;
 
 /**
  * Values that indicate a truthy/checked state for checkboxes.
  */
 const TRUTHY_VALUES = ['true', 'yes', '1', 'checked', 'on'] as const;
+
+/**
+ * Writes a value through the native prototype value setter.
+ *
+ * React tracks the DOM node's value; a plain `element.value = x` updates that
+ * tracker, so the input event that follows is treated as a no-op and the
+ * component state never changes. Going through the prototype setter leaves the
+ * tracker stale, which is what makes React pick the change up.
+ */
+function setNativeValue(element: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement, value: string): void {
+  const setter = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(element), 'value')?.set;
+  if (setter) {
+    setter.call(element, value);
+  } else {
+    element.value = value;
+  }
+}
 
 /** Dispatches input and change events to trigger framework reactivity. */
 function dispatchFieldEvents(element: HTMLElement): void {
@@ -27,6 +48,17 @@ function dispatchFieldEvents(element: HTMLElement): void {
 /** Returns true if the value indicates an empty/invalid AI response. */
 function isEmptyValue(normalizedValue: string): boolean {
   return EMPTY_VALUE_INDICATORS.includes(normalizedValue as typeof EMPTY_VALUE_INDICATORS[number]);
+}
+
+/** Returns true if the field must not be written to (disabled or readonly). */
+function isWriteProtected(element: HTMLElement): boolean {
+  if (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement) {
+    return element.disabled || element.readOnly;
+  }
+  if (element instanceof HTMLSelectElement) {
+    return element.disabled;
+  }
+  return false;
 }
 
 /** Gets the label text for a radio button. */
@@ -195,7 +227,7 @@ export function getFillTargets(formElement: HTMLFormElement): FieldInfo[] {
   
   // https://www.w3schools.com/html/html_form_input_types.asp
   const elements = formElement.querySelectorAll(
-    'input:not([type="submit"]):not([type="reset"]):not([type="button"]):not([type="hidden"]):not([type="image"]):not([type="file"]), textarea, select'
+    'input:not([type="submit"]):not([type="reset"]):not([type="button"]):not([type="hidden"]):not([type="image"]):not([type="file"]):not([disabled]):not([readonly]), textarea:not([disabled]):not([readonly]), select:not([disabled])'
   );
 
   elements.forEach((element) => {
@@ -270,20 +302,28 @@ function setRadioValue(element: HTMLInputElement, normalizedValue: string): void
     `input[type="radio"][name="${element.name}"]`
   );
   
-  for (const radio of radios) {
-    const radioLabel = getRadioLabel(radio).toLowerCase();
-    const radioValue = radio.value.toLowerCase();
-    
-    if (radioValue === normalizedValue ||
-        radioLabel === normalizedValue ||
-        radioValue.includes(normalizedValue) ||
-        radioLabel.includes(normalizedValue) ||
-        normalizedValue.includes(radioValue) ||
-        normalizedValue.includes(radioLabel)) {
-      radio.checked = true;
-      dispatchFieldEvents(radio);
-      break;
-    }
+  const candidates = Array.from(radios).map((radio) => ({
+    radio,
+    label: getRadioLabel(radio).toLowerCase(),
+    value: radio.value.toLowerCase(),
+  }));
+
+  // Exact matches win, so "female" can no longer be swallowed by "male".
+  let match = candidates.find(
+    (c) => c.value === normalizedValue || c.label === normalizedValue
+  );
+
+  if (!match) {
+    match = candidates.find(
+      (c) =>
+        (!!c.value && (c.value.includes(normalizedValue) || normalizedValue.includes(c.value))) ||
+        (!!c.label && (c.label.includes(normalizedValue) || normalizedValue.includes(c.label)))
+    );
+  }
+
+  if (match) {
+    match.radio.checked = true;
+    dispatchFieldEvents(match.radio);
   }
 }
 
@@ -291,7 +331,7 @@ function setRadioValue(element: HTMLInputElement, normalizedValue: string): void
 function setDateValue(element: HTMLInputElement, value: string): void {
   const formattedValue = formatDateValue(value, element.type);
   if (formattedValue) {
-    element.value = formattedValue;
+    setNativeValue(element, formattedValue);
     dispatchFieldEvents(element);
   } else if (affConfig.formFillDebug) {
     console.warn(`Could not parse date value "${value}" for ${element.type} input`);
@@ -307,15 +347,15 @@ function setSelectValue(element: HTMLSelectElement, normalizedValue: string, ori
   
   if (!option) {
     option = Array.from(element.options).find(
-      (opt) => opt.value.toLowerCase().includes(normalizedValue) || 
-               opt.text.toLowerCase().includes(normalizedValue) ||
-               normalizedValue.includes(opt.value.toLowerCase()) ||
-               normalizedValue.includes(opt.text.toLowerCase())
+      (opt) => (!!opt.value && opt.value.toLowerCase().includes(normalizedValue)) ||
+               (!!opt.text.trim() && opt.text.toLowerCase().includes(normalizedValue)) ||
+               (!!opt.value && normalizedValue.includes(opt.value.toLowerCase())) ||
+               (!!opt.text.trim() && normalizedValue.includes(opt.text.toLowerCase()))
     );
   }
   
   if (option) {
-    element.value = option.value;
+    setNativeValue(element, option.value);
     dispatchFieldEvents(element);
   } else if (affConfig.formFillDebug) {
     console.warn(
@@ -332,6 +372,7 @@ export function setFieldValue(element: HTMLElement, value: string): void {
   const normalizedValue = value.trim().toLowerCase();
   
   if (isEmptyValue(normalizedValue)) return;
+  if (isWriteProtected(element)) return;
   
   if (element instanceof HTMLInputElement) {
     switch (element.type) {
@@ -347,11 +388,11 @@ export function setFieldValue(element: HTMLElement, value: string): void {
         setDateValue(element, value);
         break;
       default:
-        element.value = value;
+        setNativeValue(element, value);
         dispatchFieldEvents(element);
     }
   } else if (element instanceof HTMLTextAreaElement) {
-    element.value = value;
+    setNativeValue(element, value);
     dispatchFieldEvents(element);
   } else if (element instanceof HTMLSelectElement) {
     setSelectValue(element, normalizedValue, value);

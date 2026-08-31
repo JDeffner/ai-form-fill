@@ -7,10 +7,6 @@ settings:
 importers:
 
   .:
-    dependencies:
-      zod:
-        specifier: ^4.3.6
-        version: 4.3.6
     devDependencies:
       '@types/jsdom':
         specifier: ^21.1.7
@@ -2464,4 +2460,5 @@ snapshots:
 
   yallist@4.0.0: {}
 
-  zod@4.3.6: {}
+  zod@4.3.6:
+    optional: true
