@@ -24,7 +24,10 @@ export function logResult(message: string) {
   if (!resultsEl) return;
   
   const timestamp = new Date().toLocaleTimeString();
-  resultsEl.innerHTML += `<div class="log-entry">[${timestamp}] ${message}</div>`;
+  const entry = document.createElement('div');
+  entry.className = 'log-entry';
+  entry.textContent = `[${timestamp}] ${message}`;
+  resultsEl.appendChild(entry);
   resultsEl.scrollTop = resultsEl.scrollHeight;
 }
 
