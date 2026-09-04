@@ -89,17 +89,3 @@ export type FieldInfo = {
  * All currently implemented provider names
  */
 export type AvailableProviders = 'openai' | 'ollama' | 'perplexity';
-
-/**
- * Outcome of a fill operation.
- *
- * `filled` lists the field identifiers that received a value, `skipped` the
- * ones the AI did not answer for, and `error` is set when the provider call or
- * the JSON parse failed. Both fill methods resolve with this instead of
- * swallowing failures in a console.error.
- */
-export interface FillResult {
-  filled: string[];
-  skipped: string[];
-  error?: Error;
-}

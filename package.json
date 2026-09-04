@@ -1,7 +1,7 @@
 {
   "name": "ai-form-fill",
   "description": "Framework-agnostic library for AI-powered form filling. Extract structured data from unstructured text and automatically fill forms using OpenAI, Ollama, or custom AI providers.",
-  "version": "0.1.0",
+  "version": "1.0.1",
   "keywords": [
     "ai",
     "form",
@@ -30,12 +30,12 @@
     "README.md",
     "LICENSE"
   ],
-  "types": "./dist/ai-form-input.d.ts",
+  "types": "./dist/ai-form-fill.d.ts",
   "main": "./dist/ai-form-fill.umd.cjs",
   "module": "./dist/ai-form-fill.js",
   "exports": {
     ".": {
-      "types": "./dist/ai-form-input.d.ts",
+      "types": "./dist/ai-form-fill.d.ts",
       "import": "./dist/ai-form-fill.js",
       "require": "./dist/ai-form-fill.umd.cjs"
     }

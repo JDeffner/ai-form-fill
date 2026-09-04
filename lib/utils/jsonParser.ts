@@ -2,8 +2,6 @@
  * Utility functions for parsing JSON responses from AI providers
  */
 
-import { affConfig } from '../core/config';
-
 /**
  * Parses JSON from AI responses, handling markdown code blocks and formatting issues.
  * Returns empty object if parsing fails.
@@ -13,12 +11,11 @@ export function parseJsonResponse(aiResponse: string): Record<string, string> {
     // Clean up the response
     let cleanedResponse = aiResponse.trim();
     
-    // Remove a surrounding markdown code fence, anchored so that backticks
-    // inside a value survive.
-    const fenced = cleanedResponse.match(/^```(?:json)?\s*\n?([\s\S]*?)\n?```$/);
-    if (fenced) {
-      cleanedResponse = fenced[1].trim();
-    }
+    // Remove markdown code blocks
+    cleanedResponse = cleanedResponse
+      .replace(/```json\n?/g, '')
+      .replace(/```\n?/g, '')
+      .trim();
     
     // Parse JSON
     const responseAsJson: JSON = JSON.parse(cleanedResponse);
@@ -26,19 +23,13 @@ export function parseJsonResponse(aiResponse: string): Record<string, string> {
     // Convert all values to strings
     const result: Record<string, string> = {};
     for (const [fieldName, fieldValue] of Object.entries(responseAsJson)) {
-      if (fieldValue === null || fieldValue === undefined) continue;
-      // Nested objects and arrays used to stringify to "[object Object]".
-      result[fieldName] = typeof fieldValue === 'object'
-        ? JSON.stringify(fieldValue)
-        : String(fieldValue);
+      result[fieldName] = String(fieldValue);
     }
     
     return result;
   } catch (error) {
-    if (affConfig.formFillDebug) {
-      console.error('Failed to parse JSON response:', error);
-      console.error('Response was:', aiResponse);
-    }
+    console.error('Failed to parse JSON response:', error);
+    console.error('Response was:', aiResponse);
     return {};
   }
 }

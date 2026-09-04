@@ -53,7 +53,7 @@ export function buildFieldPrompt(field: FieldInfo, context?: string): string {
   }
 
   if (field.type === 'checkbox') {
-    prompt += '\nDecide whether this checkbox should be checked. Return only "true" or "false", no explanations.';
+    prompt = `${context}\nRandomly return "true" or "false", no explanations. Dont repeat your choice too often.`;
   } else {
     prompt += '\nProvide a realistic and appropriate value for this field. Only return the value itself, no explanations.';
   }
@@ -139,7 +139,7 @@ export function buildParsePrompt(
 export const SYSTEM_PROMPTS = {
   FIELD_FILL: 'You are a helpful assistant that generates appropriate content for form fields. Provide only the value to fill in the field, without any explanation or additional text.',
   
-  PARSE_EXTRACT: 'You are a helpful assistant that extracts structured data from unstructured text. You must respond ONLY with valid JSON, no explanations or markdown code blocks. If its a checkbox field, return "true" if it should be checked, otherwise return "false" or omit the field. Omit any key you cannot fill from the text; never answer with a placeholder such as "none", "n/a" or "unknown".',
+  PARSE_EXTRACT: 'You are a helpful assistant that extracts structured data from unstructured text. You must respond ONLY with valid JSON, no explanations or markdown code blocks. If its a checkbox field, return "true" if it should be checked, otherwise return "false" or omit the field.',
 } as const;
 
 /**

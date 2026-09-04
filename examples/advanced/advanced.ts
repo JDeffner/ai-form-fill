@@ -21,7 +21,6 @@ let selectedElement: HTMLElement | null = null;
 /**
  * Provider Management
  */
-
 async function loadProviders() {
   const providerSelect = document.getElementById('providerSelect') as HTMLSelectElement;
   providerSelect.innerHTML = '';
