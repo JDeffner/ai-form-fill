@@ -7,11 +7,19 @@ import type {
   AIFormFillConfig,
   BuiltInProviderName,
   ExtractResult,
+  FieldInfo,
   FillResult,
 } from './types';
 import { AIProvider } from '../providers/provider';
-import { analyzeField, getFormFields } from '../form/analyze';
+import {
+  analyzeField,
+  getFormFields,
+  isFieldEmpty,
+  isFieldRequired,
+  readFieldValue,
+} from '../form/analyze';
 import { applyFieldValue } from '../form/apply';
+import { dispatchAFFEvent } from './events';
 import {
   buildFieldPrompt,
   buildExtractionPrompt,
@@ -37,6 +45,12 @@ export type AIFormFillOptions = AIFormFillConfig & OpenAICompatibleConfig;
 export type FillOptions = {
   /** Cancels the provider request when aborted. */
   signal?: AbortSignal;
+  /**
+   * Leave fields that already hold a value alone: they are excluded from the
+   * prompt and the schema, so the model never answers for them and they are
+   * never written. Defaults to `false`.
+   */
+  skipFilled?: boolean;
 };
 
 /**
@@ -96,11 +110,18 @@ export class AIFormFill {
     const content = response.content?.trim();
     if (!content) return null;
 
+    const previous = readFieldValue(element);
     const result = applyFieldValue(element, content);
     if (!result.applied) {
       this.log(`Value for "${fieldInfo.key}" not applied: ${result.reason}`, content);
       return null;
     }
+    dispatchAFFEvent(element, 'aff:field-filled', {
+      key: fieldInfo.key,
+      element,
+      value: result.value,
+      previous,
+    });
     this.log(`Field "${fieldInfo.key}" filled with:`, content);
     return { value: content };
   }
@@ -116,7 +137,7 @@ export class AIFormFill {
    *
    * @param formElement - The form whose fields define the extraction schema.
    * @param text - Source text (resume, email, description, ...).
-   * @param options - Optional abort signal.
+   * @param options - Optional abort signal and `skipFilled`.
    * @returns The extracted record, the fields it was built from, and the raw
    *   model output.
    * @throws ProviderError when the provider request fails.
@@ -127,10 +148,11 @@ export class AIFormFill {
     text: string,
     options?: FillOptions,
   ): Promise<ExtractResult> {
-    const allFields = getFormFields(formElement);
-    const fields = this.targetFields
-      ? allFields.filter((field) => this.targetFields!.includes(field.key))
-      : allFields;
+    const fields = getFormFields(formElement).filter((field) => {
+      if (this.targetFields && !this.targetFields.includes(field.key)) return false;
+      if (options?.skipFilled && !isFieldEmpty(field.element)) return false;
+      return true;
+    });
 
     const chatRequest: ChatRequest = {
       messages: [
@@ -157,11 +179,15 @@ export class AIFormFill {
   /**
    * Parse unstructured text and fill every matching field in the form.
    *
+   * Dispatches `aff:start` on the form before the request, `aff:field-filled`
+   * for every written field, `aff:done` at the end, and `aff:error` when the
+   * extraction fails (the error is rethrown afterwards).
+   *
    * @param formElement - The form to fill.
    * @param text - Source text (resume, email, description, ...).
-   * @param options - Optional abort signal.
-   * @returns Which fields were filled, which were skipped and why, plus the
-   *   raw model output.
+   * @param options - Optional abort signal and `skipFilled`.
+   * @returns Which fields were filled, which were skipped and why, which
+   *   required fields are still empty, plus the raw model output.
    * @throws ProviderError when the provider request fails.
    * @throws ResponseParseError when the model output is empty or not a JSON object.
    */
@@ -170,22 +196,81 @@ export class AIFormFill {
     text: string,
     options?: FillOptions,
   ): Promise<FillResult> {
-    const { data, fields, raw } = await this.extract(formElement, text, options);
+    dispatchAFFEvent(formElement, 'aff:start', { text });
 
-    const result: FillResult = { filled: [], skipped: [], unmatchedKeys: [], raw };
+    let extraction: ExtractResult;
+    try {
+      extraction = await this.extract(formElement, text, options);
+    } catch (error) {
+      dispatchAFFEvent(formElement, 'aff:error', { error });
+      throw error;
+    }
+
+    return this.applyExtraction(extraction.data, extraction.fields, {
+      raw: extraction.raw,
+      form: formElement,
+    });
+  }
+
+  /**
+   * Write an extraction to the form: the second half of {@link fillForm},
+   * callable on its own.
+   *
+   * This is the apply step of the review path. Hand it the (possibly edited)
+   * `data` and the `fields` from {@link extract} and it writes every matching
+   * value, dispatches `aff:field-filled` per field and `aff:done` at the end,
+   * and reports the outcome the same way `fillForm` does.
+   *
+   * @param data - Values keyed by {@link FieldInfo.key}.
+   * @param fields - The fields the values belong to, from {@link extract}.
+   * @param options - `raw` model output to carry into the result, and the
+   *   `form` to dispatch the events on (derived from the fields otherwise).
+   * @returns Which fields were filled, which were skipped and why, which keys
+   *   matched nothing, and which required fields are still empty.
+   */
+  applyExtraction(
+    data: Record<string, unknown>,
+    fields: FieldInfo[],
+    options?: { raw?: string; form?: HTMLFormElement },
+  ): FillResult {
+    const raw = options?.raw ?? '';
+    const form = options?.form ?? fields[0]?.element.closest('form') ?? undefined;
+    const result: FillResult = {
+      filled: [],
+      skipped: [],
+      unmatchedKeys: [],
+      missingRequired: [],
+      raw,
+    };
     const fieldKeys = new Set(fields.map((field) => field.key));
     result.unmatchedKeys = Object.keys(data).filter((key) => !fieldKeys.has(key));
 
     for (const field of fields) {
       if (!(field.key in data)) continue;
+      const previous = readFieldValue(field.element);
       const outcome = applyFieldValue(field.element, data[field.key]);
       if (outcome.applied) {
-        result.filled.push({ key: field.key, element: field.element, value: outcome.value });
+        const entry = {
+          key: field.key,
+          element: field.element,
+          value: outcome.value,
+          previous,
+        };
+        result.filled.push(entry);
+        dispatchAFFEvent(form ?? field.element, 'aff:field-filled', entry);
       } else {
         result.skipped.push({ key: field.key, reason: outcome.reason });
       }
     }
 
+    // Required fields are reported over the whole form, so a targeted fill
+    // still tells the caller what the user has to complete by hand.
+    const allFields = form ? getFormFields(form) : fields;
+    result.missingRequired = allFields
+      .filter((field) => isFieldRequired(field.element) && isFieldEmpty(field.element))
+      .map((field) => field.key);
+
+    if (form) dispatchAFFEvent(form, 'aff:done', result);
     this.log('Fill result:', result);
     return result;
   }

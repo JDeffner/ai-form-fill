@@ -45,6 +45,34 @@ export declare class AFFError extends Error {
 }
 
 /**
+ * The events the library dispatches, mapped to their `detail` payload.
+ *
+ * - `aff:start` — before the provider request, with the source text.
+ * - `aff:field-filled` — after a value was written to a field.
+ * - `aff:done` — after a fill finished, with the full {@link FillResult}.
+ * - `aff:error` — when extraction failed; the error is rethrown afterwards.
+ */
+export declare type AFFEventMap = {
+    'aff:start': {
+        text: string;
+    };
+    'aff:field-filled': {
+        /** The stable field key the value was extracted under. */
+        key: string;
+        /** The element that was written to. */
+        element: HTMLElement;
+        /** The value that was applied. */
+        value: string | string[];
+        /** The value the field held before the fill. */
+        previous: string | string[];
+    };
+    'aff:done': FillResult;
+    'aff:error': {
+        error: unknown;
+    };
+};
+
+/**
  * AI-powered form filling.
  *
  * - {@link fillForm}: extract structured data from unstructured text and fill
@@ -89,7 +117,7 @@ export declare class AIFormFill {
      *
      * @param formElement - The form whose fields define the extraction schema.
      * @param text - Source text (resume, email, description, ...).
-     * @param options - Optional abort signal.
+     * @param options - Optional abort signal and `skipFilled`.
      * @returns The extracted record, the fields it was built from, and the raw
      *   model output.
      * @throws ProviderError when the provider request fails.
@@ -99,15 +127,39 @@ export declare class AIFormFill {
     /**
      * Parse unstructured text and fill every matching field in the form.
      *
+     * Dispatches `aff:start` on the form before the request, `aff:field-filled`
+     * for every written field, `aff:done` at the end, and `aff:error` when the
+     * extraction fails (the error is rethrown afterwards).
+     *
      * @param formElement - The form to fill.
      * @param text - Source text (resume, email, description, ...).
-     * @param options - Optional abort signal.
-     * @returns Which fields were filled, which were skipped and why, plus the
-     *   raw model output.
+     * @param options - Optional abort signal and `skipFilled`.
+     * @returns Which fields were filled, which were skipped and why, which
+     *   required fields are still empty, plus the raw model output.
      * @throws ProviderError when the provider request fails.
      * @throws ResponseParseError when the model output is empty or not a JSON object.
      */
     fillForm(formElement: HTMLFormElement, text: string, options?: FillOptions): Promise<FillResult>;
+    /**
+     * Write an extraction to the form: the second half of {@link fillForm},
+     * callable on its own.
+     *
+     * This is the apply step of the review path. Hand it the (possibly edited)
+     * `data` and the `fields` from {@link extract} and it writes every matching
+     * value, dispatches `aff:field-filled` per field and `aff:done` at the end,
+     * and reports the outcome the same way `fillForm` does.
+     *
+     * @param data - Values keyed by {@link FieldInfo.key}.
+     * @param fields - The fields the values belong to, from {@link extract}.
+     * @param options - `raw` model output to carry into the result, and the
+     *   `form` to dispatch the events on (derived from the fields otherwise).
+     * @returns Which fields were filled, which were skipped and why, which keys
+     *   matched nothing, and which required fields are still empty.
+     */
+    applyExtraction(data: Record<string, unknown>, fields: FieldInfo[], options?: {
+        raw?: string;
+        form?: HTMLFormElement;
+    }): FillResult;
     /**
      * List the models offered by the current provider.
      * @throws ProviderError when the list cannot be fetched.
@@ -243,34 +295,6 @@ export declare type ApplyResult = {
 };
 
 /**
- * Wire up AI form filling for a page that follows the quick-start layout:
- *
- * - a `<form id="aff-form">` (id configurable) to fill,
- * - a `<textarea id="aff-text">` holding the source text,
- * - a button `#aff-text-button` that triggers the fill.
- *
- * The provider is read from the form's `data-aff-provider` attribute
- * (case-insensitive; defaults to `ollama`), the model from `data-aff-model`.
- *
- * @returns The created {@link AIFormFill} instance, or `null` (with a console
- *   warning, never an exception) when a required element is missing or the
- *   provider name is unknown.
- */
-export declare function autoInit(options?: AutoInitOptions): AIFormFill | null;
-
-/** Options for {@link autoInit}. */
-export declare type AutoInitOptions = {
-    /** Id of the form element to fill. Defaults to `aff-form`. */
-    formId?: string;
-    /** Provider to use; overrides the form's `data-aff-provider` attribute. */
-    provider?: BuiltInProviderName;
-    /** Model to use; overrides the form's `data-aff-model` attribute. */
-    model?: string;
-    /** Enable console logging. Defaults to `false`. */
-    debug?: boolean;
-};
-
-/**
  * Build a prompt that asks the AI to extract data from unstructured text and
  * map it onto the given form fields, returning a JSON object keyed by
  * {@link FieldInfo.key}.
@@ -336,6 +360,64 @@ export declare type ChatResponse = {
 };
 
 /**
+ * Wire a form, a text source and a trigger into one controller.
+ *
+ * @param options - Elements or selectors, provider configuration, and an
+ *   optional state callback.
+ * @returns The controller.
+ * @throws Error when the form, source or trigger cannot be resolved.
+ *
+ * @example
+ * ```typescript
+ * const controller = createFormFill({
+ *   form: '#contact',
+ *   source: '#notes',
+ *   trigger: '#fill',
+ *   onState: ({ state }) => (button.disabled = state === 'working'),
+ * });
+ * // later: controller.destroy();
+ * ```
+ */
+export declare function createFormFill(options: CreateFormFillOptions): FormFillController;
+
+/** Options for {@link createFormFill}. */
+export declare type CreateFormFillOptions = {
+    /** The form to fill: an element or a CSS selector. */
+    form: HTMLFormElement | string;
+    /**
+     * Where `fill()` reads the text when called without an argument: an element
+     * or a CSS selector.
+     */
+    source?: HTMLTextAreaElement | HTMLInputElement | string;
+    /** Element whose click triggers `fill()`: an element or a CSS selector. */
+    trigger?: HTMLElement | string;
+    /** Provider name or instance. Defaults to `ollama`. */
+    provider?: BuiltInProviderName | AIProvider;
+    /** Model to use. */
+    model?: string;
+    /** Base URL of the provider. */
+    baseUrl?: string;
+    /** Restrict filling to these field keys. */
+    targetFields?: string[];
+    /** Leave fields that already hold a value alone. Defaults to `false`. */
+    skipFilled?: boolean;
+    /** Enable console logging for this controller's instance. */
+    debug?: boolean;
+    /** Called with the new snapshot on every state change. */
+    onState?: (snapshot: FormFillSnapshot) => void;
+};
+
+/**
+ * Dispatch one of the library's {@link AFFEventMap} events on `target`.
+ *
+ * @param target - The element the event is dispatched on (the form, or the
+ *   filled field for single-field fills).
+ * @param type - The event name.
+ * @param detail - The payload, typed by the event name.
+ */
+export declare function dispatchAFFEvent<K extends keyof AFFEventMap>(target: EventTarget, type: K, detail: AFFEventMap[K]): void;
+
+/**
  * Outcome of a {@link AIFormFill.extract} call: what the model produced,
  * before anything is written to the form.
  */
@@ -385,17 +467,27 @@ export declare type FieldOption = {
 export declare type FillOptions = {
     /** Cancels the provider request when aborted. */
     signal?: AbortSignal;
+    /**
+     * Leave fields that already hold a value alone: they are excluded from the
+     * prompt and the schema, so the model never answers for them and they are
+     * never written. Defaults to `false`.
+     */
+    skipFilled?: boolean;
 };
 
 /**
  * Outcome of a {@link AIFormFill.fillForm} call.
  */
 export declare type FillResult = {
-    /** Fields that were written, with the value that was applied. */
+    /**
+     * Fields that were written, with the value that was applied and the value
+     * the field held before. `previous` is what `revertFill` restores.
+     */
     filled: Array<{
         key: string;
         element: HTMLElement;
         value: string | string[];
+        previous: string | string[];
     }>;
     /** Fields the model answered for but whose value could not be applied. */
     skipped: Array<{
@@ -404,9 +496,63 @@ export declare type FillResult = {
     }>;
     /** Keys in the model's response that match no form field. */
     unmatchedKeys: string[];
+    /**
+     * Keys of required fields that are still empty after the fill, computed
+     * over all fields of the form, not only the targeted ones. Use it to tell
+     * the user what is left to do.
+     */
+    missingRequired: string[];
     /** The raw model output, for debugging. */
     raw: string;
 };
+
+/** The object returned by {@link createFormFill}. */
+export declare type FormFillController = {
+    /**
+     * Fill the form from `text`, or from the configured source when omitted.
+     * Never rejects: failures land in the snapshot and resolve to `null`, and a
+     * cancelled fill resolves to `null` as well.
+     */
+    fill(text?: string): Promise<FillResult | null>;
+    /**
+     * Extract without writing to the form, for a review step. Rejects the same
+     * way `AIFormFill.extract` does and leaves the state untouched.
+     */
+    extract(text?: string): Promise<ExtractResult>;
+    /**
+     * Write a (possibly edited) extraction to the form, the second half of
+     * `fill()`. Dispatches the same events and reports the same
+     * {@link FillResult}, which becomes the snapshot's result so `undo()` works.
+     */
+    applyExtracted(data: Record<string, unknown>, fields: FieldInfo[]): FillResult;
+    /** Abort the in-flight request and go back to `idle`. */
+    cancel(): void;
+    /** Restore the values the last fill overwrote and clear the result. */
+    undo(): void;
+    /** Listen for state changes. Returns the unsubscribe function. */
+    subscribe(listener: (snapshot: FormFillSnapshot) => void): () => void;
+    /** The current snapshot. The reference is stable until the state changes. */
+    getSnapshot(): FormFillSnapshot;
+    /** Remove the trigger listener and abort in-flight work. */
+    destroy(): void;
+    /** The underlying {@link AIFormFill} instance. */
+    readonly instance: AIFormFill;
+};
+
+/** An immutable view of the controller's state. */
+export declare type FormFillSnapshot = {
+    state: FormFillState;
+    /** The result of the last successful fill, or `null`. */
+    result: FillResult | null;
+    /** The failure that put the controller in the `error` state, or `null`. */
+    error: unknown;
+};
+
+/**
+ * What the controller is doing: nothing yet (`idle`), waiting for the model
+ * (`working`), finished with a result (`done`), or failed (`error`).
+ */
+export declare type FormFillState = 'idle' | 'working' | 'done' | 'error';
 
 /**
  * Return every fillable field in a form, in DOM order.
@@ -564,6 +710,17 @@ export declare class ProviderError extends AFFError {
 export declare type ProviderType = 'local' | 'remote';
 
 /**
+ * Read the current value of a field, in the same shape the library writes it.
+ *
+ * - text-like inputs and `<textarea>`: the value,
+ * - `<select>`: the value, or the selected values when `multiple`,
+ * - radio: the checked value of its group, `''` when nothing is checked,
+ * - checkbox group: the checked values,
+ * - single checkbox: `'true'` or `'false'`.
+ */
+export declare function readFieldValue(element: HTMLElement): string | string[];
+
+/**
  * Perform an HTTP request and parse the JSON response.
  *
  * Failures are translated into {@link ProviderError}: HTTP error status
@@ -606,6 +763,22 @@ export declare class ResponseParseError extends AFFError {
 }
 
 /**
+ * Undo a fill: write every field in `result.filled` back to the value it held
+ * before, using the same native setters and `input`/`change` events as
+ * `applyFieldValue`, so frameworks observe the restore too.
+ *
+ * @param result - The {@link FillResult} returned by `fillForm`.
+ * @param keys - Restore only these field keys; omit to restore all of them.
+ *
+ * @example
+ * ```typescript
+ * const result = await aiForm.fillForm(form, text);
+ * revertFill(result); // back to the state before the fill
+ * ```
+ */
+export declare function revertFill(result: FillResult, keys?: string[]): void;
+
+/**
  * Why a field was skipped during {@link AIFormFill.fillForm}.
  */
 export declare type SkipReason = 
@@ -629,3 +802,12 @@ export declare const SYSTEM_PROMPTS: {
 };
 
 export { }
+
+declare global {
+  interface HTMLElementEventMap {
+    'aff:start': CustomEvent<AFFEventMap['aff:start']>;
+    'aff:field-filled': CustomEvent<AFFEventMap['aff:field-filled']>;
+    'aff:done': CustomEvent<AFFEventMap['aff:done']>;
+    'aff:error': CustomEvent<AFFEventMap['aff:error']>;
+  }
+}

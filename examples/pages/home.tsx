@@ -6,7 +6,7 @@ const CARDS = [
   {
     path: 'basic',
     title: 'Basic',
-    text: 'The one-line autoInit() setup. A contact form filled from a short introduction.',
+    text: 'The one-line createFormFill() setup. A contact form filled from a short introduction.',
   },
   {
     path: 'advanced',

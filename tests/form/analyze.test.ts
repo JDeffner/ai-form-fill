@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { analyzeField, getFormFields } from '../../lib/form/analyze';
+import { analyzeField, getFormFields, readFieldValue } from '../../lib/form/analyze';
 
 beforeEach(() => {
   document.body.innerHTML = '';
@@ -241,5 +241,61 @@ describe('getFormFields', () => {
     const keys = getFormFields(form).map((f) => f.key);
 
     expect(keys).toEqual(['first', 'choice', 'last']);
+  });
+});
+
+describe('readFieldValue', () => {
+  /** Build a form from `html` and return the named element. */
+  function field<T extends HTMLElement>(html: string, name: string): T {
+    const form = document.createElement('form');
+    form.innerHTML = html;
+    document.body.appendChild(form);
+    return form.querySelector<T>(`[name="${name}"]`)!;
+  }
+
+  it('reads text inputs and textareas', () => {
+    expect(readFieldValue(field(`<input type="text" name="a" value="Ada">`, 'a'))).toBe('Ada');
+    expect(readFieldValue(field(`<textarea name="b">bio</textarea>`, 'b'))).toBe('bio');
+    expect(readFieldValue(field(`<input type="email" name="c">`, 'c'))).toBe('');
+  });
+
+  it('reads a single select and a multiple select', () => {
+    const single = field(
+      `<select name="s"><option value="">-</option><option value="de" selected>DE</option></select>`,
+      's',
+    );
+    expect(readFieldValue(single)).toBe('de');
+
+    const multi = field(
+      `<select name="m" multiple>
+         <option value="de" selected>DE</option>
+         <option value="en">EN</option>
+         <option value="fr" selected>FR</option>
+       </select>`,
+      'm',
+    );
+    expect(readFieldValue(multi)).toEqual(['de', 'fr']);
+  });
+
+  it('reads the checked value of a radio group, or an empty string', () => {
+    const unchecked = `<input type="radio" name="g" value="a"><input type="radio" name="g" value="b">`;
+    expect(readFieldValue(field(unchecked, 'g'))).toBe('');
+
+    document.body.innerHTML = '';
+    const checked = `<input type="radio" name="g" value="a"><input type="radio" name="g" value="b" checked>`;
+    expect(readFieldValue(field(checked, 'g'))).toBe('b');
+  });
+
+  it('reads a checkbox group as the checked values and a single checkbox as a boolean', () => {
+    const group = `<input type="checkbox" name="t" value="music" checked>
+                   <input type="checkbox" name="t" value="tech">
+                   <input type="checkbox" name="t" value="sport" checked>`;
+    expect(readFieldValue(field(group, 't'))).toEqual(['music', 'sport']);
+
+    document.body.innerHTML = '';
+    expect(readFieldValue(field(`<input type="checkbox" name="n" checked>`, 'n'))).toBe('true');
+
+    document.body.innerHTML = '';
+    expect(readFieldValue(field(`<input type="checkbox" name="n">`, 'n'))).toBe('false');
   });
 });

@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Breaking
+
+- **`autoInit` is removed.** It only worked for one hard-coded page layout
+  (`#aff-form`, `#aff-text`, `#aff-text-button`) and returned `null` on a typo.
+  Use `createFormFill({ form, source, trigger })`, which takes elements or
+  selectors, has real teardown, and reports state. The `AutoInitOptions` type
+  and the `data-aff-provider` / `data-aff-model` attributes are gone with it.
+
 ### Added
 
 - **`AIFormFill.extract(form, text, opts?)`** returns the parsed model output
@@ -9,6 +17,33 @@
   can build a review-and-confirm step. `fillForm` is now implemented as
   `extract` plus the apply loop, so the two cannot drift apart. New exported
   type `ExtractResult`. Purely additive; no existing behaviour changes.
+- **Lifecycle events.** A fill dispatches `aff:start`, `aff:field-filled`,
+  `aff:done` and `aff:error` as bubbling, composed `CustomEvent`s on the form
+  (`fillField` dispatches `aff:field-filled` on the field it wrote). The names
+  are added to `HTMLElementEventMap`, so `event.detail` is typed. New exports
+  `dispatchAFFEvent` and the `AFFEventMap` type.
+- **`createFormFill(options)`**, a headless controller: it resolves the form,
+  the text source and the trigger from elements or selectors, exposes
+  `fill`, `extract`, `applyExtracted`, `cancel`, `undo`, `subscribe`,
+  `getSnapshot` and `destroy`, and tracks an `idle` / `working` / `done` /
+  `error` state. `getSnapshot` and `subscribe` follow the external-store
+  contract, so `useSyncExternalStore` can read them directly. New exported
+  types `FormFillController`, `CreateFormFillOptions`, `FormFillSnapshot`,
+  `FormFillState`.
+- **`FillResult` reports more.** Each `filled` entry carries `previous`, the
+  value the field held before the fill, and the result carries
+  `missingRequired`, the keys of required fields that are still empty after
+  the fill (computed over all fields of the form, not only the targeted ones).
+- **`revertFill(result, keys?)`** restores those previous values exactly,
+  including empty strings, unchecked radio groups and multi-selects, through
+  the same native setters and `input`/`change` events as `applyFieldValue`.
+- **`FillOptions.skipFilled`** excludes fields that already hold a value from
+  the prompt, the schema and the fill, for `extract` and `fillForm`.
+- **`AIFormFill.applyExtraction(data, fields, opts?)`**, the apply half of
+  `fillForm`, so a review step can write an edited extraction and still get a
+  full `FillResult` and the same events.
+- **`readFieldValue(element)`** reads a field's current value in the same
+  shape the library writes it.
 
 ### Changed
 
@@ -20,6 +55,12 @@
   the library fills native elements.
 - Removed the unused `mock/form.mock.ts` endpoints; moved the executed rework
   plan to `docs/REWORK-PLAN.md`.
+- The Basic and Voice demo pages create a controller in an effect and destroy
+  it on unmount; the fill flash listens for `aff:field-filled` instead of
+  guessing from untrusted `input` events.
+- `pnpm build` appends the `HTMLElementEventMap` augmentation to the rolled-up
+  `dist/ai-form-fill.d.ts` (`scripts/append-event-types.js`), because API
+  Extractor drops `declare global` blocks when it bundles declarations.
 
 ## 0.9.0 (2026-07-02)
 

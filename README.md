@@ -32,34 +32,58 @@ ollama pull gemma3:4b
 ### HTML
 
 ```html
-<form id="aff-form" data-aff-provider="ollama">
+<form id="contact">
   <input type="text" name="name" placeholder="Name" />
   <input type="email" name="email" placeholder="Email" />
   <input type="tel" name="phone" placeholder="Phone" />
 </form>
 
-<textarea id="aff-text" placeholder="Paste your text here..."></textarea>
-<button id="aff-text-button">Fill Form</button>
+<textarea id="notes" placeholder="Paste your text here..."></textarea>
+<button id="fill">Fill form</button>
 ```
 
-### JavaScript (one line)
+### JavaScript (one call)
 
 ```typescript
-import { autoInit } from 'ai-form-fill';
+import { createFormFill } from 'ai-form-fill';
 
-autoInit(); // that's it
+const controller = createFormFill({ form: '#contact', source: '#notes', trigger: '#fill' });
 ```
 
-`autoInit` returns the created `AIFormFill` instance (or `null` with a console
-warning when a required element is missing — it never throws).
+`createFormFill` takes elements or CSS selectors, wires a click on the trigger
+to a fill from the source text, and returns a headless controller: no markup,
+no styling, no framework. The provider defaults to local Ollama.
 
-| Element id        | Purpose                                                    |
-| ----------------- | ---------------------------------------------------------- |
-| `aff-form`        | The form to fill (configurable via `autoInit({ formId })`) |
-| `aff-text`        | Textarea holding the source text                           |
-| `aff-text-button` | Button that triggers the fill                              |
+| Controller member              | Description                                                                              |
+| ------------------------------ | ---------------------------------------------------------------------------------------- |
+| `fill(text?)`                  | Fill from `text` or from the source. Never rejects; resolves to a `FillResult` or `null` |
+| `extract(text?)`               | Extract without writing, for a review step                                               |
+| `applyExtracted(data, fields)` | Write a reviewed extraction to the form                                                  |
+| `cancel()`                     | Abort the running request, back to `idle`                                                |
+| `undo()`                       | Restore the values the last fill overwrote                                               |
+| `subscribe(fn)`                | Listen for state changes; returns the unsubscribe function                               |
+| `getSnapshot()`                | `{ state, result, error }`, stable reference until the state changes                     |
+| `destroy()`                    | Remove the trigger listener and abort running work                                       |
+| `instance`                     | The underlying `AIFormFill`                                                              |
 
-Attributes on the form: `data-aff-provider` (`ollama`, `openai`, `perplexity`, `openrouter` — case-insensitive, defaults to `ollama`) and optional `data-aff-model`.
+The state is `idle`, `working`, `done` or `error`. `getSnapshot` and
+`subscribe` follow the external-store contract, so React can read them with
+`useSyncExternalStore`; a plain page can use the `onState` callback instead:
+
+```typescript
+createFormFill({
+  form: '#contact',
+  source: '#notes',
+  trigger: '#fill',
+  onState: ({ state, result }) => {
+    button.disabled = state === 'working';
+    if (result) console.log(`Filled ${result.filled.length} field(s)`);
+  },
+});
+```
+
+Other options: `provider` (name or instance), `model`, `baseUrl`,
+`targetFields`, `skipFilled`, `debug`.
 
 ---
 
@@ -75,9 +99,10 @@ const text = 'My name is John Doe, email john@example.com, phone 555-1234';
 
 const result = await aiForm.fillForm(form, text);
 
-console.log(result.filled); //  [{ key: 'name', element, value: 'John Doe' }, ...]
+console.log(result.filled); //  [{ key: 'name', element, value: 'John Doe', previous: '' }, ...]
 console.log(result.skipped); //  [{ key: 'birthDate', reason: 'invalid-date-format' }, ...]
 console.log(result.unmatchedKeys); //  keys the model answered that match no field
+console.log(result.missingRequired); //  required fields that are still empty
 console.log(result.raw); //  raw model output, for debugging
 ```
 
@@ -106,24 +131,86 @@ throw — they land in `result.skipped` with a reason.
 
 `fillForm` writes straight to the form. When you want the user to confirm
 first, call `extract` instead: same request, same parsing, but nothing is
-written. Apply what they accept with the exported `applyFieldValue`.
+written. Write the reviewed data back with `applyExtraction`, the second half
+of `fillForm`, which returns the same `FillResult`.
 
 ```typescript
-import { AIFormFill, applyFieldValue } from 'ai-form-fill';
-
 const { data, fields } = await aiForm.extract(form, text);
 
 // data is keyed by field key: { firstName: 'John', email: 'john@example.com' }
-showReviewUI(data);
+const edited = await showReviewUI(data);
 
-// ...then apply only what the user accepted
-for (const field of fields) {
-  if (accepted.has(field.key)) applyFieldValue(field.element, data[field.key]);
+const result = aiForm.applyExtraction(edited, fields);
+```
+
+`fillForm` is exactly `extract` followed by `applyExtraction`, so the two never
+drift apart. The controller exposes the same pair as `extract()` and
+`applyExtracted()`. To write a single value yourself, use the exported
+`applyFieldValue(field.element, value)`.
+
+### Lifecycle events
+
+Every fill reports itself as DOM `CustomEvent`s on the form. They bubble and
+cross shadow boundaries, so one listener can serve a whole page.
+
+| Event              | `detail`                            | When                        |
+| ------------------ | ----------------------------------- | --------------------------- |
+| `aff:start`        | `{ text }`                          | Before the provider request |
+| `aff:field-filled` | `{ key, element, value, previous }` | After a field was written   |
+| `aff:done`         | The `FillResult`                    | After the fill finished     |
+| `aff:error`        | `{ error }`                         | Extraction failed           |
+
+```typescript
+form.addEventListener('aff:start', () => spinner.show());
+form.addEventListener('aff:field-filled', (event) => flash(event.detail.element));
+form.addEventListener('aff:done', (event) => {
+  spinner.hide();
+  console.log(`Filled ${event.detail.filled.length} field(s)`);
+});
+```
+
+The event names are added to `HTMLElementEventMap`, so `event.detail` is typed
+without a cast. `aff:error` fires before the error is rethrown, so
+`await fillForm(...)` still rejects as usual. `fillField` dispatches
+`aff:field-filled` on the field it wrote.
+
+### Undo a fill
+
+`FillResult.filled` records the value each field held before, so a fill can be
+taken back exactly, including empty strings and unchecked radio groups.
+
+```typescript
+import { revertFill } from 'ai-form-fill';
+
+const result = await aiForm.fillForm(form, text);
+revertFill(result); // everything back
+revertFill(result, ['email']); // or a single field
+```
+
+The controller wraps this as `controller.undo()`.
+
+### Required fields that are still empty
+
+`FillResult.missingRequired` lists the keys of required fields that hold no
+value after the fill, over all fields of the form and not only the ones that
+were filled. A radio or checkbox group counts as required when any member is
+required, and as empty when nothing in it is checked.
+
+```typescript
+if (result.missingRequired.length > 0) {
+  showHint(`Please complete: ${result.missingRequired.join(', ')}`);
 }
 ```
 
-`fillForm` is exactly `extract` followed by applying every value, so the two
-never drift apart.
+### Fill only the empty fields
+
+`skipFilled` leaves fields that already hold a value alone. They are dropped
+from the prompt and the schema, so the model never answers for them and they
+are never written, which also makes the request smaller.
+
+```typescript
+await aiForm.fillForm(form, text, { skipFilled: true });
+```
 
 ### Fill a single field
 
@@ -292,11 +379,18 @@ new AIFormFill(provider: BuiltInProviderName | AIProvider, options?: AIFormFillO
 | `setFields(keys)` / `getFields()`                       | Restrict which fields are filled                             |
 | `getAvailableModels()`                                  | Models offered by the provider                               |
 | `setSelectedModel(model, opts?)` / `getSelectedModel()` | Choose the model                                             |
+| `applyExtraction(data, fields, opts?)`                  | Write a reviewed extraction → `FillResult`                   |
 | `isProviderAvailable()`                                 | Reachability check (never throws)                            |
 
-### `autoInit(options?)`
+### `createFormFill(options)`
 
-One-line setup for the quick-start layout. `{ formId?, provider?, model?, debug? }` → `AIFormFill | null`.
+Headless controller around `AIFormFill`:
+`{ form, source?, trigger?, provider?, model?, baseUrl?, targetFields?, skipFilled?, debug?, onState? }`
+→ `FormFillController`. Throws when an element or selector does not resolve.
+
+### `revertFill(result, keys?)`
+
+Restore the values a `FillResult` overwrote, all of them or only `keys`.
 
 ### Providers
 
@@ -322,7 +416,7 @@ the bundle.
 
 | Page                                                    | Description                                                   |
 | ------------------------------------------------------- | ------------------------------------------------------------- |
-| [`pages/basic.tsx`](examples/pages/basic.tsx)           | One-line `autoInit()` setup                                   |
+| [`pages/basic.tsx`](examples/pages/basic.tsx)           | One-call `createFormFill()` setup                             |
 | [`pages/advanced.tsx`](examples/pages/advanced.tsx)     | Provider/model switching, single-field fill, `FillResult` log |
 | [`pages/voice.tsx`](examples/pages/voice.tsx)           | Web Speech API transcript into `fillForm`                     |
 | [`pages/controlled.tsx`](examples/pages/controlled.tsx) | Controlled React components receive AI-filled values          |

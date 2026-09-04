@@ -1,10 +1,9 @@
 /**
- * Basic demo: the one-line `autoInit()` setup. The page follows the
- * quick-start layout (`#aff-form`, `#aff-text`, `#aff-text-button`) and the
- * provider comes from `data-aff-provider` on the form.
+ * Basic demo: `createFormFill` wires the textarea, the button and the form
+ * together, and the effect destroys the controller on unmount.
  */
 import { useEffect } from 'react';
-import { autoInit } from '../../lib/index';
+import { createFormFill } from '../../lib/index';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -15,14 +14,20 @@ const SAMPLE = `Hi, my name is Jim Raynor. You can reach me at jim.dope@starcraf
 
 export function Basic() {
   useEffect(() => {
-    autoInit({ debug: true });
+    const controller = createFormFill({
+      form: '#aff-form',
+      source: '#aff-text',
+      trigger: '#aff-text-button',
+      debug: true,
+    });
+    return () => controller.destroy();
   }, []);
 
   return (
     <>
       <PageHeader title="One line to fill a form">
-        A single <code>autoInit()</code> call wires the textarea, the button and the form together.
-        Fills from the text on the left using local Ollama.
+        A single <code>createFormFill()</code> call wires the textarea, the button and the form
+        together. Fills from the text on the left using local Ollama.
       </PageHeader>
 
       <div className="grid gap-6 lg:grid-cols-[2fr_3fr]">
@@ -45,7 +50,6 @@ export function Basic() {
           <CardContent>
             <DemoForm
               id="aff-form"
-              data-aff-provider="ollama"
               onSubmit={(e) => {
                 e.preventDefault();
                 console.log('Form data:', readForm(e.currentTarget));

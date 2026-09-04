@@ -1,4 +1,4 @@
-const w = Object.freeze({
+const A = Object.freeze({
   /** Default request timeout in milliseconds. */
   timeout: 3e4,
   /** Ollama runs locally and is talked to directly. */
@@ -20,15 +20,15 @@ const w = Object.freeze({
     model: "openai/gpt-4o-mini"
   })
 });
-class I {
+class C {
   /** Whether the provider can enforce a JSON schema on its output. */
   supportsStructured = !1;
   selectedModel;
   baseUrl;
   timeout;
   fetchImpl;
-  constructor(e) {
-    this.baseUrl = (e?.baseUrl ?? "").replace(/\/+$/, ""), this.selectedModel = e?.model ?? "", this.timeout = e?.timeout ?? w.timeout, this.fetchImpl = e?.fetch;
+  constructor(t) {
+    this.baseUrl = (t?.baseUrl ?? "").replace(/\/+$/, ""), this.selectedModel = t?.model ?? "", this.timeout = t?.timeout ?? A.timeout, this.fetchImpl = t?.fetch;
   }
   /** The provider's identifier (e.g. `ollama`, `openrouter`). */
   getName() {
@@ -52,122 +52,152 @@ class I {
    * Pass `{ validate: false }` to set the model unvalidated (always `true`),
    * e.g. for providers whose model list endpoint is unavailable.
    */
-  async setSelectedModel(e, r) {
-    if (!e) return !1;
+  async setSelectedModel(t, r) {
+    if (!t) return !1;
     if (r?.validate === !1)
-      return this.selectedModel = e, !0;
-    let o;
+      return this.selectedModel = t, !0;
+    let n;
     try {
-      o = await this.listModels();
+      n = await this.listModels();
     } catch {
       return !1;
     }
-    return o.includes(e) ? (this.selectedModel = e, !0) : !1;
+    return n.includes(t) ? (this.selectedModel = t, !0) : !1;
   }
   /** Whether the provider supports structured (JSON schema) output. */
   supportsStructuredOutput() {
     return this.supportsStructured;
   }
 }
-function x(t) {
-  if (t.id) {
-    const r = document.querySelector(`label[for="${t.id}"]`);
+function $(e) {
+  if (e.id) {
+    const r = document.querySelector(`label[for="${e.id}"]`);
     if (r) return r.textContent?.trim() || "";
   }
-  const e = t.closest("label");
-  return e && e.textContent?.trim() || "";
+  const t = e.closest("label");
+  return t && t.textContent?.trim() || "";
 }
-function R(t) {
-  const e = t.getAttribute("aria-label")?.trim();
-  if (e) return e;
-  const r = t.getAttribute("aria-labelledby");
-  if (r) {
-    const a = r.split(/\s+/).map((i) => document.getElementById(i)?.textContent?.trim() ?? "").filter(Boolean).join(" ");
-    if (a) return a;
+function x(e) {
+  const t = e.closest("form");
+  return !t || !e.name ? [e] : Array.from(
+    t.querySelectorAll(
+      `input[type="${e.type}"][name="${e.name}"]`
+    )
+  );
+}
+function U(e) {
+  if (e instanceof HTMLSelectElement)
+    return e.multiple ? Array.from(e.selectedOptions, (t) => t.value) : e.value;
+  if (e instanceof HTMLTextAreaElement) return e.value;
+  if (e instanceof HTMLInputElement) {
+    if (e.type === "radio")
+      return x(e).find((t) => t.checked)?.value ?? "";
+    if (e.type === "checkbox") {
+      const t = x(e);
+      return t.length > 1 ? t.filter((r) => r.checked).map((r) => r.value || "on") : e.checked ? "true" : "false";
+    }
+    return e.value;
   }
-  const o = t.getAttribute("title")?.trim();
-  if (o) return o;
+  return "";
 }
-function D(t) {
-  return Array.from(t.options).filter((e) => e.value !== "").map((e) => ({
-    value: e.value,
-    label: e.textContent?.trim() || e.value
+function D(e) {
+  const t = U(e);
+  return Array.isArray(t) ? t.length === 0 : e instanceof HTMLInputElement && e.type === "checkbox" ? !e.checked : t === "";
+}
+function Q(e) {
+  return e instanceof HTMLInputElement ? e.type === "radio" || e.type === "checkbox" ? x(e).some((t) => t.required) : e.required : e instanceof HTMLTextAreaElement || e instanceof HTMLSelectElement ? e.required : !1;
+}
+function Z(e) {
+  const t = e.getAttribute("aria-label")?.trim();
+  if (t) return t;
+  const r = e.getAttribute("aria-labelledby");
+  if (r) {
+    const o = r.split(/\s+/).map((a) => document.getElementById(a)?.textContent?.trim() ?? "").filter(Boolean).join(" ");
+    if (o) return o;
+  }
+  const n = e.getAttribute("title")?.trim();
+  if (n) return n;
+}
+function ee(e) {
+  return Array.from(e.options).filter((t) => t.value !== "").map((t) => ({
+    value: t.value,
+    label: t.textContent?.trim() || t.value
   }));
 }
-function A(t) {
-  const e = { element: t, key: "", type: "text" };
-  if (t instanceof HTMLInputElement ? (e.type = t.type, e.name = t.name || void 0, e.placeholder = t.placeholder || void 0, e.pattern = t.pattern || void 0, t.type === "checkbox" && (e.placeholder = t.value || "checkbox option"), t.type === "radio" && (e.placeholder = t.value || "radio option")) : t instanceof HTMLTextAreaElement ? (e.type = "textarea", e.name = t.name || void 0, e.placeholder = t.placeholder || void 0) : t instanceof HTMLSelectElement && (e.type = "select", e.name = t.name || void 0, e.options = D(t), t.multiple && (e.multiple = !0)), t.id) {
-    const o = document.querySelector(`label[for="${t.id}"]`);
-    o && (e.label = o.textContent?.trim());
+function N(e) {
+  const t = { element: e, key: "", type: "text" };
+  if (e instanceof HTMLInputElement ? (t.type = e.type, t.name = e.name || void 0, t.placeholder = e.placeholder || void 0, t.pattern = e.pattern || void 0, e.type === "checkbox" && (t.placeholder = e.value || "checkbox option"), e.type === "radio" && (t.placeholder = e.value || "radio option")) : e instanceof HTMLTextAreaElement ? (t.type = "textarea", t.name = e.name || void 0, t.placeholder = e.placeholder || void 0) : e instanceof HTMLSelectElement && (t.type = "select", t.name = e.name || void 0, t.options = ee(e), e.multiple && (t.multiple = !0)), e.id) {
+    const n = document.querySelector(`label[for="${e.id}"]`);
+    n && (t.label = n.textContent?.trim());
   }
-  if (!e.label) {
-    const o = t.closest("label");
-    o && (e.label = o.textContent?.trim());
+  if (!t.label) {
+    const n = e.closest("label");
+    n && (t.label = n.textContent?.trim());
   }
-  e.label || (e.label = R(t));
-  const r = t.dataset.affHint;
-  return r && (e.hint = r), e.key = e.name || t.id || "field", e;
+  t.label || (t.label = Z(e));
+  const r = e.dataset.affHint;
+  return r && (t.hint = r), t.key = t.name || e.id || "field", t;
 }
-function _(t, e) {
-  t.hint = void 0;
-  for (const r of e) {
-    const o = r.dataset.affHint;
-    o && (t.hint = `${t.hint ?? ""} ${o}`.trim());
+function W(e, t) {
+  e.hint = void 0;
+  for (const r of t) {
+    const n = r.dataset.affHint;
+    n && (e.hint = `${e.hint ?? ""} ${n}`.trim());
   }
 }
-function V(t) {
-  const e = A(t[0]);
-  return e.options = t.map((r) => ({
+function te(e) {
+  const t = N(e[0]);
+  return t.options = e.map((r) => ({
     value: r.value,
-    label: x(r) || r.value
-  })), _(e, t), e;
+    label: $(r) || r.value
+  })), W(t, e), t;
 }
-function B(t) {
-  const e = A(t[0]);
-  return e.multiple = !0, e.placeholder = void 0, e.options = t.map((r) => ({
+function re(e) {
+  const t = N(e[0]);
+  return t.multiple = !0, t.placeholder = void 0, t.options = e.map((r) => ({
     value: r.value || "on",
-    label: x(r) || r.value || "on"
-  })), _(e, t), e;
+    label: $(r) || r.value || "on"
+  })), W(t, e), t;
 }
-function K(t) {
-  const e = /* @__PURE__ */ new Set();
-  t.forEach((r, o) => {
-    const a = r.name || r.element.id || `field_${o + 1}`;
-    let i = a, n = 2;
-    for (; e.has(i); )
-      i = `${a}_${n}`, n += 1;
-    e.add(i), r.key = i;
+function ne(e) {
+  const t = /* @__PURE__ */ new Set();
+  e.forEach((r, n) => {
+    const o = r.name || r.element.id || `field_${n + 1}`;
+    let a = o, i = 2;
+    for (; t.has(a); )
+      a = `${o}_${i}`, i += 1;
+    t.add(a), r.key = a;
   });
 }
-function z(t) {
-  const e = Array.from(
-    t.querySelectorAll(
+function V(e) {
+  const t = Array.from(
+    e.querySelectorAll(
       'input:not([type="submit"]):not([type="reset"]):not([type="button"]):not([type="hidden"]):not([type="image"]):not([type="file"]), textarea, select'
     )
-  ), r = /* @__PURE__ */ new Map(), o = /* @__PURE__ */ new Map();
-  for (const n of e) {
-    if (!(n instanceof HTMLInputElement) || !n.name) continue;
-    const s = n.type === "radio" ? r : n.type === "checkbox" ? o : void 0;
-    s && (s.has(n.name) || s.set(n.name, []), s.get(n.name).push(n));
+  ), r = /* @__PURE__ */ new Map(), n = /* @__PURE__ */ new Map();
+  for (const i of t) {
+    if (!(i instanceof HTMLInputElement) || !i.name) continue;
+    const s = i.type === "radio" ? r : i.type === "checkbox" ? n : void 0;
+    s && (s.has(i.name) || s.set(i.name, []), s.get(i.name).push(i));
   }
-  const a = [], i = /* @__PURE__ */ new Set();
-  for (const n of e)
-    if (n instanceof HTMLElement) {
-      if (n instanceof HTMLInputElement && n.type === "radio") {
-        if (!n.name || i.has(`radio:${n.name}`)) continue;
-        i.add(`radio:${n.name}`), a.push(V(r.get(n.name)));
+  const o = [], a = /* @__PURE__ */ new Set();
+  for (const i of t)
+    if (i instanceof HTMLElement) {
+      if (i instanceof HTMLInputElement && i.type === "radio") {
+        if (!i.name || a.has(`radio:${i.name}`)) continue;
+        a.add(`radio:${i.name}`), o.push(te(r.get(i.name)));
         continue;
       }
-      if (n instanceof HTMLInputElement && n.type === "checkbox" && n.name && o.get(n.name).length > 1) {
-        if (i.has(`checkbox:${n.name}`)) continue;
-        i.add(`checkbox:${n.name}`), a.push(B(o.get(n.name)));
+      if (i instanceof HTMLInputElement && i.type === "checkbox" && i.name && n.get(i.name).length > 1) {
+        if (a.has(`checkbox:${i.name}`)) continue;
+        a.add(`checkbox:${i.name}`), o.push(re(n.get(i.name)));
         continue;
       }
-      a.push(A(n));
+      o.push(N(i));
     }
-  return K(a), a;
+  return ne(o), o;
 }
-const J = [
+const oe = [
   "null",
   "",
   "n/a",
@@ -177,207 +207,202 @@ const J = [
   "undefined",
   "unknown",
   "missing"
-], G = ["true", "yes", "1", "checked", "on"], W = ["false", "no", "0", "unchecked", "off"], f = (t) => ({ applied: !0, value: t }), c = (t) => ({ applied: !1, reason: t });
-function m(t) {
-  t.dispatchEvent(new Event("input", { bubbles: !0 })), t.dispatchEvent(new Event("change", { bubbles: !0 }));
+], ae = ["true", "yes", "1", "checked", "on"], ie = ["false", "no", "0", "unchecked", "off"], g = (e) => ({ applied: !0, value: e }), u = (e) => ({ applied: !1, reason: e });
+function h(e) {
+  e.dispatchEvent(new Event("input", { bubbles: !0 })), e.dispatchEvent(new Event("change", { bubbles: !0 }));
 }
-function h(t) {
-  return t.trim().toLowerCase().replace(/\s+/g, " ");
+function w(e) {
+  return e.trim().toLowerCase().replace(/\s+/g, " ");
 }
-function y(t) {
-  return J.includes(
-    h(t)
+function k(e) {
+  return oe.includes(
+    w(e)
   );
 }
-function b(t) {
-  return typeof t == "string" ? t : typeof t == "number" || typeof t == "boolean" ? String(t) : null;
+function E(e) {
+  return typeof e == "string" ? e : typeof e == "number" || typeof e == "boolean" ? String(e) : null;
 }
-function L(t, e) {
-  const r = t instanceof HTMLInputElement ? HTMLInputElement.prototype : t instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLSelectElement.prototype, o = Object.getOwnPropertyDescriptor(r, "value");
-  o?.set ? o.set.call(t, e) : t.value = e;
+function S(e, t) {
+  const r = e instanceof HTMLInputElement ? HTMLInputElement.prototype : e instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLSelectElement.prototype, n = Object.getOwnPropertyDescriptor(r, "value");
+  n?.set ? n.set.call(e, t) : e.value = t;
 }
-function $(t, e) {
+function M(e, t) {
   const r = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "checked");
-  r?.set ? r.set.call(t, e) : t.checked = e;
+  r?.set ? r.set.call(e, t) : e.checked = t;
 }
-function S(t, e, r) {
-  if (t === e || t === r) return !0;
-  const o = h(t);
-  return o === h(e) || o === h(r);
+function Y(e, t, r) {
+  if (e === t || e === r) return !0;
+  const n = w(e);
+  return n === w(t) || n === w(r);
 }
-function C(t, e, r, o) {
-  const a = e.find((s) => r(s) === t);
+function q(e, t, r, n) {
+  const o = t.find((s) => r(s) === e);
+  if (o) return o;
+  const a = t.find((s) => n(s) === e);
   if (a) return a;
-  const i = e.find((s) => o(s) === t);
-  if (i) return i;
-  const n = h(t);
-  return e.find(
-    (s) => h(r(s)) === n || h(o(s)) === n
+  const i = w(e);
+  return t.find(
+    (s) => w(r(s)) === i || w(n(s)) === i
   );
 }
-const X = /^(\d{4})-(\d{2})-(\d{2})$/, Q = /^(\d{4})-(\d{2})-(\d{2})T([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/, Z = /^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/, q = /^\d{4}-(0[1-9]|1[0-2])$/, ee = /^\d{4}-W(0[1-9]|[1-4]\d|5[0-3])$/;
-function H(t, e, r) {
-  const o = new Date(t, e - 1, r);
-  return o.getFullYear() === t && o.getMonth() === e - 1 && o.getDate() === r;
+const se = /^(\d{4})-(\d{2})-(\d{2})$/, le = /^(\d{4})-(\d{2})-(\d{2})T([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/, ce = /^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/, ue = /^\d{4}-(0[1-9]|1[0-2])$/, de = /^\d{4}-W(0[1-9]|[1-4]\d|5[0-3])$/;
+function K(e, t, r) {
+  const n = new Date(e, t - 1, r);
+  return n.getFullYear() === e && n.getMonth() === t - 1 && n.getDate() === r;
 }
-function te(t, e) {
-  const r = t.trim();
-  switch (e) {
+function fe(e, t) {
+  const r = e.trim();
+  switch (t) {
     case "date": {
-      const o = X.exec(r);
-      return o && H(Number(o[1]), Number(o[2]), Number(o[3])) ? r : null;
+      const n = se.exec(r);
+      return n && K(Number(n[1]), Number(n[2]), Number(n[3])) ? r : null;
     }
     case "datetime-local": {
-      const o = Q.exec(r);
-      return o && H(Number(o[1]), Number(o[2]), Number(o[3])) ? r : null;
+      const n = le.exec(r);
+      return n && K(Number(n[1]), Number(n[2]), Number(n[3])) ? r : null;
     }
     case "time": {
-      const o = /^\d:/.test(r) ? `0${r}` : r;
-      return Z.test(o) ? o : null;
+      const n = /^\d:/.test(r) ? `0${r}` : r;
+      return ce.test(n) ? n : null;
     }
     case "month":
-      return q.test(r) ? r : null;
+      return ue.test(r) ? r : null;
     case "week":
-      return ee.test(r) ? r : null;
+      return de.test(r) ? r : null;
     default:
       return null;
   }
 }
-function P(t, e) {
-  const r = b(e);
-  return r === null ? c("unsupported-value") : y(r) ? c("empty-value") : (L(t, r), m(t), f(r));
+function z(e, t) {
+  const r = E(t);
+  return r === null ? u("unsupported-value") : k(r) ? u("empty-value") : (S(e, r), h(e), g(r));
 }
-function re(t, e) {
-  const r = b(e);
-  if (r === null) return c("unsupported-value");
-  if (y(r)) return c("empty-value");
-  const o = te(r, t.type);
-  return o === null ? c("invalid-date-format") : (L(t, o), m(t), f(o));
+function pe(e, t) {
+  const r = E(t);
+  if (r === null) return u("unsupported-value");
+  if (k(r)) return u("empty-value");
+  const n = fe(r, e.type);
+  return n === null ? u("invalid-date-format") : (S(e, n), h(e), g(n));
 }
-function oe(t) {
-  const e = t.closest("form");
-  return !e || !t.name ? [t] : Array.from(
-    e.querySelectorAll(`input[type="checkbox"][name="${t.name}"]`)
-  );
-}
-function ne(t, e) {
-  const r = oe(t);
-  if (r.length > 1 || Array.isArray(e)) {
-    const s = (Array.isArray(e) ? e : [e]).map(b).filter((l) => l !== null && !y(l));
-    if (s.length === 0) return c("empty-value");
-    const u = [];
+function he(e, t) {
+  const r = x(e);
+  if (r.length > 1 || Array.isArray(t)) {
+    const s = (Array.isArray(t) ? t : [t]).map(E).filter((l) => l !== null && !k(l));
+    if (s.length === 0) return u("empty-value");
+    const c = [];
     for (const l of r) {
-      const p = l.value || "on", k = x(l) || p, v = s.some(
-        (d) => S(d, p, k)
+      const m = l.value || "on", y = $(l) || m, b = s.some(
+        (d) => Y(d, m, y)
       );
-      v !== l.checked && ($(l, v), m(l)), v && u.push(p);
+      b !== l.checked && (M(l, b), h(l)), b && c.push(m);
     }
-    return u.length === 0 ? c("no-matching-option") : f(u);
+    return c.length === 0 ? u("no-matching-option") : g(c);
   }
-  if (typeof e == "boolean")
-    return $(t, e), m(t), f(String(e));
-  const o = b(e);
-  if (o === null) return c("unsupported-value");
-  if (o.trim() === "") return c("empty-value");
-  const a = h(o);
-  let i;
-  if (G.includes(a)) i = !0;
-  else if (W.includes(a)) i = !1;
-  else if (S(o, t.value || "on", x(t))) i = !0;
-  else return y(o) ? c("empty-value") : c("unsupported-value");
-  return $(t, i), m(t), f(String(i));
+  if (typeof t == "boolean")
+    return M(e, t), h(e), g(String(t));
+  const n = E(t);
+  if (n === null) return u("unsupported-value");
+  if (n.trim() === "") return u("empty-value");
+  const o = w(n);
+  let a;
+  if (ae.includes(o)) a = !0;
+  else if (ie.includes(o)) a = !1;
+  else if (Y(n, e.value || "on", $(e))) a = !0;
+  else return k(n) ? u("empty-value") : u("unsupported-value");
+  return M(e, a), h(e), g(String(a));
 }
-function ae(t, e) {
-  const r = b(e);
-  if (r === null) return c("unsupported-value");
-  if (y(r)) return c("empty-value");
-  const o = t.closest("form"), a = o && t.name ? Array.from(
-    o.querySelectorAll(`input[type="radio"][name="${t.name}"]`)
-  ) : [t], i = C(
+function me(e, t) {
+  const r = E(t);
+  if (r === null) return u("unsupported-value");
+  if (k(r)) return u("empty-value");
+  const n = x(e), o = q(
     r,
-    a,
-    (n) => n.value,
-    (n) => x(n) || n.value
+    n,
+    (a) => a.value,
+    (a) => $(a) || a.value
   );
-  return i ? ($(i, !0), m(i), f(i.value)) : c("no-matching-option");
+  return o ? (M(o, !0), h(o), g(o.value)) : u("no-matching-option");
 }
-function ie(t, e) {
-  if (t.multiple) return se(t, e);
-  const r = b(e);
-  if (r === null) return c("unsupported-value");
-  if (y(r)) return c("empty-value");
-  const o = Array.from(t.options).filter((i) => i.value !== ""), a = C(
+function ye(e, t) {
+  if (e.multiple) return be(e, t);
+  const r = E(t);
+  if (r === null) return u("unsupported-value");
+  if (k(r)) return u("empty-value");
+  const n = Array.from(e.options).filter((a) => a.value !== ""), o = q(
     r,
-    o,
-    (i) => i.value,
-    (i) => i.textContent?.trim() || i.value
+    n,
+    (a) => a.value,
+    (a) => a.textContent?.trim() || a.value
   );
-  return a ? (L(t, a.value), m(t), f(a.value)) : c("no-matching-option");
+  return o ? (S(e, o.value), h(e), g(o.value)) : u("no-matching-option");
 }
-function se(t, e) {
-  const o = (Array.isArray(e) ? e : [e]).map(b).filter((n) => n !== null && !y(n));
-  if (o.length === 0) return c("empty-value");
-  const a = Array.from(t.options).filter((n) => n.value !== ""), i = [];
-  for (const n of a) {
-    const s = n.textContent?.trim() || n.value, u = o.some((l) => S(l, n.value, s));
-    n.selected = u, u && i.push(n.value);
+function be(e, t) {
+  const n = (Array.isArray(t) ? t : [t]).map(E).filter((i) => i !== null && !k(i));
+  if (n.length === 0) return u("empty-value");
+  const o = Array.from(e.options).filter((i) => i.value !== ""), a = [];
+  for (const i of o) {
+    const s = i.textContent?.trim() || i.value, c = n.some((l) => Y(l, i.value, s));
+    i.selected = c, c && a.push(i.value);
   }
-  return i.length === 0 ? c("no-matching-option") : (m(t), f(i));
+  return a.length === 0 ? u("no-matching-option") : (h(e), g(a));
 }
-function U(t, e) {
-  if (e == null) return c("empty-value");
-  if (t instanceof HTMLInputElement)
-    switch (t.type) {
+function J(e, t) {
+  if (t == null) return u("empty-value");
+  if (e instanceof HTMLInputElement)
+    switch (e.type) {
       case "checkbox":
-        return ne(t, e);
+        return he(e, t);
       case "radio":
-        return ae(t, e);
+        return me(e, t);
       case "date":
       case "datetime-local":
       case "time":
       case "month":
       case "week":
-        return re(t, e);
+        return pe(e, t);
       default:
-        return P(t, e);
+        return z(e, t);
     }
-  return t instanceof HTMLTextAreaElement ? P(t, e) : t instanceof HTMLSelectElement ? ie(t, e) : c("unsupported-value");
+  return e instanceof HTMLTextAreaElement ? z(e, t) : e instanceof HTMLSelectElement ? ye(e, t) : u("unsupported-value");
 }
-function le(t, e) {
+function F(e, t, r) {
+  e.dispatchEvent(new CustomEvent(t, { detail: r, bubbles: !0, composed: !0 }));
+}
+function ve(e, t) {
   let r = `Generate appropriate content for the following form field:
 
 `;
-  return t.label && (r += `Field Label: ${t.label}
-`), t.name && (r += `Field Name: ${t.name}
-`), r += `Field Type: ${t.type}
-`, t.placeholder && (r += `Placeholder: ${t.placeholder}
-`), t.pattern && (r += `Pattern/Format: ${t.pattern}
-`), t.options?.length && (r += `Allowed values: ${t.options.map((o) => o.value).join(", ")}
-`), e && (r += `
-Additional Context: ${e}
-`), t.type === "checkbox" ? r += `
+  return e.label && (r += `Field Label: ${e.label}
+`), e.name && (r += `Field Name: ${e.name}
+`), r += `Field Type: ${e.type}
+`, e.placeholder && (r += `Placeholder: ${e.placeholder}
+`), e.pattern && (r += `Pattern/Format: ${e.pattern}
+`), e.options?.length && (r += `Allowed values: ${e.options.map((n) => n.value).join(", ")}
+`), t && (r += `
+Additional Context: ${t}
+`), e.type === "checkbox" ? r += `
 Return only "true" or "false" for this checkbox, no explanations.` : r += `
 Provide a realistic and appropriate value for this field. Only return the value itself, no explanations.`, r;
 }
-function ce(t) {
-  return ` - Allowed values: [${(t.options ?? []).map(
-    (o) => o.label && o.label !== o.value ? `"${o.value}" (${o.label})` : `"${o.value}"`
+function ge(e) {
+  return ` - Allowed values: [${(e.options ?? []).map(
+    (n) => n.label && n.label !== n.value ? `"${n.value}" (${n.label})` : `"${n.value}"`
   ).join(", ")}] (return the value exactly as written)`;
 }
-function ue(t, e) {
+function we(e, t) {
   let r = `Extract structured data from the following unstructured text and match it to the form fields.
 
 `;
   r += `Form fields:
 `;
-  for (const o of t) {
-    const a = o.multiple ? `${o.type}, multiple values allowed` : o.type;
-    r += `- ${o.key} (type: ${a})`, o.label && (r += ` - Label: "${o.label}"`), o.placeholder && (r += ` - Placeholder: "${o.placeholder}"`), o.options?.length && (r += ce(o)), o.type === "date" ? r += " - Format: YYYY-MM-DD" : o.type === "datetime-local" ? r += " - Format: YYYY-MM-DDTHH:MM" : o.type === "time" ? r += " - Format: HH:MM (24h)" : o.type === "month" ? r += " - Format: YYYY-MM" : o.type === "week" && (r += " - Format: YYYY-Www"), o.hint && (r += ` - Additional info: ${o.hint}`), r += `
+  for (const n of e) {
+    const o = n.multiple ? `${n.type}, multiple values allowed` : n.type;
+    r += `- ${n.key} (type: ${o})`, n.label && (r += ` - Label: "${n.label}"`), n.placeholder && (r += ` - Placeholder: "${n.placeholder}"`), n.options?.length && (r += ge(n)), n.type === "date" ? r += " - Format: YYYY-MM-DD" : n.type === "datetime-local" ? r += " - Format: YYYY-MM-DDTHH:MM" : n.type === "time" ? r += " - Format: HH:MM (24h)" : n.type === "month" ? r += " - Format: YYYY-MM" : n.type === "week" && (r += " - Format: YYYY-Www"), n.hint && (r += ` - Additional info: ${n.hint}`), r += `
 `;
   }
   return r += `
 Unstructured text:
-${e}
+${t}
 
 `, r += `Extract the relevant information and return it as a JSON object whose keys match the field keys exactly.
 Only include fields where you found relevant data.
@@ -388,33 +413,33 @@ Dates and times must use the stated ISO format.
 Return ONLY the JSON object, no explanations or markdown formatting.
 `, r;
 }
-const Y = {
+const B = {
   /** Single-field generation: return only the value. */
   FIELD_FILL: "You are a helpful assistant that generates appropriate content for form fields. Provide only the value to fill in the field, without any explanation or additional text.",
   /** Data extraction: return only valid JSON. */
   EXTRACT: "You are a helpful assistant that extracts structured data from unstructured text. You must respond ONLY with valid JSON, no explanations or markdown code blocks. If a field is a checkbox, return true if it should be checked, otherwise return false or omit the field."
 };
-function de(t) {
-  const e = {};
-  for (const r of t) {
-    const o = r.options?.map((i) => i.value) ?? [];
-    let a;
-    if (r.multiple && o.length > 0)
-      a = { type: "array", items: { type: "string", enum: o } };
-    else if (o.length > 0)
-      a = { type: "string", enum: o };
+function xe(e) {
+  const t = {};
+  for (const r of e) {
+    const n = r.options?.map((a) => a.value) ?? [];
+    let o;
+    if (r.multiple && n.length > 0)
+      o = { type: "array", items: { type: "string", enum: n } };
+    else if (n.length > 0)
+      o = { type: "string", enum: n };
     else
       switch (r.type) {
         case "number":
         case "range":
-          a = { type: "number" };
+          o = { type: "number" };
           break;
         case "boolean":
         case "checkbox":
-          a = { type: "boolean" };
+          o = { type: "boolean" };
           break;
         case "url":
-          a = { type: "string", format: "uri" };
+          o = { type: "string", format: "uri" };
           break;
         // Date/time fields use regex patterns matching exactly what the HTML
         // inputs accept. JSON-schema `format: 'time'`/`'date-time'` would be
@@ -423,141 +448,141 @@ function de(t) {
         // reject. `[0-9]` instead of `\d` because grammar-based enforcers
         // (llama.cpp) only support a regex subset.
         case "date":
-          a = { type: "string", format: "date" };
+          o = { type: "string", format: "date" };
           break;
         case "datetime-local":
-          a = {
+          o = {
             type: "string",
             pattern: "^[0-9]{4}-[0-9]{2}-[0-9]{2}T([01][0-9]|2[0-3]):[0-5][0-9]$"
           };
           break;
         case "time":
-          a = { type: "string", pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$" };
+          o = { type: "string", pattern: "^([01][0-9]|2[0-3]):[0-5][0-9]$" };
           break;
         case "month":
-          a = { type: "string", pattern: "^[0-9]{4}-(0[1-9]|1[0-2])$" };
+          o = { type: "string", pattern: "^[0-9]{4}-(0[1-9]|1[0-2])$" };
           break;
         case "week":
-          a = { type: "string", pattern: "^[0-9]{4}-W(0[1-9]|[1-4][0-9]|5[0-3])$" };
+          o = { type: "string", pattern: "^[0-9]{4}-W(0[1-9]|[1-4][0-9]|5[0-3])$" };
           break;
         default:
-          a = { type: "string" };
+          o = { type: "string" };
           break;
       }
-    r.pattern && (a.pattern = r.pattern), (r.placeholder || r.hint) && (a.description = [r.placeholder, r.hint].filter(Boolean).join(" - ")), e[r.key] = a;
+    r.pattern && (o.pattern = r.pattern), (r.placeholder || r.hint) && (o.description = [r.placeholder, r.hint].filter(Boolean).join(" - ")), t[r.key] = o;
   }
-  return { type: "object", properties: e, additionalProperties: !1 };
+  return { type: "object", properties: t, additionalProperties: !1 };
 }
-class T extends Error {
-  constructor(e, r) {
-    super(e, r), this.name = "AFFError";
+class I extends Error {
+  constructor(t, r) {
+    super(t, r), this.name = "AFFError";
   }
 }
-class g extends T {
+class T extends I {
   /** Name of the provider that failed (e.g. `ollama`, `openai`). */
   provider;
   /** HTTP status code, when the failure was an HTTP error response. */
   status;
-  constructor(e, r) {
-    super(e, { cause: r.cause }), this.name = "ProviderError", this.provider = r.provider, this.status = r.status;
+  constructor(t, r) {
+    super(t, { cause: r.cause }), this.name = "ProviderError", this.provider = r.provider, this.status = r.status;
   }
 }
-class F extends T {
+class j extends I {
   /** The unmodified model output that failed to parse. */
   raw;
-  constructor(e, r) {
-    super(e, { cause: r.cause }), this.name = "ResponseParseError", this.raw = r.raw;
+  constructor(t, r) {
+    super(t, { cause: r.cause }), this.name = "ResponseParseError", this.raw = r.raw;
   }
 }
-function pe(t) {
-  const e = t.trim().replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+function ke(e) {
+  const t = e.trim().replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
   let r;
   try {
-    r = JSON.parse(e);
-  } catch (o) {
-    throw new F("Model response is not valid JSON", {
-      raw: t,
-      cause: o
+    r = JSON.parse(t);
+  } catch (n) {
+    throw new j("Model response is not valid JSON", {
+      raw: e,
+      cause: n
     });
   }
   if (r === null || typeof r != "object" || Array.isArray(r))
-    throw new F("Model response is not a JSON object", { raw: t });
+    throw new j("Model response is not a JSON object", { raw: e });
   return r;
 }
-function ye(t) {
+function He(e) {
   try {
-    return JSON.parse(t), !0;
+    return JSON.parse(e), !0;
   } catch {
     return !1;
   }
 }
-async function M(t, e) {
-  const { method: r = "GET", body: o, headers: a, timeout: i, signal: n, provider: s, fetchImpl: u } = e, l = u ?? fetch, p = new AbortController(), k = setTimeout(() => p.abort(), i), v = () => p.abort(n?.reason);
-  if (n) {
-    if (n.aborted)
-      throw clearTimeout(k), n.reason ?? new DOMException("Aborted", "AbortError");
-    n.addEventListener("abort", v, { once: !0 });
+async function O(e, t) {
+  const { method: r = "GET", body: n, headers: o, timeout: a, signal: i, provider: s, fetchImpl: c } = t, l = c ?? fetch, m = new AbortController(), y = setTimeout(() => m.abort(), a), b = () => m.abort(i?.reason);
+  if (i) {
+    if (i.aborted)
+      throw clearTimeout(y), i.reason ?? new DOMException("Aborted", "AbortError");
+    i.addEventListener("abort", b, { once: !0 });
   }
   try {
-    const d = await l(t, {
+    const d = await l(e, {
       method: r,
       headers: {
-        ...o !== void 0 ? { "Content-Type": "application/json" } : {},
-        ...a
+        ...n !== void 0 ? { "Content-Type": "application/json" } : {},
+        ...o
       },
-      body: o !== void 0 ? JSON.stringify(o) : void 0,
-      signal: p.signal
+      body: n !== void 0 ? JSON.stringify(n) : void 0,
+      signal: m.signal
     });
     if (!d.ok)
-      throw new g(
-        `${s}: HTTP ${d.status} ${d.statusText} from ${t}`,
+      throw new T(
+        `${s}: HTTP ${d.status} ${d.statusText} from ${e}`,
         { provider: s, status: d.status }
       );
     try {
       return await d.json();
-    } catch (N) {
-      throw new g(`${s}: invalid JSON in response from ${t}`, {
+    } catch (L) {
+      throw new T(`${s}: invalid JSON in response from ${e}`, {
         provider: s,
-        cause: N
+        cause: L
       });
     }
   } catch (d) {
-    throw d instanceof g ? d : (typeof d == "object" && d !== null && "name" in d ? String(d.name) : "") === "AbortError" ? n?.aborted ? d : new g(`${s}: request timed out after ${i}ms`, {
+    throw d instanceof T ? d : (typeof d == "object" && d !== null && "name" in d ? String(d.name) : "") === "AbortError" ? i?.aborted ? d : new T(`${s}: request timed out after ${a}ms`, {
       provider: s,
       cause: d
-    }) : new g(`${s}: failed to connect to ${t}`, {
+    }) : new T(`${s}: failed to connect to ${e}`, {
       provider: s,
       cause: d
     });
   } finally {
-    clearTimeout(k), n?.removeEventListener("abort", v);
+    clearTimeout(y), i?.removeEventListener("abort", b);
   }
 }
-class fe extends I {
+class Ee extends C {
   providerName = "ollama";
   providerType = "local";
   supportsStructured = !0;
-  constructor(e) {
+  constructor(t) {
     super({
-      baseUrl: e?.baseUrl ?? w.ollama.baseUrl,
-      model: e?.model ?? w.ollama.model,
-      timeout: e?.timeout,
-      fetch: e?.fetch
+      baseUrl: t?.baseUrl ?? A.ollama.baseUrl,
+      model: t?.model ?? A.ollama.model,
+      timeout: t?.timeout,
+      fetch: t?.fetch
     });
   }
-  async chat(e) {
-    const r = await M(`${this.baseUrl}/api/chat`, {
+  async chat(t) {
+    const r = await O(`${this.baseUrl}/api/chat`, {
       method: "POST",
       body: {
-        model: e.model,
-        messages: e.messages,
+        model: t.model,
+        messages: t.messages,
         stream: !1,
         // Ollama takes a JSON schema in the top-level `format` field.
-        ...e.format ? { format: e.format } : {},
-        ...e.maxTokens ? { options: { num_predict: e.maxTokens } } : {}
+        ...t.format ? { format: t.format } : {},
+        ...t.maxTokens ? { options: { num_predict: t.maxTokens } } : {}
       },
       timeout: this.timeout,
-      signal: e.signal,
+      signal: t.signal,
       provider: this.providerName,
       fetchImpl: this.fetchImpl
     });
@@ -568,7 +593,7 @@ class fe extends I {
     };
   }
   async listModels() {
-    return ((await M(`${this.baseUrl}/api/tags`, {
+    return ((await O(`${this.baseUrl}/api/tags`, {
       timeout: this.timeout,
       provider: this.providerName,
       fetchImpl: this.fetchImpl
@@ -582,10 +607,10 @@ class fe extends I {
     }
   }
 }
-function me() {
+function Te() {
   return typeof window < "u" && typeof window.document < "u";
 }
-class he extends I {
+class Ae extends C {
   providerName;
   providerType = "remote";
   supportsStructured = !0;
@@ -596,23 +621,23 @@ class he extends I {
    *   name for a custom OpenAI-compatible service (requires `baseUrl`).
    * @param config - baseUrl / apiKey / model / timeout / headers overrides.
    */
-  constructor(e = "openai", r) {
-    const a = {
-      openai: w.openai,
-      perplexity: w.perplexity,
-      openrouter: w.openrouter
-    }[e], i = r?.baseUrl ?? a?.baseUrl;
-    if (!i)
-      throw new T(
-        `No baseUrl for provider "${e}". Non-preset providers require { baseUrl }.`
+  constructor(t = "openai", r) {
+    const o = {
+      openai: A.openai,
+      perplexity: A.perplexity,
+      openrouter: A.openrouter
+    }[t], a = r?.baseUrl ?? o?.baseUrl;
+    if (!a)
+      throw new I(
+        `No baseUrl for provider "${t}". Non-preset providers require { baseUrl }.`
       );
     if (super({
-      baseUrl: i,
-      model: r?.model ?? a?.model ?? "",
+      baseUrl: a,
+      model: r?.model ?? o?.model ?? "",
       timeout: r?.timeout,
       fetch: r?.fetch
-    }), this.providerName = e, r?.apiKey && me() && !r.allowApiKeyInBrowser)
-      throw new T(
+    }), this.providerName = t, r?.apiKey && Te() && !r.allowApiKeyInBrowser)
+      throw new I(
         "Refusing to use an API key in the browser: it would be visible to anyone. Point baseUrl at a server-side proxy instead, or pass allowApiKeyInBrowser: true for local prototyping only."
       );
     this.apiKey = r?.apiKey, this.extraHeaders = r?.headers;
@@ -623,36 +648,36 @@ class he extends I {
       ...this.extraHeaders
     };
   }
-  async chat(e) {
+  async chat(t) {
     const r = {
-      model: e.model,
-      messages: e.messages
+      model: t.model,
+      messages: t.messages
     };
-    e.maxTokens !== void 0 && (r.max_tokens = e.maxTokens), e.format && (r.response_format = {
+    t.maxTokens !== void 0 && (r.max_tokens = t.maxTokens), t.format && (r.response_format = {
       type: "json_schema",
-      json_schema: { name: "form_fields", schema: e.format }
+      json_schema: { name: "form_fields", schema: t.format }
     });
-    const o = await M(`${this.baseUrl}/chat/completions`, {
+    const n = await O(`${this.baseUrl}/chat/completions`, {
       method: "POST",
       body: r,
       headers: this.buildHeaders(),
       timeout: this.timeout,
-      signal: e.signal,
+      signal: t.signal,
       provider: this.providerName,
       fetchImpl: this.fetchImpl
-    }), a = o.choices?.[0];
-    if (!a)
-      throw new g(`${this.providerName}: response contained no choices`, {
+    }), o = n.choices?.[0];
+    if (!o)
+      throw new T(`${this.providerName}: response contained no choices`, {
         provider: this.providerName
       });
     return {
-      content: a.message?.content ?? null,
-      model: o.model,
-      finishReason: a.finish_reason
+      content: o.message?.content ?? null,
+      model: n.model,
+      finishReason: o.finish_reason
     };
   }
   async listModels() {
-    return ((await M(`${this.baseUrl}/models`, {
+    return ((await O(`${this.baseUrl}/models`, {
       headers: this.buildHeaders(),
       timeout: this.timeout,
       provider: this.providerName,
@@ -667,7 +692,7 @@ class he extends I {
     }
   }
 }
-class O {
+class R {
   provider;
   targetFields;
   debug;
@@ -675,11 +700,11 @@ class O {
    * @param provider - A built-in provider name or a custom {@link AIProvider}.
    * @param options - Field targeting, debug, and provider configuration.
    */
-  constructor(e, r) {
-    this.debug = r?.debug ?? !1, this.provider = e instanceof I ? e : O.createProvider(e, r), this.targetFields = r?.targetFields;
+  constructor(t, r) {
+    this.debug = r?.debug ?? !1, this.provider = t instanceof C ? t : R.createProvider(t, r), this.targetFields = r?.targetFields;
   }
-  log(...e) {
-    this.debug && console.log("[ai-form-fill]", ...e);
+  log(...t) {
+    this.debug && console.log("[ai-form-fill]", ...t);
   }
   /**
    * Generate and apply content for a single field, inferred from its label,
@@ -690,20 +715,25 @@ class O {
    * @returns The applied value, or `null` when the model produced no usable value.
    * @throws ProviderError when the provider request fails.
    */
-  async fillField(e, r) {
-    const o = A(e);
-    this.log(`Filling ${o.type} field "${o.key}"`);
-    const i = (await this.provider.chat({
+  async fillField(t, r) {
+    const n = N(t);
+    this.log(`Filling ${n.type} field "${n.key}"`);
+    const a = (await this.provider.chat({
       messages: [
-        { role: "system", content: Y.FIELD_FILL },
-        { role: "user", content: le(o) }
+        { role: "system", content: B.FIELD_FILL },
+        { role: "user", content: ve(n) }
       ],
       model: this.provider.getSelectedModel(),
       signal: r?.signal
     })).content?.trim();
-    if (!i) return null;
-    const n = U(e, i);
-    return n.applied ? (this.log(`Field "${o.key}" filled with:`, i), { value: i }) : (this.log(`Value for "${o.key}" not applied: ${n.reason}`, i), null);
+    if (!a) return null;
+    const i = U(t), s = J(t, a);
+    return s.applied ? (F(t, "aff:field-filled", {
+      key: n.key,
+      element: t,
+      value: s.value,
+      previous: i
+    }), this.log(`Field "${n.key}" filled with:`, a), { value: a }) : (this.log(`Value for "${n.key}" not applied: ${s.reason}`, a), null);
   }
   /**
    * Parse unstructured text into field values **without touching the form**.
@@ -716,48 +746,97 @@ class O {
    *
    * @param formElement - The form whose fields define the extraction schema.
    * @param text - Source text (resume, email, description, ...).
-   * @param options - Optional abort signal.
+   * @param options - Optional abort signal and `skipFilled`.
    * @returns The extracted record, the fields it was built from, and the raw
    *   model output.
    * @throws ProviderError when the provider request fails.
    * @throws ResponseParseError when the model output is empty or not a JSON object.
    */
-  async extract(e, r, o) {
-    const a = z(e), i = this.targetFields ? a.filter((p) => this.targetFields.includes(p.key)) : a, n = {
+  async extract(t, r, n) {
+    const o = V(t).filter((l) => !(this.targetFields && !this.targetFields.includes(l.key) || n?.skipFilled && !D(l.element))), a = {
       messages: [
-        { role: "system", content: Y.EXTRACT },
-        { role: "user", content: ue(i, r) }
+        { role: "system", content: B.EXTRACT },
+        { role: "user", content: we(o, r) }
       ],
       model: this.provider.getSelectedModel(),
-      signal: o?.signal
+      signal: n?.signal
     };
-    this.provider.supportsStructuredOutput() && (n.format = de(i));
-    const u = (await this.provider.chat(n)).content ?? "";
-    if (!u.trim())
-      throw new F("Provider returned an empty response", { raw: u });
-    const l = pe(u);
-    return this.log("Extracted data:", l), { data: l, fields: i, raw: u };
+    this.provider.supportsStructuredOutput() && (a.format = xe(o));
+    const s = (await this.provider.chat(a)).content ?? "";
+    if (!s.trim())
+      throw new j("Provider returned an empty response", { raw: s });
+    const c = ke(s);
+    return this.log("Extracted data:", c), { data: c, fields: o, raw: s };
   }
   /**
    * Parse unstructured text and fill every matching field in the form.
    *
+   * Dispatches `aff:start` on the form before the request, `aff:field-filled`
+   * for every written field, `aff:done` at the end, and `aff:error` when the
+   * extraction fails (the error is rethrown afterwards).
+   *
    * @param formElement - The form to fill.
    * @param text - Source text (resume, email, description, ...).
-   * @param options - Optional abort signal.
-   * @returns Which fields were filled, which were skipped and why, plus the
-   *   raw model output.
+   * @param options - Optional abort signal and `skipFilled`.
+   * @returns Which fields were filled, which were skipped and why, which
+   *   required fields are still empty, plus the raw model output.
    * @throws ProviderError when the provider request fails.
    * @throws ResponseParseError when the model output is empty or not a JSON object.
    */
-  async fillForm(e, r, o) {
-    const { data: a, fields: i, raw: n } = await this.extract(e, r, o), s = { filled: [], skipped: [], unmatchedKeys: [], raw: n }, u = new Set(i.map((l) => l.key));
-    s.unmatchedKeys = Object.keys(a).filter((l) => !u.has(l));
-    for (const l of i) {
-      if (!(l.key in a)) continue;
-      const p = U(l.element, a[l.key]);
-      p.applied ? s.filled.push({ key: l.key, element: l.element, value: p.value }) : s.skipped.push({ key: l.key, reason: p.reason });
+  async fillForm(t, r, n) {
+    F(t, "aff:start", { text: r });
+    let o;
+    try {
+      o = await this.extract(t, r, n);
+    } catch (a) {
+      throw F(t, "aff:error", { error: a }), a;
     }
-    return this.log("Fill result:", s), s;
+    return this.applyExtraction(o.data, o.fields, {
+      raw: o.raw,
+      form: t
+    });
+  }
+  /**
+   * Write an extraction to the form: the second half of {@link fillForm},
+   * callable on its own.
+   *
+   * This is the apply step of the review path. Hand it the (possibly edited)
+   * `data` and the `fields` from {@link extract} and it writes every matching
+   * value, dispatches `aff:field-filled` per field and `aff:done` at the end,
+   * and reports the outcome the same way `fillForm` does.
+   *
+   * @param data - Values keyed by {@link FieldInfo.key}.
+   * @param fields - The fields the values belong to, from {@link extract}.
+   * @param options - `raw` model output to carry into the result, and the
+   *   `form` to dispatch the events on (derived from the fields otherwise).
+   * @returns Which fields were filled, which were skipped and why, which keys
+   *   matched nothing, and which required fields are still empty.
+   */
+  applyExtraction(t, r, n) {
+    const o = n?.raw ?? "", a = n?.form ?? r[0]?.element.closest("form") ?? void 0, i = {
+      filled: [],
+      skipped: [],
+      unmatchedKeys: [],
+      missingRequired: [],
+      raw: o
+    }, s = new Set(r.map((l) => l.key));
+    i.unmatchedKeys = Object.keys(t).filter((l) => !s.has(l));
+    for (const l of r) {
+      if (!(l.key in t)) continue;
+      const m = U(l.element), y = J(l.element, t[l.key]);
+      if (y.applied) {
+        const b = {
+          key: l.key,
+          element: l.element,
+          value: y.value,
+          previous: m
+        };
+        i.filled.push(b), F(a ?? l.element, "aff:field-filled", b);
+      } else
+        i.skipped.push({ key: l.key, reason: y.reason });
+    }
+    const c = a ? V(a) : r;
+    return i.missingRequired = c.filter((l) => Q(l.element) && D(l.element)).map((l) => l.key), a && F(a, "aff:done", i), this.log("Fill result:", i), i;
   }
   /**
    * List the models offered by the current provider.
@@ -770,16 +849,16 @@ class O {
    * Select the model to use. Validated against the provider's model list by
    * default; see {@link AIProvider.setSelectedModel}.
    */
-  setSelectedModel(e, r) {
-    return this.provider.setSelectedModel(e, r);
+  setSelectedModel(t, r) {
+    return this.provider.setSelectedModel(t, r);
   }
   /** The currently selected model. */
   getSelectedModel() {
     return this.provider.getSelectedModel();
   }
   /** Restrict filling to these field keys, or pass `undefined` to fill all. */
-  setFields(e) {
-    this.targetFields = e;
+  setFields(t) {
+    this.targetFields = t;
   }
   /** The field keys currently targeted, or `undefined` if all are targeted. */
   getFields() {
@@ -790,74 +869,175 @@ class O {
     return this.provider.isAvailable();
   }
   /** Swap the active provider. */
-  setProvider(e) {
-    this.provider = e;
+  setProvider(t) {
+    this.provider = t;
   }
   /** The active provider. */
   getProvider() {
     return this.provider;
   }
   /** Build a built-in provider from its name. */
-  static createProvider(e, r) {
-    return e === "ollama" ? new fe({
+  static createProvider(t, r) {
+    return t === "ollama" ? new Ee({
       baseUrl: r?.baseUrl,
       model: r?.model,
       timeout: r?.timeout,
       fetch: r?.fetch
-    }) : new he(e, r);
+    }) : new Ae(t, r);
   }
 }
-const j = [
-  "ollama",
-  "openai",
-  "perplexity",
-  "openrouter"
-];
-function E(t) {
-  return console.warn(`[ai-form-fill] autoInit: ${t}`), null;
+function G(e, t) {
+  for (const r of e) {
+    const n = t.includes(r.value || "on");
+    n !== r.checked && (M(r, n), h(r));
+  }
 }
-function be(t = {}) {
-  const e = t.formId ?? "aff-form", r = document.getElementById(e);
-  if (!(r instanceof HTMLFormElement))
-    return E(`no <form id="${e}"> found.`);
-  const o = document.getElementById("aff-text");
-  if (!(o instanceof HTMLTextAreaElement))
-    return E('no <textarea id="aff-text"> found.');
-  const a = document.getElementById("aff-text-button");
-  if (!a)
-    return E('no fill trigger with id "aff-text-button" found.');
-  const i = r.dataset.affProvider?.trim().toLowerCase(), n = t.provider ?? (i || "ollama");
-  if (!j.includes(n))
-    return E(`unknown provider "${n}". Available: ${j.join(", ")}.`);
-  const s = t.model ?? r.dataset.affModel?.trim(), u = new O(n, {
-    debug: t.debug ?? !1,
-    ...s ? { model: s } : {}
-  });
-  return a.addEventListener("click", () => {
-    const l = o.value.trim();
-    u.fillForm(r, l).catch((p) => {
-      console.error("[ai-form-fill] fillForm failed:", p);
-    });
-  }), u;
+function Me(e, t) {
+  if (e instanceof HTMLSelectElement) {
+    if (e.multiple) {
+      const r = Array.isArray(t) ? t : [t];
+      for (const n of e.options) n.selected = r.includes(n.value);
+      h(e);
+      return;
+    }
+    S(e, Array.isArray(t) ? t[0] ?? "" : t), h(e);
+    return;
+  }
+  if (e instanceof HTMLInputElement) {
+    if (e.type === "radio") {
+      const r = Array.isArray(t) ? t[0] ?? "" : t;
+      G(x(e), r === "" ? [] : [r]);
+      return;
+    }
+    if (e.type === "checkbox") {
+      const r = x(e);
+      if (r.length > 1 || Array.isArray(t)) {
+        G(r, Array.isArray(t) ? t : [t]);
+        return;
+      }
+      M(e, t === "true"), h(e);
+      return;
+    }
+  }
+  (e instanceof HTMLInputElement || e instanceof HTMLTextAreaElement) && (S(e, Array.isArray(t) ? t.join(", ") : t), h(e));
+}
+function Fe(e, t) {
+  for (const r of e.filled)
+    t && !t.includes(r.key) || Me(r.element, r.previous);
+}
+function P(e, t, r, n) {
+  const o = typeof e == "string" ? document.querySelector(e) : e;
+  if (!t(o)) {
+    const a = typeof e == "string" ? `selector "${e}"` : "element";
+    throw new Error(`createFormFill: the ${r} ${a} is not ${n}.`);
+  }
+  return o;
+}
+const $e = (e) => e instanceof HTMLFormElement, Se = (e) => e instanceof HTMLTextAreaElement || e instanceof HTMLInputElement, Le = (e) => e instanceof HTMLElement;
+function Ie(e) {
+  const t = P(e.form, $e, "form", "a <form> element"), r = e.source ? P(e.source, Se, "source", "an <input> or <textarea>") : void 0, n = e.trigger ? P(e.trigger, Le, "trigger", "an element") : void 0, o = new R(e.provider ?? "ollama", {
+    model: e.model,
+    baseUrl: e.baseUrl,
+    targetFields: e.targetFields,
+    debug: e.debug
+  }), a = /* @__PURE__ */ new Set();
+  let i = { state: "idle", result: null, error: null }, s = null;
+  function c(f) {
+    i = f, e.onState?.(i);
+    for (const p of a) p(i);
+  }
+  function l(f) {
+    const p = f ?? r?.value;
+    return p === void 0 ? new Error("fill() was called without text and no source element is configured.") : p.trim() ? p : new Error("The source text is empty.");
+  }
+  function m() {
+    s?.abort();
+    const f = new AbortController();
+    return s = f, f;
+  }
+  async function y(f) {
+    const p = l(f);
+    if (p instanceof Error)
+      return c({ state: "error", result: null, error: p }), null;
+    const v = m();
+    c({ state: "working", result: null, error: null });
+    try {
+      const H = await o.fillForm(t, p, {
+        signal: v.signal,
+        skipFilled: e.skipFilled
+      });
+      return v.signal.aborted ? null : (c({ state: "done", result: H, error: null }), H);
+    } catch (H) {
+      return v.signal.aborted || c({ state: "error", result: null, error: H }), null;
+    } finally {
+      s === v && (s = null);
+    }
+  }
+  async function b(f) {
+    const p = l(f);
+    if (p instanceof Error) throw p;
+    const v = m();
+    try {
+      return await o.extract(t, p, {
+        signal: v.signal,
+        skipFilled: e.skipFilled
+      });
+    } finally {
+      s === v && (s = null);
+    }
+  }
+  function d(f, p) {
+    const v = o.applyExtraction(f, p, { form: t });
+    return c({ state: "done", result: v, error: null }), v;
+  }
+  function L() {
+    s && (s.abort(), s = null, c({ state: "idle", result: null, error: null }));
+  }
+  function X() {
+    i.result && (Fe(i.result), c({ state: "idle", result: null, error: null }));
+  }
+  const _ = (f) => {
+    f.preventDefault(), y();
+  };
+  return n?.addEventListener("click", _), {
+    fill: y,
+    extract: b,
+    applyExtracted: d,
+    cancel: L,
+    undo: X,
+    subscribe(f) {
+      return a.add(f), () => {
+        a.delete(f);
+      };
+    },
+    getSnapshot: () => i,
+    destroy() {
+      n?.removeEventListener("click", _), s?.abort(), s = null, a.clear();
+    },
+    instance: o
+  };
 }
 export {
-  T as AFFError,
-  w as AFF_DEFAULTS,
-  O as AIFormFill,
-  I as AIProvider,
-  fe as OllamaProvider,
-  he as OpenAICompatibleProvider,
-  g as ProviderError,
-  F as ResponseParseError,
-  Y as SYSTEM_PROMPTS,
-  A as analyzeField,
-  U as applyFieldValue,
-  be as autoInit,
-  ue as buildExtractionPrompt,
-  le as buildFieldPrompt,
-  de as buildFormSchema,
-  z as getFormFields,
-  ye as isValidJson,
-  pe as parseModelResponse,
-  M as requestJson
+  I as AFFError,
+  A as AFF_DEFAULTS,
+  R as AIFormFill,
+  C as AIProvider,
+  Ee as OllamaProvider,
+  Ae as OpenAICompatibleProvider,
+  T as ProviderError,
+  j as ResponseParseError,
+  B as SYSTEM_PROMPTS,
+  N as analyzeField,
+  J as applyFieldValue,
+  we as buildExtractionPrompt,
+  ve as buildFieldPrompt,
+  xe as buildFormSchema,
+  Ie as createFormFill,
+  F as dispatchAFFEvent,
+  V as getFormFields,
+  He as isValidJson,
+  ke as parseModelResponse,
+  U as readFieldValue,
+  O as requestJson,
+  Fe as revertFill
 };
