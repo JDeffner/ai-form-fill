@@ -23,31 +23,47 @@ raw model output
       │  lib/prompt/parse-response.ts   parseModelResponse()
       ▼
 Record<string, unknown>  throws ResponseParseError on garbage
-      │  lib/core/ai-form-fill.ts       fillForm() loop, keyed by field.key
+      │  lib/core/ai-form-fill.ts       applyExtraction() loop, by field.key
       ▼
 lib/form/apply.ts        applyFieldValue(): per-type coercion, exact option
       │                  matching, strict ISO date validation, native
       ▼                  prototype setters + input/change events
-FillResult               { filled, skipped(+reason), unmatchedKeys, raw }
+FillResult               { filled(+previous), skipped(+reason),
+                         unmatchedKeys, missingRequired, raw }
 ```
 
 `extract()` is the same flow stopped one step early, at
-`Record<string, unknown>`: everything above the `fillForm()` loop, nothing
-below it. `fillForm()` is literally `extract()` plus the apply loop, so the two
-cannot drift. Callers that need a review step use `extract()` and then call
-`applyFieldValue` themselves.
+`Record<string, unknown>`: everything above the apply loop, nothing below it.
+The loop itself is `applyExtraction(data, fields)`, and `fillForm()` is
+literally `extract()` followed by that call, so the two cannot drift. A review
+step calls the two halves separately, with the user's edits in between.
 
 `fillField` is the single-field variant of the same flow: `analyzeField` →
 `buildFieldPrompt` → `chat` → `applyFieldValue`.
 
+Every step reports itself as a bubbling `CustomEvent` on the form
+(`lib/core/events.ts`): `aff:start` before the request, `aff:field-filled`
+per written field, `aff:done` with the `FillResult`, `aff:error` when the
+extraction throws. Nothing in the library listens to them; they exist so a UI
+does not have to wrap the calls.
+
+`lib/form/revert.ts` runs the flow backwards: `revertFill(result)` writes each
+`filled` entry's `previous` value back through the same setters and events.
+
+`lib/core/controller.ts` sits on top of all of it. `createFormFill()` resolves
+a form, a text source and a trigger, owns one `AIFormFill`, and turns the
+promise into an observable `idle` / `working` / `done` / `error` snapshot with
+`cancel` and `undo`. It adds no DOM of its own, so UI layers (a web component,
+a React hook) build on the snapshot instead of on the promise.
+
 ## Domains
 
-| Directory        | Responsibility                                                            |
-| ---------------- | ------------------------------------------------------------------------- |
-| `lib/core/`      | Public class, autoInit, types, typed errors, frozen defaults              |
-| `lib/form/`      | DOM work: reading fields (`analyze.ts`), writing values (`apply.ts`)      |
-| `lib/prompt/`    | LLM-facing text/schema (`build.ts`), output parsing (`parse-response.ts`) |
-| `lib/providers/` | Transport: base class, Ollama, OpenAI-compatible, shared HTTP helper      |
+| Directory        | Responsibility                                                             |
+| ---------------- | -------------------------------------------------------------------------- |
+| `lib/core/`      | Public class, controller, events, types, typed errors, defaults            |
+| `lib/form/`      | DOM work: reading (`analyze.ts`), writing (`apply.ts`), undo (`revert.ts`) |
+| `lib/prompt/`    | LLM-facing text/schema (`build.ts`), output parsing (`parse-response.ts`)  |
+| `lib/providers/` | Transport: base class, Ollama, OpenAI-compatible, shared HTTP helper       |
 
 ## Key invariants
 

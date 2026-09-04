@@ -3,7 +3,7 @@ import { App } from './app';
 import './styles.css';
 import './fill-flash';
 
-// No <StrictMode>: it mounts effects twice in dev, and `autoInit()` (used by
-// the Basic and Voice pages) has no teardown, so the fill button would be
-// wired twice.
+// No <StrictMode>: the pages now create their controllers in an effect and
+// destroy them in the cleanup, so double mounting would be safe, but the
+// duplicated dev-only debug logs make the demos harder to follow.
 createRoot(document.getElementById('root')!).render(<App />);

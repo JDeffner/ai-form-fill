@@ -110,12 +110,26 @@ export type ExtractResult = {
  * Outcome of a {@link AIFormFill.fillForm} call.
  */
 export type FillResult = {
-  /** Fields that were written, with the value that was applied. */
-  filled: Array<{ key: string; element: HTMLElement; value: string | string[] }>;
+  /**
+   * Fields that were written, with the value that was applied and the value
+   * the field held before. `previous` is what `revertFill` restores.
+   */
+  filled: Array<{
+    key: string;
+    element: HTMLElement;
+    value: string | string[];
+    previous: string | string[];
+  }>;
   /** Fields the model answered for but whose value could not be applied. */
   skipped: Array<{ key: string; reason: SkipReason }>;
   /** Keys in the model's response that match no form field. */
   unmatchedKeys: string[];
+  /**
+   * Keys of required fields that are still empty after the fill, computed
+   * over all fields of the form, not only the targeted ones. Use it to tell
+   * the user what is left to do.
+   */
+  missingRequired: string[];
   /** The raw model output, for debugging. */
   raw: string;
 };

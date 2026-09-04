@@ -1,11 +1,11 @@
 /**
  * Voice demo: the Web Speech API turns speech into text, the text goes into
- * the same `fillForm` call as typed input (here via `autoInit`). The library
+ * the same fill call as typed input (here via `createFormFill`). The library
  * core stays text-in only.
  */
 import { useEffect, useRef, useState } from 'react';
 import { Mic, Square } from 'lucide-react';
-import { autoInit } from '../../lib/index';
+import { createFormFill } from '../../lib/index';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -43,7 +43,13 @@ export function Voice() {
   const recognition = useRef<SpeechRecognitionLike | null>(null);
 
   useEffect(() => {
-    autoInit({ debug: true });
+    const controller = createFormFill({
+      form: '#aff-form',
+      source: '#aff-text',
+      trigger: '#aff-text-button',
+      debug: true,
+    });
+    return () => controller.destroy();
   }, []);
 
   const toggle = () => {
@@ -109,11 +115,7 @@ export function Voice() {
             <CardTitle>Form</CardTitle>
           </CardHeader>
           <CardContent>
-            <DemoForm
-              id="aff-form"
-              data-aff-provider="ollama"
-              onSubmit={(e) => e.preventDefault()}
-            />
+            <DemoForm id="aff-form" onSubmit={(e) => e.preventDefault()} />
           </CardContent>
         </Card>
       </div>

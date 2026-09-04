@@ -17,6 +17,80 @@ export function getInputLabel(input: HTMLInputElement): string {
   return parentLabel ? parentLabel.textContent?.trim() || '' : '';
 }
 
+/**
+ * All inputs of the same type sharing `element`'s name inside its form — the
+ * radio or checkbox group it belongs to. Falls back to `[element]` when the
+ * input has no form or no name and therefore forms no group.
+ */
+export function getInputGroup(element: HTMLInputElement): HTMLInputElement[] {
+  const form = element.closest('form');
+  if (!form || !element.name) return [element];
+  return Array.from(
+    form.querySelectorAll<HTMLInputElement>(
+      `input[type="${element.type}"][name="${element.name}"]`,
+    ),
+  );
+}
+
+/**
+ * Read the current value of a field, in the same shape the library writes it.
+ *
+ * - text-like inputs and `<textarea>`: the value,
+ * - `<select>`: the value, or the selected values when `multiple`,
+ * - radio: the checked value of its group, `''` when nothing is checked,
+ * - checkbox group: the checked values,
+ * - single checkbox: `'true'` or `'false'`.
+ */
+export function readFieldValue(element: HTMLElement): string | string[] {
+  if (element instanceof HTMLSelectElement) {
+    if (element.multiple) return Array.from(element.selectedOptions, (option) => option.value);
+    return element.value;
+  }
+  if (element instanceof HTMLTextAreaElement) return element.value;
+  if (element instanceof HTMLInputElement) {
+    if (element.type === 'radio') {
+      return getInputGroup(element).find((radio) => radio.checked)?.value ?? '';
+    }
+    if (element.type === 'checkbox') {
+      const group = getInputGroup(element);
+      if (group.length > 1) {
+        return group.filter((box) => box.checked).map((box) => box.value || 'on');
+      }
+      return element.checked ? 'true' : 'false';
+    }
+    return element.value;
+  }
+  return '';
+}
+
+/**
+ * Whether a field holds no value: an empty string, no selected option, an
+ * unchecked radio group, or an unchecked checkbox (single or group).
+ */
+export function isFieldEmpty(element: HTMLElement): boolean {
+  const value = readFieldValue(element);
+  if (Array.isArray(value)) return value.length === 0;
+  if (element instanceof HTMLInputElement && element.type === 'checkbox') return !element.checked;
+  return value === '';
+}
+
+/**
+ * Whether a field is required. A radio or checkbox group counts as required
+ * when any member carries the `required` attribute.
+ */
+export function isFieldRequired(element: HTMLElement): boolean {
+  if (element instanceof HTMLInputElement) {
+    if (element.type === 'radio' || element.type === 'checkbox') {
+      return getInputGroup(element).some((input) => input.required);
+    }
+    return element.required;
+  }
+  if (element instanceof HTMLTextAreaElement || element instanceof HTMLSelectElement) {
+    return element.required;
+  }
+  return false;
+}
+
 /** Resolve `aria-label`, `aria-labelledby` (references joined) or `title`. */
 function getAccessibleLabel(element: HTMLElement): string | undefined {
   const ariaLabel = element.getAttribute('aria-label')?.trim();

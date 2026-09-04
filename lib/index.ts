@@ -5,7 +5,14 @@
 
 // Core
 export { AIFormFill, type AIFormFillOptions, type FillOptions } from './core/ai-form-fill';
-export { autoInit, type AutoInitOptions } from './core/auto-init';
+export {
+  createFormFill,
+  type CreateFormFillOptions,
+  type FormFillController,
+  type FormFillSnapshot,
+  type FormFillState,
+} from './core/controller';
+export { dispatchAFFEvent, type AFFEventMap } from './core/events';
 export { AFF_DEFAULTS } from './core/defaults';
 export { AFFError, ProviderError, ResponseParseError } from './core/errors';
 export type {
@@ -33,8 +40,9 @@ export {
 export { requestJson, type RequestJsonOptions } from './providers/http';
 
 // Form engine
-export { analyzeField, getFormFields } from './form/analyze';
+export { analyzeField, getFormFields, readFieldValue } from './form/analyze';
 export { applyFieldValue, type ApplyResult } from './form/apply';
+export { revertFill } from './form/revert';
 
 // Prompt & schema building, response parsing
 export {

@@ -8,7 +8,7 @@
  */
 
 import type { SkipReason } from '../core/types';
-import { getInputLabel } from './analyze';
+import { getInputGroup, getInputLabel } from './analyze';
 
 /** Outcome of {@link applyFieldValue}. */
 export type ApplyResult =
@@ -35,7 +35,7 @@ const applied = (value: string | string[]): ApplyResult => ({ applied: true, val
 const skipped = (reason: SkipReason): ApplyResult => ({ applied: false, reason });
 
 /** Dispatch input and change events so framework reactivity picks up the value. */
-function dispatchFieldEvents(element: HTMLElement): void {
+export function dispatchFieldEvents(element: HTMLElement): void {
   element.dispatchEvent(new Event('input', { bubbles: true }));
   element.dispatchEvent(new Event('change', { bubbles: true }));
 }
@@ -62,7 +62,7 @@ function coerceScalar(value: unknown): string | null {
  * Set `value` through the native prototype setter so React's value tracker
  * (which shadows the property on the instance) sees the change.
  */
-function setNativeValue(
+export function setNativeValue(
   element: HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement,
   value: string,
 ): void {
@@ -81,7 +81,7 @@ function setNativeValue(
 }
 
 /** Same as {@link setNativeValue}, for the `checked` property. */
-function setNativeChecked(element: HTMLInputElement, checked: boolean): void {
+export function setNativeChecked(element: HTMLInputElement, checked: boolean): void {
   const descriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'checked');
   if (descriptor?.set) {
     descriptor.set.call(element, checked);
@@ -185,17 +185,8 @@ function applyDateLike(element: HTMLInputElement, value: unknown): ApplyResult {
   return applied(validated);
 }
 
-/** All checkboxes belonging to the same group as `element` (same form+name). */
-function getCheckboxGroup(element: HTMLInputElement): HTMLInputElement[] {
-  const form = element.closest('form');
-  if (!form || !element.name) return [element];
-  return Array.from(
-    form.querySelectorAll<HTMLInputElement>(`input[type="checkbox"][name="${element.name}"]`),
-  );
-}
-
 function applyCheckbox(element: HTMLInputElement, value: unknown): ApplyResult {
-  const group = getCheckboxGroup(element);
+  const group = getInputGroup(element);
 
   // Multi-option group: the value is a list of option values/labels to check.
   if (group.length > 1 || Array.isArray(value)) {
@@ -249,13 +240,7 @@ function applyRadio(element: HTMLInputElement, value: unknown): ApplyResult {
   if (text === null) return skipped('unsupported-value');
   if (isEmptyText(text)) return skipped('empty-value');
 
-  const form = element.closest('form');
-  const radios =
-    form && element.name
-      ? Array.from(
-          form.querySelectorAll<HTMLInputElement>(`input[type="radio"][name="${element.name}"]`),
-        )
-      : [element];
+  const radios = getInputGroup(element);
 
   const match = findOption(
     text,

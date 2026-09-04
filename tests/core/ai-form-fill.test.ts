@@ -223,6 +223,167 @@ describe('AIFormFill', () => {
     });
   });
 
+  describe('FillResult.previous', () => {
+    it('records the value each field held before the fill', async () => {
+      const mockProvider = new MockAIProvider(
+        JSON.stringify({
+          name: 'Grace',
+          country: 'us',
+          gender: 'female',
+          tags: ['tech'],
+        }),
+      );
+
+      const form = document.createElement('form');
+      form.innerHTML = `
+        <input type="text" name="name" value="Ada">
+        <select name="country">
+          <option value="de" selected>Germany</option>
+          <option value="us">USA</option>
+        </select>
+        <input type="radio" name="gender" value="male" checked>
+        <input type="radio" name="gender" value="female">
+        <input type="checkbox" name="tags" value="music" checked>
+        <input type="checkbox" name="tags" value="tech">
+      `;
+      document.body.appendChild(form);
+
+      const result = await new AIFormFill(mockProvider).fillForm(form, 'text');
+
+      const previous = Object.fromEntries(result.filled.map((f) => [f.key, f.previous]));
+      expect(previous).toEqual({
+        name: 'Ada',
+        country: 'de',
+        gender: 'male',
+        tags: ['music'],
+      });
+    });
+  });
+
+  describe('FillResult.missingRequired', () => {
+    it('lists required fields that are still empty, and nothing else', async () => {
+      const mockProvider = new MockAIProvider(JSON.stringify({ name: 'Grace' }));
+
+      const form = document.createElement('form');
+      form.innerHTML = `
+        <input type="text" name="name" required>
+        <input type="text" name="street" required>
+        <input type="radio" name="gender" value="male" required>
+        <input type="radio" name="gender" value="female">
+        <select name="country" required>
+          <option value="">Select...</option>
+          <option value="de">Germany</option>
+        </select>
+        <input type="text" name="nickname">
+      `;
+      document.body.appendChild(form);
+
+      const result = await new AIFormFill(mockProvider).fillForm(form, 'text');
+
+      // `name` was filled, so it is satisfied; `nickname` is not required.
+      expect(result.missingRequired).toEqual(['street', 'gender', 'country']);
+    });
+
+    it('covers fields outside targetFields', async () => {
+      const mockProvider = new MockAIProvider(JSON.stringify({ name: 'Grace' }));
+
+      const form = document.createElement('form');
+      form.innerHTML = `
+        <input type="text" name="name" required>
+        <input type="text" name="street" required>
+      `;
+      document.body.appendChild(form);
+
+      const result = await new AIFormFill(mockProvider, { targetFields: ['name'] }).fillForm(
+        form,
+        'text',
+      );
+
+      expect(result.missingRequired).toEqual(['street']);
+    });
+  });
+
+  describe('skipFilled', () => {
+    it('leaves fields that already hold a value out of the prompt, schema and fill', async () => {
+      const mockProvider = new MockAIProvider(
+        JSON.stringify({ name: 'Grace', email: 'grace@example.com' }),
+      );
+
+      const form = document.createElement('form');
+      form.innerHTML = `
+        <input type="text" name="name" value="Ada">
+        <input type="email" name="email">
+      `;
+      document.body.appendChild(form);
+
+      const result = await new AIFormFill(mockProvider).fillForm(form, 'text', {
+        skipFilled: true,
+      });
+
+      expect(form.querySelector<HTMLInputElement>('[name="name"]')?.value).toBe('Ada');
+      expect(form.querySelector<HTMLInputElement>('[name="email"]')?.value).toBe(
+        'grace@example.com',
+      );
+      expect(result.filled.map((f) => f.key)).toEqual(['email']);
+      expect(result.unmatchedKeys).toEqual(['name']);
+
+      const prompt = mockProvider.lastRequest?.messages.at(-1)?.content ?? '';
+      expect(prompt).toContain('- email (');
+      expect(prompt).not.toContain('- name (');
+      const schema = mockProvider.lastRequest?.format as { properties: Record<string, unknown> };
+      expect(Object.keys(schema.properties)).toEqual(['email']);
+    });
+
+    it('treats an unchecked checkbox and an empty select as empty', async () => {
+      const mockProvider = new MockAIProvider(JSON.stringify({}));
+
+      const form = document.createElement('form');
+      form.innerHTML = `
+        <input type="checkbox" name="newsletter">
+        <input type="checkbox" name="terms" checked>
+        <select name="country">
+          <option value="">Select...</option>
+          <option value="de">Germany</option>
+        </select>
+      `;
+      document.body.appendChild(form);
+
+      const result = await new AIFormFill(mockProvider).extract(form, 'text', { skipFilled: true });
+
+      expect(result.fields.map((f) => f.key)).toEqual(['newsletter', 'country']);
+    });
+  });
+
+  describe('applyExtraction', () => {
+    it('writes an edited extraction and reports it like fillForm', async () => {
+      const mockProvider = new MockAIProvider(JSON.stringify({ name: 'Grace' }));
+
+      const form = document.createElement('form');
+      form.innerHTML = `
+        <input type="text" name="name">
+        <input type="text" name="street" required>
+      `;
+      document.body.appendChild(form);
+
+      const aiFormFill = new AIFormFill(mockProvider);
+      const { data, fields } = await aiFormFill.extract(form, 'text');
+      expect(form.querySelector<HTMLInputElement>('[name="name"]')?.value).toBe('');
+
+      const result = aiFormFill.applyExtraction({ ...data, name: 'Ada' }, fields);
+
+      expect(form.querySelector<HTMLInputElement>('[name="name"]')?.value).toBe('Ada');
+      expect(result.filled).toEqual([
+        {
+          key: 'name',
+          element: form.querySelector('[name="name"]'),
+          value: 'Ada',
+          previous: '',
+        },
+      ]);
+      expect(result.missingRequired).toEqual(['street']);
+    });
+  });
+
   describe('extract', () => {
     it('returns the extracted data without writing to the form', async () => {
       const mockProvider = new MockAIProvider(
