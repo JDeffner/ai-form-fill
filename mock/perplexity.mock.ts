@@ -1,42 +1,23 @@
-import { defineMock } from 'vite-plugin-mock-dev-server'
-import OpenAI from 'openai';
+/**
+ * Dev proxy for Perplexity: plain passthrough of the standard OpenAI wire
+ * format, injecting the API key server-side. Point the provider at
+ * `baseUrl: '/api/perplexity'`.
+ *
+ * Perplexity has no `GET /models` endpoint, so the proxy answers the models
+ * route with a static list.
+ */
 
-export default defineMock([
-  {
-    url: '/api/perplexity/chat',
-    method: ['POST'],
-    async body(request) {
-      const requestBody = request.body;
+import process from 'node:process';
+import { defineMock } from 'vite-plugin-mock-dev-server';
+import { createOpenAIProxyMocks } from './openai-proxy';
 
-      const endpointObject = new OpenAI({
-      apiKey: import.meta.env.VITE_PERPLEXITY_KEY, // Keep your API key secure!
-      baseURL: 'https://api.perplexity.ai',
-      });
-
-      return await endpointObject.chat.completions.create({
-        model: requestBody.model,
-        messages: requestBody.messages,
-        max_tokens: requestBody.maxTokens
-      })
-      
-    },
-    headers: {
-      'Content-Type': 'application/json',
-      
-    },
-  },
-  // Comment out to simulate unavailable provider
-  {
-    url: '/api/perplexity/available',
-    method: ['GET', 'POST'],
-    body: {
-    }
-  },
-  {
-    url: '/api/perplexity/models',
-    method: ['POST'],
-    body: {
-      models: ['sonar']
-    }
-  }
-])
+export default defineMock(
+  createOpenAIProxyMocks({
+    route: 'perplexity',
+    upstream: 'https://api.perplexity.ai',
+    // Server-side only; see .env.example. Not a VITE_ var, so it is never
+    // inlined into a transpiled artifact or the client bundle.
+    apiKey: process.env.PERPLEXITY_API_KEY,
+    models: ['sonar', 'sonar-pro', 'sonar-reasoning'],
+  }),
+);

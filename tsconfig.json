@@ -5,6 +5,8 @@
     "module": "ESNext",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "types": ["vite/client"],
+    "jsx": "react-jsx",
+    "paths": { "@/*": ["./examples/*"] },
     "skipLibCheck": true,
     "isolatedModules": true,
     "declaration": true,
@@ -25,5 +27,5 @@
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true
   },
-  "include": ["lib", "dev", "mock", "tests/mockProvider.ts"],
+  "include": ["lib", "mock", "tests", "examples"]
 }

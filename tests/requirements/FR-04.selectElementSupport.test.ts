@@ -1,32 +1,19 @@
 /**
  * FR-04: Select Element Support
- * 
- * Requirement: The library shall support AI-assisted filling of dropdown (select) elements 
+ *
+ * Requirement: The library shall support AI-assisted filling of dropdown (select) elements
  * by matching AI suggestions to available options.
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { JSDOM } from 'jsdom';
-import { setFieldValue, getFillTargets } from '../../lib/utils/fieldUtils';
-
-let document: Document;
-let window: Window & typeof globalThis;
+import { getFormFields } from '../../lib/form/analyze';
+import { applyFieldValue } from '../../lib/form/apply';
 
 beforeEach(() => {
-  const dom = new JSDOM('<!DOCTYPE html><html><body></body></html>');
-  document = dom.window.document;
-  window = dom.window as unknown as Window & typeof globalThis;
-  global.document = document;
-  global.Event = window.Event;
-  global.HTMLElement = window.HTMLElement;
-  global.HTMLInputElement = window.HTMLInputElement;
-  global.HTMLTextAreaElement = window.HTMLTextAreaElement;
-  global.HTMLSelectElement = window.HTMLSelectElement;
-  global.HTMLFormElement = window.HTMLFormElement;
+  document.body.innerHTML = '';
 });
 
 describe('FR-04: Select Element Support', () => {
-  
   // AC-1: The AI receives information about available options for select fields.
   it('AC-1: Select fields are included in form analysis', () => {
     const form = document.createElement('form');
@@ -37,9 +24,9 @@ describe('FR-04: Select Element Support', () => {
       </select>
     `;
     document.body.appendChild(form);
-    
-    const targets = getFillTargets(form);
-    
+
+    const targets = getFormFields(form);
+
     expect(targets.length).toBe(1);
     expect(targets[0].type).toBe('select');
     expect(targets[0].name).toBe('country');
@@ -52,11 +39,11 @@ describe('FR-04: Select Element Support', () => {
       <option value="de">Germany</option>
       <option value="us">United States</option>
     `;
-    
-    setFieldValue(select, 'us');
+
+    applyFieldValue(select, 'us');
     expect(select.value).toBe('us');
-    
-    setFieldValue(select, 'Germany');
+
+    applyFieldValue(select, 'Germany');
     expect(select.value).toBe('de');
   });
 
@@ -67,11 +54,11 @@ describe('FR-04: Select Element Support', () => {
       <option value="de">Germany</option>
       <option value="us">United States</option>
     `;
-    
-    setFieldValue(select, 'germany');
+
+    applyFieldValue(select, 'germany');
     expect(select.value).toBe('de');
-    
-    setFieldValue(select, 'UNITED STATES');
+
+    applyFieldValue(select, 'UNITED STATES');
     expect(select.value).toBe('us');
   });
 });

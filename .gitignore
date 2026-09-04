@@ -10,10 +10,15 @@ lerna-debug.log*
 node_modules/
 *.local
 .env
-tests/
+coverage/
+*.tsbuildinfo
 
+# Vite / esbuild transient transpilation artifacts. These can inline env values
+# (e.g. from mock/*.mock.ts) and must never be committed.
+*.timestamp-*.mjs
 
 # Editor directories and files
+.claude/
 .vscode/*
 !.vscode/extensions.json
 .idea

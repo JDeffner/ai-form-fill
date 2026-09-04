@@ -2,13 +2,19 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AI Form Input - Demo & Testing</title>
-    <link rel="stylesheet" href="/styles.css" />
-    <meta http-equiv='refresh' content='0; URL=/examples/advanced/advanced.html' />
+    <title>ai-form-fill demos</title>
+    <script>
+      // Apply the saved/OS theme before first paint so dark mode does not flash white.
+      if (
+        (localStorage.getItem('theme') ??
+          (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')) === 'dark'
+      )
+        document.documentElement.classList.add('dark');
+    </script>
   </head>
   <body>
-    <div class="container"></div> 
+    <div id="root"></div>
+    <script type="module" src="/examples/main.tsx"></script>
   </body>
 </html>

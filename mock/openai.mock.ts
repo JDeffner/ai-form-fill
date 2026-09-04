@@ -1,41 +1,19 @@
-import { defineMock } from 'vite-plugin-mock-dev-server'
-import OpenAI from 'openai';
+/**
+ * Dev proxy for OpenAI: plain passthrough of the standard OpenAI wire format,
+ * injecting the API key server-side. Point the provider at
+ * `baseUrl: '/api/openai'`.
+ */
 
-export default defineMock([
-  {
-    url: '/api/openai/chat',
-    method: ['POST'],
-    async body(request) {
-      const requestBody = request.body;
+import process from 'node:process';
+import { defineMock } from 'vite-plugin-mock-dev-server';
+import { createOpenAIProxyMocks } from './openai-proxy';
 
-      const endpointObject = new OpenAI({
-      apiKey: import.meta.env.VITE_OPEN_AI_KEY, // Keep your API key secure!
-      });
-      return await endpointObject.chat.completions.create({
-        model: requestBody.model,
-        messages: requestBody.messages,
-        max_tokens: requestBody.maxTokens,
-        response_format: { type: "json_schema", json_schema: {
-          name: "form_schema",
-          schema: requestBody.format
-        }},
-      })
-      
-    },
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  },
-  // Comment out to simulate unavailable provider
-  {
-    url: '/api/openai/available',
-    method: ['GET', 'POST'],
-  },
-  {
-    url: '/api/openai/models',
-    method: ['POST'],
-    body: {
-      models: ['gpt-5-nano']
-    }
-  }
-])
+export default defineMock(
+  createOpenAIProxyMocks({
+    route: 'openai',
+    upstream: 'https://api.openai.com/v1',
+    // Server-side only; see .env.example. Not a VITE_ var, so it is never
+    // inlined into a transpiled artifact or the client bundle.
+    apiKey: process.env.OPENAI_API_KEY,
+  }),
+);
