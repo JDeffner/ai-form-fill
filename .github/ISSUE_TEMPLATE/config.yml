@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Guides and recipes
+    url: https://github.com/JDeffner/ai-form-fill/wiki
+    about: Longer guides and the full API notes live in the wiki.
+  - name: Live demo and API reference
+    url: https://jdeffner.github.io/ai-form-fill/
+    about: The running demo pages and the generated API reference.
+  - name: Report a vulnerability
+    url: https://github.com/JDeffner/ai-form-fill/security/advisories/new
+    about: Security reports go here privately, not into a public issue.
