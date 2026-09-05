@@ -323,19 +323,40 @@ await aiForm.setSelectedModel('sonar', { validate: false }); // set unvalidated
 
 ## Voice input
 
-Voice stays out of the core: speech becomes text (Web Speech API), text goes
-into the same `fillForm` call. See [`examples/pages/voice.tsx`](examples/pages/voice.tsx) for a
-complete page — the essence is:
+Voice stays out of the core: speech becomes text, the text goes into the same
+fill call. `ai-form-fill/voice` is a separate entry point, so importing the
+core pulls in no speech code.
 
 ```typescript
-const recognition = new (window.SpeechRecognition ?? window.webkitSpeechRecognition)();
-recognition.onresult = (event) => {
-  textarea.value = event.results[0][0].transcript;
-};
-recognition.start(); // then: aiForm.fillForm(form, textarea.value)
+import { createFormFill } from 'ai-form-fill';
+import { createDictation, isDictationSupported } from 'ai-form-fill/voice';
+
+const controller = createFormFill({ form: '#form', source: '#text' });
+
+if (isDictationSupported()) {
+  const dictation = createDictation({
+    // The full transcript so far, interim words included.
+    onText: (text) => (textarea.value = text),
+    // Fires once, after stop() or the silence auto-stop.
+    onEnd: (text) => controller.fill(text),
+  });
+  micButton.addEventListener('click', () =>
+    dictation.listening ? dictation.stop() : dictation.start(),
+  );
+}
 ```
 
-Best supported in Chrome; other browsers fall back to typing.
+One gesture: click, speak, stop speaking. After `silenceMs` (1500 ms by
+default, `0` disables it) with no new words, the session ends on its own and
+`onEnd` fires, so no second click is needed. `createDictation` also takes
+`lang`, `interim` and `onError`. It throws when the API is missing, so guard
+with `isDictationSupported()`, which is a function and safe to import during
+server-side rendering.
+
+Chromium browsers and Safari have the Web Speech API; Firefox does not, so
+offer typing as well. Chromium sends the audio to a Google speech service,
+which is worth saying in your privacy notice. See
+[`examples/pages/voice.tsx`](examples/pages/voice.tsx) for a complete page.
 
 ---
 
@@ -402,8 +423,8 @@ points.
 ### Browser support
 
 Evergreen browsers (Chrome, Edge, Firefox, Safari). The library uses standard
-DOM APIs, `fetch` and `AbortController` only. The optional voice example
-additionally needs the Web Speech API (Chrome).
+DOM APIs, `fetch` and `AbortController` only. The optional `ai-form-fill/voice`
+entry additionally needs the Web Speech API (Chromium and Safari, not Firefox).
 
 ---
 
@@ -418,7 +439,7 @@ the bundle.
 | ------------------------------------------------------- | ------------------------------------------------------------- |
 | [`pages/basic.tsx`](examples/pages/basic.tsx)           | One-call `createFormFill()` setup                             |
 | [`pages/advanced.tsx`](examples/pages/advanced.tsx)     | Provider/model switching, single-field fill, `FillResult` log |
-| [`pages/voice.tsx`](examples/pages/voice.tsx)           | Web Speech API transcript into `fillForm`                     |
+| [`pages/voice.tsx`](examples/pages/voice.tsx)           | `createDictation` transcript into `fillForm`                  |
 | [`pages/controlled.tsx`](examples/pages/controlled.tsx) | Controlled React components receive AI-filled values          |
 | [`server/`](examples/server)                            | Zero-dependency passthrough proxy for cloud providers         |
 
@@ -441,10 +462,16 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full setup, and
 
 ## Building
 
-`pnpm build` emits to `dist/`:
+`pnpm build` emits one file set per entry point to `dist/`:
 
-- `ai-form-fill.js` / `ai-form-fill.umd.cjs` — the bundled library (ESM and UMD)
-- `ai-form-fill.d.ts` — rolled-up type declarations
+- `ai-form-fill.js` / `ai-form-fill.cjs` (ESM and CommonJS) plus
+  `ai-form-fill.d.ts`: the core, imported as `ai-form-fill`
+- `voice.js` / `voice.cjs` plus `voice.d.ts`: the dictation module, imported as
+  `ai-form-fill/voice`
+
+`main` points at `dist/ai-form-fill.cjs`. The UMD bundle
+(`dist/ai-form-fill.umd.cjs`) is gone; a script-tag bundle comes back in a
+later release.
 
 The `.d.ts` keeps all TSDoc comments from the source, so consumers get hover
 documentation and IntelliSense. Keep doc comments on exported APIs and leave
@@ -454,9 +481,9 @@ documentation and IntelliSense. Keep doc comments on exported APIs and leave
 
 The package is installable via Composer (`jdeffner/ai-form-fill`) for use in
 PHP asset pipelines: `dist/` is tracked in the repository, so include
-`dist/ai-form-fill.umd.cjs` (script tag / asset pipeline) or the ESM build
-from your bundler. There are no PHP classes — it is a JavaScript asset
-package.
+`dist/ai-form-fill.js` (ESM, from your bundler or a `<script type="module">`)
+or `dist/ai-form-fill.cjs` (CommonJS). There are no PHP classes; it is a
+JavaScript asset package.
 
 ## License
 

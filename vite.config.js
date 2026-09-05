@@ -1,4 +1,5 @@
 ///<reference types="vitest/config" />
+import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import process from 'node:process';
@@ -16,6 +17,28 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 // artifact or a client bundle.
 const SERVER_ENV_KEYS = ['OPENAI_API_KEY', 'PERPLEXITY_API_KEY', 'OPENROUTER_API_KEY'];
 
+// API Extractor drops `declare global` blocks when it rolls the declaration
+// files up into one bundle, so the `HTMLElementEventMap` augmentation that
+// types `form.addEventListener('aff:done', ...)` for consumers would be lost.
+// This appends that block, read straight from its source file, to the core
+// entry's bundle (no other entry augments a global). It runs after the
+// declaration build and is idempotent, so rebuilding an up-to-date `dist/`
+// changes nothing.
+const EVENT_TYPES_SOURCE = resolve(__dirname, 'lib/core/events.ts');
+const CORE_TYPES_BUNDLE = resolve(__dirname, 'dist/ai-form-fill.d.ts');
+const GLOBAL_MARKER = 'declare global {';
+
+function appendGlobalEventTypes() {
+  const source = readFileSync(EVENT_TYPES_SOURCE, 'utf8');
+  const start = source.indexOf(GLOBAL_MARKER);
+  if (start === -1) {
+    throw new Error(`No "${GLOBAL_MARKER}" block found in ${EVENT_TYPES_SOURCE}.`);
+  }
+  const bundle = readFileSync(CORE_TYPES_BUNDLE, 'utf8');
+  if (bundle.includes(GLOBAL_MARKER)) return;
+  writeFileSync(CORE_TYPES_BUNDLE, `${bundle.trimEnd()}\n\n${source.slice(start).trimEnd()}\n`);
+}
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   for (const key of SERVER_ENV_KEYS) {
@@ -28,20 +51,20 @@ export default defineConfig(({ mode }) => {
     resolve: { alias: { '@': resolve(__dirname, 'examples') } },
     build: {
       lib: {
-        entry: resolve(__dirname, 'lib/index.ts'),
-        name: 'AIFormFill',
-        // the proper extensions will be added
-        fileName: 'ai-form-fill',
+        // One entry per public import path. `ai-form-fill/voice` is separate
+        // so the core bundle carries no speech code.
+        // The entry key is the output file name, so the core keeps the names
+        // it has always had: dist/ai-form-fill.js, .cjs and .d.ts.
+        entry: {
+          'ai-form-fill': resolve(__dirname, 'lib/index.ts'),
+          voice: resolve(__dirname, 'lib/voice/index.ts'),
+        },
+        formats: ['es', 'cjs'],
+        fileName: (format, entryName) => `${entryName}.${format === 'cjs' ? 'cjs' : 'js'}`,
       },
       rollupOptions: {
-        // make sure to externalize deps that shouldn't be bundled
-        // into your library
+        // The library has no runtime dependencies, so nothing is external.
         external: [],
-        output: {
-          // Provide global variables to use in the UMD build
-          // for externalized deps
-          globals: {},
-        },
       },
     },
     plugins: [
@@ -54,6 +77,7 @@ export default defineConfig(({ mode }) => {
         insertTypesEntry: true,
         rollupTypes: true,
         tsconfigPath: './tsconfig.json',
+        afterBuild: appendGlobalEventTypes,
       }),
     ],
     test: {

@@ -40,19 +40,24 @@
     "LICENSE"
   ],
   "types": "./dist/ai-form-fill.d.ts",
-  "main": "./dist/ai-form-fill.umd.cjs",
+  "main": "./dist/ai-form-fill.cjs",
   "module": "./dist/ai-form-fill.js",
   "exports": {
     ".": {
       "types": "./dist/ai-form-fill.d.ts",
       "import": "./dist/ai-form-fill.js",
-      "require": "./dist/ai-form-fill.umd.cjs"
+      "require": "./dist/ai-form-fill.cjs"
+    },
+    "./voice": {
+      "types": "./dist/voice.d.ts",
+      "import": "./dist/voice.js",
+      "require": "./dist/voice.cjs"
     },
     "./package.json": "./package.json"
   },
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build && node scripts/append-event-types.js",
+    "build": "tsc --noEmit && vite build",
     "release:build": "pnpm build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
