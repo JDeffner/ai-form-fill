@@ -1,0 +1,15 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "name": "ai-form-fill",
+  "entryPoints": ["lib/index.ts", "lib/ui/index.ts", "lib/voice/index.ts", "lib/react/index.ts"],
+  "entryPointStrategy": "resolve",
+  "out": "site/api",
+  "readme": "none",
+  "excludeInternal": true,
+  "githubPages": false,
+  "hideGenerator": true,
+  "navigationLinks": {
+    "Demos": "https://jdeffner.github.io/ai-form-fill/",
+    "GitHub": "https://github.com/JDeffner/ai-form-fill"
+  }
+}

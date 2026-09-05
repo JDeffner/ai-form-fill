@@ -69,6 +69,14 @@ export function App() {
               {d.title}
             </a>
           ))}
+          {/* The generated API reference, built into `site/api` by
+              `pnpm build:site`. In `pnpm dev` it 404s until you run that. */}
+          <a
+            href={`${import.meta.env.BASE_URL}api/`}
+            className="rounded-md px-3 py-1.5 text-muted-foreground transition-colors hover:text-foreground"
+          >
+            Docs
+          </a>
           <Button
             variant="ghost"
             size="icon"

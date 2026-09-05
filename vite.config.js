@@ -1,5 +1,5 @@
 ///<reference types="vitest/config" />
-import { readFileSync, writeFileSync } from 'node:fs';
+import { createReadStream, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import process from 'node:process';
@@ -38,6 +38,21 @@ function appendGlobalEventTypes() {
   if (bundle.includes(GLOBAL_MARKER)) return;
   writeFileSync(CORE_TYPES_BUNDLE, `${bundle.trimEnd()}\n\n${source.slice(start).trimEnd()}\n`);
 }
+
+// `examples/vanilla.html` loads the script-tag bundle by relative path, so the
+// copy in `site/examples/` works under the GitHub Pages base path without
+// knowing what that base is. In dev the page is served from `/examples/`,
+// where nothing is built, so serve that one URL from `dist/` instead.
+const serveBrowserBundle = {
+  name: 'aff-serve-browser-bundle',
+  apply: 'serve',
+  configureServer(server) {
+    server.middlewares.use('/examples/ai-form-fill.browser.js', (_req, res) => {
+      res.setHeader('Content-Type', 'text/javascript');
+      createReadStream(resolve(__dirname, 'dist/ai-form-fill.browser.js')).pipe(res);
+    });
+  },
+};
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
@@ -78,6 +93,7 @@ export default defineConfig(({ mode }) => {
       tailwindcss(),
       // `prefix` makes the plugin intercept /api/* without a server.proxy entry.
       mockDevServerPlugin({ prefix: '^/api' }),
+      serveBrowserBundle,
       dts({
         // Only the library. Without this, `declare module` blocks from the
         // demo app (the JSX augmentation for <ai-form-fill>) end up in every
