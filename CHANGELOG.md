@@ -11,10 +11,32 @@
   and the `data-aff-provider` / `data-aff-model` attributes are gone with it.
 - **The UMD bundle is removed.** `dist/ai-form-fill.umd.cjs` is gone and
   `main` now points at `dist/ai-form-fill.cjs`. Use the ESM build
-  (`dist/ai-form-fill.js`) from a bundler or a `<script type="module">`. A
-  script-tag bundle comes back in a later release.
+  (`dist/ai-form-fill.js`) from a bundler or a `<script type="module">`, or the
+  new `dist/ai-form-fill.browser.js` from a plain script tag.
 
 ### Added
+
+- **`<ai-form-fill>`, the ready-made interface.** Two lines of HTML next to a
+  form give the user a text box, an optional microphone, a fill button, live
+  status, a summary of what was filled and what is still missing, undo, and an
+  optional review step. It is plain DOM in a shadow root with no dependencies
+  and no CSS injected into the page: it inherits the page font and text colour,
+  exposes every node as a `::part` and every colour as an `--aff-*` variable.
+  Attributes: `for`, `provider`, `model`, `base-url`, `target-fields`,
+  `skip-filled`, `voice`, `lang`, `review`, `label`, `placeholder`, `debug`.
+  Properties: `provider` (an `AIProvider` instance), `strings` (every piece of
+  text is replaceable) and the read-only `controller`. Fields the element
+  writes carry `data-aff-filled` for 1.5 seconds so a page can highlight them.
+
+- **`ai-form-fill/ui`**, a separate entry point with `AIFormFillElement`,
+  `defineFormFillElement`, `DEFAULT_STRINGS` and the `AIFormFillStrings` type.
+  The core bundle carries no markup and no styles.
+
+- **`dist/ai-form-fill.browser.js`**, a script-tag build. One minified IIFE
+  with core, voice and ui; it registers `<ai-form-fill>` on load and puts the
+  whole API on the `AIFormFill` global. The `unpkg` and `jsdelivr` fields point
+  at it, so `https://cdn.jsdelivr.net/npm/ai-form-fill@2/dist/ai-form-fill.browser.js`
+  works without a bundler.
 
 - **`ai-form-fill/voice`**, a separate entry point with `createDictation` and
   `isDictationSupported`. `createDictation` wraps the browser's Web Speech

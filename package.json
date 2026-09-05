@@ -42,6 +42,8 @@
   "types": "./dist/ai-form-fill.d.ts",
   "main": "./dist/ai-form-fill.cjs",
   "module": "./dist/ai-form-fill.js",
+  "unpkg": "./dist/ai-form-fill.browser.js",
+  "jsdelivr": "./dist/ai-form-fill.browser.js",
   "exports": {
     ".": {
       "types": "./dist/ai-form-fill.d.ts",
@@ -53,11 +55,16 @@
       "import": "./dist/voice.js",
       "require": "./dist/voice.cjs"
     },
+    "./ui": {
+      "types": "./dist/ui.d.ts",
+      "import": "./dist/ui.js",
+      "require": "./dist/ui.cjs"
+    },
     "./package.json": "./package.json"
   },
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && vite build && vite build -c vite.browser.config.js",
     "release:build": "pnpm build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",

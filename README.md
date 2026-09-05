@@ -87,6 +87,128 @@ Other options: `provider` (name or instance), `model`, `baseUrl`,
 
 ---
 
+## Add the UI element
+
+`createFormFill` gives you the wiring. `<ai-form-fill>` gives you the finished
+panel: a text box, an optional microphone, a fill button, live status, a result
+summary and undo. It is plain DOM in a shadow root, it has no dependencies, and
+it inherits the page font and text colour, so it reads on light and dark pages
+without configuration.
+
+```html
+<form id="contact">...</form>
+<ai-form-fill for="#contact"></ai-form-fill>
+```
+
+```typescript
+import { defineFormFillElement } from 'ai-form-fill/ui';
+
+defineFormFillElement();
+```
+
+Leave `for` out when the element sits inside the form; it then uses the form it
+is in. If neither resolves, the panel says so and does nothing.
+
+### Attributes
+
+| Attribute       | Meaning                                                      |
+| --------------- | ------------------------------------------------------------ |
+| `for`           | CSS selector of the form                                     |
+| `provider`      | Built-in provider name, `ollama` by default                  |
+| `model`         | Model name                                                   |
+| `base-url`      | Base URL of the provider                                     |
+| `target-fields` | Comma separated field keys to fill                           |
+| `skip-filled`   | Leave fields that already hold a value alone                 |
+| `voice`         | Show the microphone when the browser can dictate             |
+| `lang`          | Dictation language (BCP 47), the dictation default otherwise |
+| `review`        | Show the values first and write them on Apply                |
+| `label`         | Text above the box                                           |
+| `placeholder`   | Placeholder of the box                                       |
+| `debug`         | Log to the console                                           |
+
+Three JavaScript properties go beyond what an attribute can carry: `provider`
+takes an `AIProvider` instance and wins over the attribute, `strings` overrides
+any text (see below), and `controller` is the read-only `FormFillController`
+behind the panel.
+
+### Styling
+
+Set the custom properties on the element and restyle any node through its part:
+
+```css
+ai-form-fill {
+  --aff-accent: #111;
+  --aff-radius: 4px;
+}
+ai-form-fill::part(submit) {
+  text-transform: uppercase;
+}
+```
+
+Variables: `--aff-accent`, `--aff-accent-fg`, `--aff-border`, `--aff-muted`,
+`--aff-radius`, `--aff-gap`, `--aff-font`.
+
+Parts: `panel`, `label`, `textarea`, `actions`, `mic`, `mic-label`, `submit`,
+`cancel`, `undo`, `apply`, `discard`, `status`, `summary`, `summary-row`,
+`review-row`, `review-check`, `review-label`, `review-value`.
+
+Every field the element writes carries `data-aff-filled` for 1.5 seconds, so a
+page can show what just changed. The element injects no CSS into your page, so
+this rule is yours to write:
+
+```css
+[data-aff-filled] {
+  outline: 2px solid #1d4ed8;
+}
+```
+
+### Review mode
+
+With the `review` attribute the element extracts first and writes nothing. It
+lists one row per value with a checkbox, and Apply writes only the checked
+rows. Discard drops them and keeps the text, so the user can edit and try
+again.
+
+```html
+<ai-form-fill for="#contact" review></ai-form-fill>
+```
+
+### Voice
+
+With the `voice` attribute the panel shows a microphone, but only when the
+browser has the Web Speech API. One gesture is enough: press, speak, stop
+speaking. After 1.5 seconds of silence the dictation ends and the fill starts.
+Press Escape to stop without filling.
+
+```html
+<ai-form-fill for="#contact" voice lang="de-DE"></ai-form-fill>
+```
+
+### Wording
+
+`strings` replaces any text, one entry or all of them:
+
+```typescript
+document.querySelector('ai-form-fill').strings = {
+  fill: 'Formular ausfüllen',
+  statusWorking: 'Einen Moment.',
+};
+```
+
+### Without a bundler
+
+One script tag registers the element and puts the whole library on the
+`AIFormFill` global:
+
+```html
+<script src="https://cdn.jsdelivr.net/npm/ai-form-fill@2/dist/ai-form-fill.browser.js"></script>
+
+<form id="contact">...</form>
+<ai-form-fill for="#contact" voice></ai-form-fill>
+```
+
+---
+
 ## Using the class directly
 
 ```typescript
@@ -468,10 +590,15 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full setup, and
   `ai-form-fill.d.ts`: the core, imported as `ai-form-fill`
 - `voice.js` / `voice.cjs` plus `voice.d.ts`: the dictation module, imported as
   `ai-form-fill/voice`
+- `ui.js` / `ui.cjs` plus `ui.d.ts`: the `<ai-form-fill>` element, imported as
+  `ai-form-fill/ui`
+- `ai-form-fill.browser.js`: everything in one minified IIFE for a script tag,
+  built by the second config (`vite.browser.config.js`) and served by unpkg and
+  jsDelivr
 
-`main` points at `dist/ai-form-fill.cjs`. The UMD bundle
-(`dist/ai-form-fill.umd.cjs`) is gone; a script-tag bundle comes back in a
-later release.
+`main` points at `dist/ai-form-fill.cjs`. The old UMD bundle
+(`dist/ai-form-fill.umd.cjs`) is gone; `dist/ai-form-fill.browser.js` replaces
+it.
 
 The `.d.ts` keeps all TSDoc comments from the source, so consumers get hover
 documentation and IntelliSense. Keep doc comments on exported APIs and leave
