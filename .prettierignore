@@ -1,3 +1,4 @@
 dist/
 coverage/
+site/
 pnpm-lock.yaml

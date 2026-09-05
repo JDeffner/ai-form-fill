@@ -1,7 +1,7 @@
 {
   "name": "ai-form-fill",
   "description": "Framework-agnostic library for AI-powered form filling. Extract structured data from unstructured text and automatically fill forms using Ollama or any OpenAI-compatible provider (OpenAI, Perplexity, OpenRouter, ...).",
-  "version": "0.9.0",
+  "version": "2.0.0",
   "keywords": [
     "ai",
     "form",
@@ -29,7 +29,9 @@
     "url": "https://github.com/JDeffner/ai-form-fill/issues"
   },
   "type": "module",
-  "sideEffects": false,
+  "sideEffects": [
+    "./dist/ai-form-fill.browser.js"
+  ],
   "engines": {
     "node": ">=20"
   },
@@ -70,6 +72,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build && vite build -c vite.browser.config.js",
+    "build:site": "vite build -c vite.site.config.js && node scripts/build-site.mjs && typedoc",
     "release:build": "pnpm build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
@@ -110,6 +113,7 @@
     "tailwind-merge": "^3.6.0",
     "tailwindcss": "^4.3.3",
     "tw-animate-css": "^1.4.0",
+    "typedoc": "^0.28.20",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.62.1",
     "vite": "^7.3.1",

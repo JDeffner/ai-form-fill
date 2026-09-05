@@ -1,0 +1,67 @@
+name: Release
+
+# Runs on a version tag. It checks the tag out, verifies it, and creates the
+# GitHub release from the matching CHANGELOG section. It does not publish to
+# npm: `npm publish` is run by the maintainer from a local checkout, so the
+# registry never sees a token stored in this repository.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+
+      # dist/ is tracked, so a release tag must carry the built output that
+      # matches its own source.
+      - name: Fail if dist/ is stale
+        run: git diff --exit-code dist/
+
+      - name: Read the CHANGELOG section for this tag
+        id: notes
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          {
+            echo 'body<<CHANGELOG_EOF'
+            node scripts/changelog-section.mjs "$version"
+            echo 'CHANGELOG_EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Create the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NOTES: ${{ steps.notes.outputs.body }}
+        run: |
+          prerelease=''
+          case "$GITHUB_REF_NAME" in
+            *-*) prerelease='--prerelease' ;;
+          esac
+          printf '%s\n' "$NOTES" > release-notes.md
+          gh release create "$GITHUB_REF_NAME" \
+            --title "$GITHUB_REF_NAME" \
+            --notes-file release-notes.md \
+            $prerelease
+
+      - name: Publish step (manual)
+        run: |
+          echo "The GitHub release is out. Publish to npm from a local checkout:"
+          echo
+          echo "  git checkout $GITHUB_REF_NAME"
+          echo "  pnpm install --frozen-lockfile && pnpm build"
+          echo "  npm publish --provenance --access public"

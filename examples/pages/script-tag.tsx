@@ -53,12 +53,15 @@ export function ScriptTag() {
               ))}
             </ul>
             <p className="text-sm">
-              A running version of exactly this page is served next to the demos. It loads{' '}
-              <code>/dist/ai-form-fill.browser.js</code>, so run <code>pnpm build</code> once before
-              opening it.
+              A running version of exactly this page is served next to the demos. It loads the built
+              bundle from its own folder, so run <code>pnpm build</code> once before opening it.
             </p>
             <Button asChild variant="secondary" className="justify-self-start">
-              <a href="/examples/vanilla.html" target="_blank" rel="noreferrer">
+              <a
+                href={`${import.meta.env.BASE_URL}examples/vanilla.html`}
+                target="_blank"
+                rel="noreferrer"
+              >
                 Open the plain HTML page
                 <ExternalLink />
               </a>

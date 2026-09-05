@@ -66,7 +66,7 @@
     <h1>ai-form-fill without a bundler</h1>
     <p>
       One script tag and one custom element. No import, no build step. This page is served from
-      <code>examples/vanilla.html</code> and loads the built bundle from <code>dist/</code>, so run
+      <code>examples/vanilla.html</code> and loads the built script-tag bundle, so run
       <code>pnpm build</code> once before opening it. It fills against local Ollama.
     </p>
 
@@ -95,7 +95,9 @@
       </label>
     </form>
 
-    <!-- Loaded last, so the element upgrades when the form it points at exists. -->
-    <script src="/dist/ai-form-fill.browser.js"></script>
+    <!-- Loaded last, so the element upgrades when the form it points at exists.
+         The path is relative, so this page works both in the dev server and as
+         the copy the docs site serves under its own base path. -->
+    <script src="./ai-form-fill.browser.js"></script>
   </body>
 </html>

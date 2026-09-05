@@ -1,6 +1,9 @@
 # Contributing
 
-Thanks for your interest in improving `ai-form-fill`!
+Thanks for your interest in improving `ai-form-fill`. Bug reports, feature
+requests and pull requests are all welcome. [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
+applies to every space of this project. Security problems go through
+[SECURITY.md](SECURITY.md), not through a public issue.
 
 ## Setup
 
@@ -18,18 +21,19 @@ Thanks for your interest in improving `ai-form-fill`!
 
 ## Scripts
 
-| Script                  | What it does                                            |
-| ----------------------- | ------------------------------------------------------- |
-| `pnpm dev`              | Start the Vite dev server with the demo pages           |
-| `pnpm test`             | Run the unit tests once (no network needed)             |
-| `pnpm test:watch`       | Run the unit tests in watch mode                        |
-| `pnpm test:integration` | Run the Ollama integration suite (requires Ollama)      |
-| `pnpm lint`             | ESLint over the whole repo                              |
-| `pnpm lint:fix`         | ESLint with autofix                                     |
-| `pnpm format`           | Prettier write                                          |
-| `pnpm format:check`     | Prettier check (CI mode)                                |
-| `pnpm typecheck`        | `tsc --noEmit`                                          |
-| `pnpm build`            | Typecheck + build `dist/` (ESM, CJS, rolled-up `.d.ts`) |
+| Script                  | What it does                                                |
+| ----------------------- | ----------------------------------------------------------- |
+| `pnpm dev`              | Start the Vite dev server with the demo pages               |
+| `pnpm test`             | Run the unit tests once (no network needed)                 |
+| `pnpm test:watch`       | Run the unit tests in watch mode                            |
+| `pnpm test:integration` | Run the Ollama integration suite (requires Ollama)          |
+| `pnpm lint`             | ESLint over the whole repo                                  |
+| `pnpm lint:fix`         | ESLint with autofix                                         |
+| `pnpm format`           | Prettier write                                              |
+| `pnpm format:check`     | Prettier check (CI mode)                                    |
+| `pnpm typecheck`        | `tsc --noEmit`                                              |
+| `pnpm build`            | Typecheck + build `dist/` (ESM, CJS, rolled-up `.d.ts`)     |
+| `pnpm build:site`       | Build the docs site into `site/` (demo app + API reference) |
 
 The build has one entry per public import path: `lib/index.ts` becomes
 `dist/ai-form-fill.*` (imported as `ai-form-fill`) and `lib/voice/index.ts`
@@ -55,8 +59,8 @@ becomes `dist/voice.*` (imported as `ai-form-fill/voice`). Add an entry in
 styled with shadcn/ui. The pages are Element (`<ai-form-fill>` inside React),
 Controller (headless `createFormFill`), Voice, React hook (`useFormFill`),
 Advanced (provider switching and the `aff:*` event log) and Script tag, which
-links to `examples/vanilla.html`. That page is static, loads
-`/dist/ai-form-fill.browser.js` and imports nothing from `lib/`, so run
+links to `examples/vanilla.html`. That page is static, loads the built
+script-tag bundle by relative path and imports nothing from `lib/`, so run
 `pnpm build` once before opening it. `examples/snippets/` holds the Vue and
 Svelte snippets. The generated shadcn components live in
 `examples/components/ui/` and `components.json` configures the shadcn CLI
@@ -70,13 +74,65 @@ radio inputs) rather than the Radix-based shadcn `Select`/`Checkbox`/
 `RadioGroup`: the library writes to native form controls, and a Radix widget
 with a hidden mirror input would not update visually.
 
+## Docs site
+
+`pnpm build:site` builds what GitHub Pages serves at
+https://jdeffner.github.io/ai-form-fill/ into `site/`, which is gitignored:
+
+1. `vite build -c vite.site.config.js` builds the demo app with the base path
+   `/ai-form-fill/`. The app is hash-routed, so it needs no rewrite rules.
+2. `node scripts/build-site.mjs` copies `examples/vanilla.html` and the built
+   `dist/ai-form-fill.browser.js` into `site/examples/`. The page loads the
+   bundle by relative path, so the pair works under any base path. In the dev
+   server that same URL is served from `dist/` by a small plugin in
+   `vite.config.js`, so run `pnpm build` once before opening the page.
+3. `typedoc` generates the API reference from the four entry points into
+   `site/api`, which the "Docs" link in the demo header points at. In
+   `pnpm dev` that link 404s until you have run `pnpm build:site`.
+
+`.github/workflows/pages.yml` runs this on every push to `main` and deploys the
+result. The owner enables it once: repository **Settings** → **Pages** →
+**Build and deployment** → **Source: GitHub Actions**. No secret is needed; the
+workflow uses the built-in token with `pages: write` and `id-token: write`.
+
+GitHub Discussions is off. If it gets enabled (**Settings** → **General** →
+**Features** → **Discussions**), point the first contact link in
+`.github/ISSUE_TEMPLATE/config.yml` at it.
+
+## Releasing
+
+Only the owner releases. npm publishing is deliberately not in CI, so no npm
+token lives in this repository.
+
+1. Update `CHANGELOG.md`: rename `## Unreleased` to `## X.Y.Z (YYYY-MM-DD)` and
+   add a fresh empty `## Unreleased` above it.
+2. Set the same version in `package.json`.
+3. `pnpm install && pnpm build`, then commit the rebuilt `dist/` as
+   `release: vX.Y.Z`.
+4. `git tag vX.Y.Z` and `git push && git push --tags`.
+5. The tag triggers `.github/workflows/release.yml`: it runs lint, typecheck,
+   tests and the build, fails if `dist/` is stale, reads the CHANGELOG section
+   with `node scripts/changelog-section.mjs X.Y.Z`, and creates the GitHub
+   release from it. A tag with a hyphen (`v2.1.0-rc.1`) is marked as a
+   prerelease. CI separately fails a tag whose name does not match
+   `package.json`.
+6. Publish from a local checkout of the tag:
+
+   ```bash
+   npm publish --provenance --access public
+   ```
+
 ## Pull requests
 
 - Keep PRs focused; renames/moves go in their own commit so diffs stay
   reviewable.
-- Before pushing, run `pnpm lint && pnpm typecheck && pnpm test && pnpm build`
-  — CI runs exactly these.
+- Before pushing, run
+  `pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build`.
+  CI runs exactly these, on Node 20 and 22.
+- Add a line under `## Unreleased` in `CHANGELOG.md` for anything a user would
+  notice.
 - Public APIs carry TSDoc comments; the rolled-up `dist/*.d.ts` preserves them
   for consumers, so please document any new exported symbol.
 - `dist/` is tracked in git (composer installs from the repo). Do not edit it
-  by hand; it is rebuilt and committed on release.
+  by hand, but do commit the rebuilt output when you change `lib/`: CI fails a
+  PR against `main` whose `dist/` is stale.

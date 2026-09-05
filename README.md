@@ -1,102 +1,58 @@
-# AI Form Fill
+# ai-form-fill
 
-Framework-agnostic library for AI-powered form filling. Extract structured data from unstructured text and automatically fill forms using Ollama or any OpenAI-compatible provider (OpenAI, Perplexity, OpenRouter, or your own).
+Fill any HTML form from text or speech. The user pastes a paragraph or talks,
+an LLM reads it, and the fields get filled. The library reads your form, builds
+a JSON schema from it (with the real option values as enums), asks the model,
+and writes the answer back through native setters, so vanilla pages, React,
+Vue and Svelte all pick the values up. It runs against local
+[Ollama](https://ollama.com) with no key and no backend, or against any
+OpenAI-compatible API. Zero runtime dependencies.
 
-## Features
+- **Live demo:** https://jdeffner.github.io/ai-form-fill/
+- **API reference:** https://jdeffner.github.io/ai-form-fill/api/
+- **Guides and recipes:** https://github.com/JDeffner/ai-form-fill/wiki
 
-- Uses LLMs to understand and extract data from natural language
-- Automatically matches data to form fields (text, email, number, textarea, select, radio, checkbox, date/time, `<select multiple>`, checkbox groups)
-- Structured output: a JSON schema (with exact option values as enums) is generated from your form
-- Works with Ollama and any OpenAI-compatible API — standard wire format, no custom backend contract
-- Framework-agnostic: values are applied through native setters + `input`/`change` events, so vanilla JS, React (controlled components), Vue and Svelte all pick them up
-- Real results and errors: `fillForm` returns a `FillResult`; failures reject with typed errors
-- Field hints (`data-aff-hint`) and field targeting
-- Zero runtime dependencies
+## Three ways to use it
 
-## Installation
+| You want                         | Use                                                           |
+| -------------------------------- | ------------------------------------------------------------- |
+| A finished panel, no build step  | A script tag plus `<ai-form-fill>`                            |
+| A finished panel inside your app | `import 'ai-form-fill/ui'` plus `<ai-form-fill>`              |
+| Your own interface               | `createFormFill()`, `useFormFill()` or the `AIFormFill` class |
+
+The element is built on the controller, the controller is built on the class.
+Start high and drop a level when you need to.
+
+## Install
 
 ```bash
 npm install ai-form-fill
 ```
 
----
+Or skip the install. One script tag registers the element and puts the whole
+API on the `AIFormFill` global:
 
-## Quick start (Ollama, zero config)
+```html
+<script src="https://cdn.jsdelivr.net/npm/ai-form-fill@2/dist/ai-form-fill.browser.js"></script>
+```
 
-The fastest path runs fully local — no API keys, no backend. Install [Ollama](https://ollama.com) and pull a model:
+## Quick start
+
+Install Ollama and pull a model, so nothing leaves the machine:
 
 ```bash
 ollama pull gemma3:4b
 ```
 
-### HTML
+Then put the element next to your form:
 
 ```html
 <form id="contact">
-  <input type="text" name="name" placeholder="Name" />
-  <input type="email" name="email" placeholder="Email" />
-  <input type="tel" name="phone" placeholder="Phone" />
+  <input name="name" type="text" />
+  <input name="email" type="email" />
+  <input name="phone" type="tel" />
 </form>
 
-<textarea id="notes" placeholder="Paste your text here..."></textarea>
-<button id="fill">Fill form</button>
-```
-
-### JavaScript (one call)
-
-```typescript
-import { createFormFill } from 'ai-form-fill';
-
-const controller = createFormFill({ form: '#contact', source: '#notes', trigger: '#fill' });
-```
-
-`createFormFill` takes elements or CSS selectors, wires a click on the trigger
-to a fill from the source text, and returns a headless controller: no markup,
-no styling, no framework. The provider defaults to local Ollama.
-
-| Controller member              | Description                                                                              |
-| ------------------------------ | ---------------------------------------------------------------------------------------- |
-| `fill(text?)`                  | Fill from `text` or from the source. Never rejects; resolves to a `FillResult` or `null` |
-| `extract(text?)`               | Extract without writing, for a review step                                               |
-| `applyExtracted(data, fields)` | Write a reviewed extraction to the form                                                  |
-| `cancel()`                     | Abort the running request, back to `idle`                                                |
-| `undo()`                       | Restore the values the last fill overwrote                                               |
-| `subscribe(fn)`                | Listen for state changes; returns the unsubscribe function                               |
-| `getSnapshot()`                | `{ state, result, error }`, stable reference until the state changes                     |
-| `destroy()`                    | Remove the trigger listener and abort running work                                       |
-| `instance`                     | The underlying `AIFormFill`                                                              |
-
-The state is `idle`, `working`, `done` or `error`. `getSnapshot` and
-`subscribe` follow the external-store contract, so React can read them with
-`useSyncExternalStore`; a plain page can use the `onState` callback instead:
-
-```typescript
-createFormFill({
-  form: '#contact',
-  source: '#notes',
-  trigger: '#fill',
-  onState: ({ state, result }) => {
-    button.disabled = state === 'working';
-    if (result) console.log(`Filled ${result.filled.length} field(s)`);
-  },
-});
-```
-
-Other options: `provider` (name or instance), `model`, `baseUrl`,
-`targetFields`, `skipFilled`, `debug`.
-
----
-
-## Add the UI element
-
-`createFormFill` gives you the wiring. `<ai-form-fill>` gives you the finished
-panel: a text box, an optional microphone, a fill button, live status, a result
-summary and undo. It is plain DOM in a shadow root, it has no dependencies, and
-it inherits the page font and text colour, so it reads on light and dark pages
-without configuration.
-
-```html
-<form id="contact">...</form>
 <ai-form-fill for="#contact"></ai-form-fill>
 ```
 
@@ -106,34 +62,19 @@ import { defineFormFillElement } from 'ai-form-fill/ui';
 defineFormFillElement();
 ```
 
-Leave `for` out when the element sits inside the form; it then uses the form it
-is in. If neither resolves, the panel says so and does nothing.
+That is the whole setup. The panel gives the user a text box, a fill button,
+live status, a summary of what was filled and what is still missing, and undo.
+It is plain DOM in a shadow root, it injects no CSS into your page, and it
+inherits the page font and text colour, so it reads on light and dark pages.
+Leave `for` out when the element sits inside the form.
 
-### Attributes
+Attributes: `for`, `provider`, `model`, `base-url`, `target-fields`,
+`skip-filled`, `voice`, `lang`, `review`, `label`, `placeholder`, `debug`.
+Three things go beyond what an attribute can carry, as properties: `provider`
+takes an `AIProvider` instance, `strings` replaces any text, and `controller`
+is the read-only controller behind the panel.
 
-| Attribute       | Meaning                                                      |
-| --------------- | ------------------------------------------------------------ |
-| `for`           | CSS selector of the form                                     |
-| `provider`      | Built-in provider name, `ollama` by default                  |
-| `model`         | Model name                                                   |
-| `base-url`      | Base URL of the provider                                     |
-| `target-fields` | Comma separated field keys to fill                           |
-| `skip-filled`   | Leave fields that already hold a value alone                 |
-| `voice`         | Show the microphone when the browser can dictate             |
-| `lang`          | Dictation language (BCP 47), the dictation default otherwise |
-| `review`        | Show the values first and write them on Apply                |
-| `label`         | Text above the box                                           |
-| `placeholder`   | Placeholder of the box                                       |
-| `debug`         | Log to the console                                           |
-
-Three JavaScript properties go beyond what an attribute can carry: `provider`
-takes an `AIProvider` instance and wins over the attribute, `strings` overrides
-any text (see below), and `controller` is the read-only `FormFillController`
-behind the panel.
-
-### Styling
-
-Set the custom properties on the element and restyle any node through its part:
+Style it through custom properties and parts:
 
 ```css
 ai-form-fill {
@@ -145,76 +86,132 @@ ai-form-fill::part(submit) {
 }
 ```
 
-Variables: `--aff-accent`, `--aff-accent-fg`, `--aff-border`, `--aff-muted`,
-`--aff-radius`, `--aff-gap`, `--aff-font`.
+Every field the element writes carries `data-aff-filled` for 1.5 seconds, so
+one CSS rule of yours can show what just changed.
 
-Parts: `panel`, `label`, `textarea`, `actions`, `mic`, `mic-label`, `submit`,
-`cancel`, `undo`, `apply`, `discard`, `status`, `summary`, `summary-row`,
-`review-row`, `review-check`, `review-label`, `review-value`.
+## Your own interface
 
-Every field the element writes carries `data-aff-filled` for 1.5 seconds, so a
-page can show what just changed. The element injects no CSS into your page, so
-this rule is yours to write:
+`createFormFill` is the same wiring without the markup. It takes elements or
+selectors, and returns a headless controller.
 
-```css
-[data-aff-filled] {
-  outline: 2px solid #1d4ed8;
-}
+```typescript
+import { createFormFill } from 'ai-form-fill';
+
+const controller = createFormFill({
+  form: '#contact',
+  source: '#notes',
+  trigger: '#fill',
+  onState: ({ state, result }) => {
+    button.disabled = state === 'working';
+    if (result) console.log(`Filled ${result.filled.length} field(s)`);
+  },
+});
 ```
 
-### Review mode
+It exposes `fill(text?)`, `extract(text?)`, `applyExtracted(data, fields)`,
+`cancel()`, `undo()`, `subscribe(fn)`, `getSnapshot()`, `destroy()` and the
+underlying `instance`. The state is `idle`, `working`, `done` or `error`.
+`getSnapshot` and `subscribe` follow the external-store contract, so
+`useSyncExternalStore` reads them directly. Other options: `provider`, `model`,
+`baseUrl`, `targetFields`, `skipFilled`, `debug`.
+
+The class underneath does one fill per call and holds no DOM:
+
+```typescript
+import { AIFormFill } from 'ai-form-fill';
+
+const aiForm = new AIFormFill('ollama', { model: 'gemma3:4b' });
+const result = await aiForm.fillForm(form, 'John Doe, john@example.com, 555-1234');
+```
+
+## Providers
+
+Local Ollama is the default and needs no configuration.
+`OpenAICompatibleProvider` speaks the standard OpenAI wire format
+(`POST {baseUrl}/chat/completions`, `GET {baseUrl}/models`), so it works with
+any compatible endpoint. Presets supply base URLs for `openai`, `openrouter`
+and `perplexity`; anything else works by name plus `baseUrl`.
+
+Point `baseUrl` at a server-side passthrough that adds your API key.
+[`examples/server`](examples/server) is a 40-line, zero-dependency Node proxy;
+LiteLLM or an API gateway do the same job.
+
+```typescript
+import { AIFormFill, OpenAICompatibleProvider } from 'ai-form-fill';
+
+const provider = new OpenAICompatibleProvider('openai', {
+  baseUrl: 'https://my-app.com/ai', // your proxy, the key stays server-side
+});
+const aiForm = new AIFormFill(provider);
+```
+
+For local prototyping you can talk to the API directly, which needs an explicit
+opt-in because anyone can read a key out of a shipped page:
+
+```typescript
+const provider = new OpenAICompatibleProvider('openrouter', {
+  apiKey: 'sk-or-...',
+  allowApiKeyInBrowser: true, // prototyping only, never production
+  model: 'openai/gpt-4o-mini',
+});
+```
+
+## Review before writing
 
 With the `review` attribute the element extracts first and writes nothing. It
 lists one row per value with a checkbox, and Apply writes only the checked
-rows. Discard drops them and keeps the text, so the user can edit and try
-again.
+rows.
 
 ```html
 <ai-form-fill for="#contact" review></ai-form-fill>
 ```
 
-### Voice
+The same pair is available directly. `extract` runs the request and the parsing
+but leaves the form alone; `applyExtraction` writes a reviewed extraction and
+returns the same `FillResult` as a fill.
 
-With the `voice` attribute the panel shows a microphone, but only when the
+```typescript
+const { data, fields } = await aiForm.extract(form, text);
+const edited = await showReviewUI(data); // { firstName: 'John', ... }
+const result = aiForm.applyExtraction(edited, fields);
+```
+
+## Voice
+
+Add the `voice` attribute and the panel shows a microphone, but only when the
 browser has the Web Speech API. One gesture is enough: press, speak, stop
 speaking. After 1.5 seconds of silence the dictation ends and the fill starts.
-Press Escape to stop without filling.
 
 ```html
 <ai-form-fill for="#contact" voice lang="de-DE"></ai-form-fill>
 ```
 
-### Wording
-
-`strings` replaces any text, one entry or all of them:
+Speech is a separate entry point, so importing the core pulls in no speech
+code. Use it directly when you build your own panel:
 
 ```typescript
-document.querySelector('ai-form-fill').strings = {
-  fill: 'Formular ausfüllen',
-  statusWorking: 'Einen Moment.',
-};
+import { createDictation, isDictationSupported } from 'ai-form-fill/voice';
+
+if (isDictationSupported()) {
+  const dictation = createDictation({
+    onText: (text) => (textarea.value = text), // full transcript so far
+    onEnd: (text) => controller.fill(text), // once, after stop or silence
+  });
+  micButton.addEventListener('click', () =>
+    dictation.listening ? dictation.stop() : dictation.start(),
+  );
+}
 ```
 
-### Without a bundler
-
-One script tag registers the element and puts the whole library on the
-`AIFormFill` global:
-
-```html
-<script src="https://cdn.jsdelivr.net/npm/ai-form-fill@2/dist/ai-form-fill.browser.js"></script>
-
-<form id="contact">...</form>
-<ai-form-fill for="#contact" voice></ai-form-fill>
-```
-
----
+Chromium browsers and Safari have the Web Speech API, Firefox does not, so
+offer typing as well. Chromium sends the audio to a Google speech service,
+which is worth a line in your privacy notice.
 
 ## React
 
 `ai-form-fill/react` is one hook. It creates the controller when the form
 mounts, destroys it when the form unmounts, and reports the state as plain
-React state. `react` is an optional peer dependency, so nothing changes for
-users of the other entry points.
+React state. `react` is an optional peer dependency.
 
 ```tsx
 import { useState } from 'react';
@@ -242,84 +239,35 @@ export function Contact() {
 }
 ```
 
-Controlled inputs work without extra code: values are written through the
-native prototype setters before the `input` event, so React state updates on an
-AI fill exactly like on typing.
+Controlled inputs need no extra code: values are written through the native
+prototype setters before the `input` event, so React state updates on a fill
+exactly like on typing.
 
-The hook returns `formRef`, `fill(text)`, `extract(text)`,
-`applyExtracted(data, fields)`, `cancel()`, `undo()`, and the `state`, `result`
-and `error` of the controller. It takes the same options as `createFormFill`
-minus `form`, `source`, `trigger` and `onState`; they are read once, when the
-controller is created, so remount the form (a `key` is enough) to switch
-provider or model.
+## Results, events and undo
 
----
-
-## Using the class directly
+`fillForm` resolves to a `FillResult`:
 
 ```typescript
-import { AIFormFill } from 'ai-form-fill';
-
-const aiForm = new AIFormFill('ollama', { model: 'gemma3:4b', debug: true });
-
-const form = document.getElementById('myForm') as HTMLFormElement;
-const text = 'My name is John Doe, email john@example.com, phone 555-1234';
-
-const result = await aiForm.fillForm(form, text);
-
-console.log(result.filled); //  [{ key: 'name', element, value: 'John Doe', previous: '' }, ...]
-console.log(result.skipped); //  [{ key: 'birthDate', reason: 'invalid-date-format' }, ...]
-console.log(result.unmatchedKeys); //  keys the model answered that match no field
-console.log(result.missingRequired); //  required fields that are still empty
-console.log(result.raw); //  raw model output, for debugging
+result.filled; // [{ key, element, value, previous }, ...]
+result.skipped; // [{ key, reason }, ...] e.g. 'invalid-date-format'
+result.unmatchedKeys; // keys the model answered that match no field
+result.missingRequired; // required fields that are still empty
+result.raw; // raw model output, for debugging
 ```
 
-### Errors
-
-Provider and parsing failures reject with typed errors instead of failing silently:
+Because every entry records `previous`, a fill can be taken back exactly,
+including empty strings and unchecked radio groups:
 
 ```typescript
-import { ProviderError, ResponseParseError } from 'ai-form-fill';
+import { revertFill } from 'ai-form-fill';
 
-try {
-  await aiForm.fillForm(form, text);
-} catch (error) {
-  if (error instanceof ProviderError) {
-    // network / HTTP / timeout — error.provider, error.status
-  } else if (error instanceof ResponseParseError) {
-    // the model returned something unusable — error.raw has the output
-  }
-}
+revertFill(result); // everything back
+revertFill(result, ['email']); // or one field
 ```
 
-Per-field problems (an option that doesn't exist, a malformed date) never
-throw — they land in `result.skipped` with a reason.
-
-### Review before applying
-
-`fillForm` writes straight to the form. When you want the user to confirm
-first, call `extract` instead: same request, same parsing, but nothing is
-written. Write the reviewed data back with `applyExtraction`, the second half
-of `fillForm`, which returns the same `FillResult`.
-
-```typescript
-const { data, fields } = await aiForm.extract(form, text);
-
-// data is keyed by field key: { firstName: 'John', email: 'john@example.com' }
-const edited = await showReviewUI(data);
-
-const result = aiForm.applyExtraction(edited, fields);
-```
-
-`fillForm` is exactly `extract` followed by `applyExtraction`, so the two never
-drift apart. The controller exposes the same pair as `extract()` and
-`applyExtracted()`. To write a single value yourself, use the exported
-`applyFieldValue(field.element, value)`.
-
-### Lifecycle events
-
-Every fill reports itself as DOM `CustomEvent`s on the form. They bubble and
-cross shadow boundaries, so one listener can serve a whole page.
+Every fill also reports itself as DOM events on the form. They bubble and
+cross shadow boundaries, so one listener serves a whole page, and the names are
+in `HTMLElementEventMap`, so `event.detail` is typed.
 
 | Event              | `detail`                            | When                        |
 | ------------------ | ----------------------------------- | --------------------------- |
@@ -328,348 +276,97 @@ cross shadow boundaries, so one listener can serve a whole page.
 | `aff:done`         | The `FillResult`                    | After the fill finished     |
 | `aff:error`        | `{ error }`                         | Extraction failed           |
 
-```typescript
-form.addEventListener('aff:start', () => spinner.show());
-form.addEventListener('aff:field-filled', (event) => flash(event.detail.element));
-form.addEventListener('aff:done', (event) => {
-  spinner.hide();
-  console.log(`Filled ${event.detail.filled.length} field(s)`);
-});
-```
-
-The event names are added to `HTMLElementEventMap`, so `event.detail` is typed
-without a cast. `aff:error` fires before the error is rethrown, so
-`await fillForm(...)` still rejects as usual. `fillField` dispatches
-`aff:field-filled` on the field it wrote.
-
-### Undo a fill
-
-`FillResult.filled` records the value each field held before, so a fill can be
-taken back exactly, including empty strings and unchecked radio groups.
-
-```typescript
-import { revertFill } from 'ai-form-fill';
-
-const result = await aiForm.fillForm(form, text);
-revertFill(result); // everything back
-revertFill(result, ['email']); // or a single field
-```
-
-The controller wraps this as `controller.undo()`.
-
-### Required fields that are still empty
-
-`FillResult.missingRequired` lists the keys of required fields that hold no
-value after the fill, over all fields of the form and not only the ones that
-were filled. A radio or checkbox group counts as required when any member is
-required, and as empty when nothing in it is checked.
-
-```typescript
-if (result.missingRequired.length > 0) {
-  showHint(`Please complete: ${result.missingRequired.join(', ')}`);
-}
-```
-
-### Fill only the empty fields
-
-`skipFilled` leaves fields that already hold a value alone. They are dropped
-from the prompt and the schema, so the model never answers for them and they
-are never written, which also makes the request smaller.
-
-```typescript
-await aiForm.fillForm(form, text, { skipFilled: true });
-```
-
-### Fill a single field
-
-```typescript
-const bio = document.querySelector('#bio') as HTMLElement;
-const outcome = await aiForm.fillField(bio); // { value } or null
-```
-
-### Cancellation
-
-```typescript
-const controller = new AbortController();
-aiForm.fillForm(form, text, { signal: controller.signal });
-controller.abort(); // rejects with the abort reason
-```
-
----
-
-## Cloud providers (OpenAI, OpenRouter, Perplexity, ...)
-
-`OpenAICompatibleProvider` speaks the standard OpenAI wire format
-(`POST {baseUrl}/chat/completions`, `GET {baseUrl}/models`), so it works with
-**any** OpenAI-compatible endpoint. The recommended production setup is
-pointing `baseUrl` at a small server-side passthrough that injects your API
-key — see [`examples/server`](examples/server) for a ~40-line, zero-dependency
-Node proxy (LiteLLM or an API gateway work just as well):
-
-```typescript
-import { AIFormFill, OpenAICompatibleProvider } from 'ai-form-fill';
-
-// Via your proxy (recommended): the key stays server-side.
-const provider = new OpenAICompatibleProvider('openai', {
-  baseUrl: 'https://my-app.com/ai', // your passthrough
-});
-const aiForm = new AIFormFill(provider);
-```
-
-For quick local prototyping you can talk to the API directly — this requires
-an explicit opt-in because anyone can read the key from a shipped page:
-
-```typescript
-const provider = new OpenAICompatibleProvider('openrouter', {
-  apiKey: 'sk-or-...',
-  allowApiKeyInBrowser: true, // prototyping only, never production
-  model: 'openai/gpt-4o-mini',
-});
-```
-
-Presets supply default base URLs and models: `openai` → `https://api.openai.com/v1`, `openrouter` → `https://openrouter.ai/api/v1`, `perplexity` → `https://api.perplexity.ai`. Any other OpenAI-compatible service works by name + `baseUrl`:
-
-```typescript
-const lmstudio = new OpenAICompatibleProvider('lmstudio', {
-  baseUrl: 'http://localhost:1234/v1',
-  model: 'qwen2.5-7b-instruct',
-});
-```
-
-> Note: Perplexity has no `GET /models` endpoint, so `listModels()` /
-> `isAvailable()` fail against it directly — set the model explicitly or let
-> your proxy answer `/models` (the dev mocks in this repo do exactly that).
-
----
-
-## Configuration
-
-### Provider options
-
-```typescript
-new AIFormFill('ollama', {
-  model: 'gemma3:4b',
-  baseUrl: 'http://localhost:11434', // optional
-  timeout: 40000, // optional, ms
-  targetFields: ['firstName', 'email'], // optional whitelist of field keys
-  debug: true, // per-instance logging
-});
-```
-
-Defaults live in the frozen `AFF_DEFAULTS` export; all configuration is
-per-instance (there is no global mutable state).
-
-### Field targeting
-
-```typescript
-aiForm.setFields(['name', 'phone']); // only fill these
-aiForm.setFields(undefined); // back to all fields
-```
-
-Fields are identified by a stable key: `name` attribute → `id` →
-`field_<n>`, deduplicated on collision. Targeting by `name` therefore works
-naturally.
-
-### Field hints (`data-aff-hint`)
-
-Give the model per-field guidance:
-
-```html
-<input type="date" name="startDate" data-aff-hint="Use the earliest date mentioned in the text" />
-<textarea name="bio" data-aff-hint="Professional summary, max 2 sentences"></textarea>
-```
-
-### Models
-
-```typescript
-await aiForm.getAvailableModels(); // string[] (throws ProviderError when unreachable)
-await aiForm.setSelectedModel('mistral'); // validated against the list; false if not offered
-await aiForm.setSelectedModel('sonar', { validate: false }); // set unvalidated
-```
-
----
-
-## Voice input
-
-Voice stays out of the core: speech becomes text, the text goes into the same
-fill call. `ai-form-fill/voice` is a separate entry point, so importing the
-core pulls in no speech code.
-
-```typescript
-import { createFormFill } from 'ai-form-fill';
-import { createDictation, isDictationSupported } from 'ai-form-fill/voice';
-
-const controller = createFormFill({ form: '#form', source: '#text' });
-
-if (isDictationSupported()) {
-  const dictation = createDictation({
-    // The full transcript so far, interim words included.
-    onText: (text) => (textarea.value = text),
-    // Fires once, after stop() or the silence auto-stop.
-    onEnd: (text) => controller.fill(text),
-  });
-  micButton.addEventListener('click', () =>
-    dictation.listening ? dictation.stop() : dictation.start(),
-  );
-}
-```
-
-One gesture: click, speak, stop speaking. After `silenceMs` (1500 ms by
-default, `0` disables it) with no new words, the session ends on its own and
-`onEnd` fires, so no second click is needed. `createDictation` also takes
-`lang`, `interim` and `onError`. It throws when the API is missing, so guard
-with `isDictationSupported()`, which is a function and safe to import during
-server-side rendering.
-
-Chromium browsers and Safari have the Web Speech API; Firefox does not, so
-offer typing as well. Chromium sends the audio to a Google speech service,
-which is worth saying in your privacy notice. See
-[`examples/pages/voice.tsx`](examples/pages/voice.tsx) for a complete page.
-
----
-
-## Security & privacy
-
-- **API keys never belong in shipped frontend code.** The library refuses
-  `apiKey` in the browser unless you explicitly pass
-  `allowApiKeyInBrowser: true` (for local prototyping). Production setups
-  point `baseUrl` at a server-side proxy that injects the key —
-  [`examples/server`](examples/server) is a complete reference.
-- **The source text is sent to the configured provider.** Form-filling input
-  is frequently personal data (names, addresses, resumes), which matters
-  under GDPR: with the local Ollama provider the text never leaves the
-  machine; with cloud providers it goes to that vendor under your agreements
-  with them.
-- **Treat the text as untrusted (prompt injection).** The text pasted or
-  dictated by a user is model input and can contain instructions. The blast
-  radius is limited by design — extracted values only land in form fields the
-  user can review, constrained by the generated schema — but do **not**
-  auto-submit forms after filling, and validate server-side as you would for
-  any user input. When the form carries anything consequential, prefer
-  [`extract`](#review-before-applying) and an explicit confirmation step over
-  `fillForm`.
-
----
+Provider and parsing failures reject with typed errors instead of failing
+silently: `ProviderError` (with `provider` and `status`) and
+`ResponseParseError` (with `raw`). Per-field problems never throw; they land in
+`result.skipped` with a reason.
 
 ## API overview
 
-### `AIFormFill`
+| Export                                | What it is                                                               |
+| ------------------------------------- | ------------------------------------------------------------------------ |
+| `AIFormFill`                          | The class: `fillForm`, `extract`, `applyExtraction`, `fillField`, models |
+| `createFormFill(options)`             | Headless controller around a form, a text source and a trigger           |
+| `revertFill(result, keys?)`           | Undo a fill, all fields or some                                          |
+| `getFormFields`, `applyFieldValue`    | The form engine, for building your own apply step                        |
+| `OllamaProvider`                      | Local Ollama, the default                                                |
+| `OpenAICompatibleProvider`            | Any OpenAI-compatible endpoint                                           |
+| `AIProvider`                          | Base class for a custom provider                                         |
+| `ProviderError`, `ResponseParseError` | Typed failures                                                           |
+| `ai-form-fill/ui`                     | `defineFormFillElement`, `AIFormFillElement`, `DEFAULT_STRINGS`          |
+| `ai-form-fill/voice`                  | `createDictation`, `isDictationSupported`                                |
+| `ai-form-fill/react`                  | `useFormFill`                                                            |
 
-```typescript
-new AIFormFill(provider: BuiltInProviderName | AIProvider, options?: AIFormFillOptions)
-```
+Every symbol, option and type is documented in the
+[API reference](https://jdeffner.github.io/ai-form-fill/api/); the
+[wiki](https://github.com/JDeffner/ai-form-fill/wiki) has the longer guides.
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) explains the data flow and the
+extension points.
 
-| Method                                                  | Description                                                  |
-| ------------------------------------------------------- | ------------------------------------------------------------ |
-| `fillForm(form, text, opts?)`                           | Parse text, fill matching fields → `Promise<FillResult>`     |
-| `extract(form, text, opts?)`                            | Parse text only, form untouched → `Promise<ExtractResult>`   |
-| `fillField(element, opts?)`                             | Generate + apply content for one field → `{ value } \| null` |
-| `setProvider(provider)` / `getProvider()`               | Swap / read the active provider                              |
-| `setFields(keys)` / `getFields()`                       | Restrict which fields are filled                             |
-| `getAvailableModels()`                                  | Models offered by the provider                               |
-| `setSelectedModel(model, opts?)` / `getSelectedModel()` | Choose the model                                             |
-| `applyExtraction(data, fields, opts?)`                  | Write a reviewed extraction → `FillResult`                   |
-| `isProviderAvailable()`                                 | Reachability check (never throws)                            |
+## Security and privacy
 
-### `createFormFill(options)`
+- **API keys do not belong in shipped frontend code.** The library refuses
+  `apiKey` in a browser unless you pass `allowApiKeyInBrowser: true`, which is
+  for local prototyping. Production points `baseUrl` at a server-side proxy.
+- **The text goes to the configured provider.** Form input is often personal
+  data (names, addresses, CVs), which matters under the GDPR. With local Ollama
+  the text never leaves the machine; with a cloud provider it goes to that
+  vendor under your agreement with them.
+- **Treat the text as untrusted.** Text a user pastes or dictates is model
+  input and can contain instructions. The blast radius is limited by design,
+  because extracted values only reach fields of the given form and are
+  constrained by the generated schema. Still: do not auto-submit a filled form,
+  validate server-side as you would any user input, and prefer the review path
+  when the form carries anything consequential.
 
-Headless controller around `AIFormFill`:
-`{ form, source?, trigger?, provider?, model?, baseUrl?, targetFields?, skipFilled?, debug?, onState? }`
-→ `FormFillController`. Throws when an element or selector does not resolve.
+See [SECURITY.md](SECURITY.md) for what counts as a vulnerability and how to
+report one.
 
-### `useFormFill(options?)`
-
-The React hook from `ai-form-fill/react`. Same options as `createFormFill`
-without `form`, `source`, `trigger` and `onState` →
-`{ formRef, fill, extract, applyExtracted, cancel, undo, state, result, error }`.
-
-### `revertFill(result, keys?)`
-
-Restore the values a `FillResult` overwrote, all of them or only `keys`.
-
-### Providers
-
-`OllamaProvider`, `OpenAICompatibleProvider`, and the `AIProvider` base class
-for custom providers (implement `chat`, `listModels`, `isAvailable`). See
-[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for the data flow and extension
-points.
-
-### Browser support
+## Browser support
 
 Evergreen browsers (Chrome, Edge, Firefox, Safari). The library uses standard
-DOM APIs, `fetch` and `AbortController` only. The optional `ai-form-fill/voice`
-entry additionally needs the Web Speech API (Chromium and Safari, not Firefox).
-
----
+DOM APIs, `fetch` and `AbortController` only. `<ai-form-fill>` needs custom
+elements and shadow DOM, which all four have. The optional
+`ai-form-fill/voice` entry additionally needs the Web Speech API, which Firefox
+does not have.
 
 ## Examples
 
-Run `pnpm dev` and open the landing page. The demos are one small React app
-(`examples/`) styled with [shadcn/ui](https://ui.shadcn.com); React, Tailwind
-and shadcn are dev dependencies only, the library itself ships nothing but
-the bundle.
+The [live demo](https://jdeffner.github.io/ai-form-fill/) runs the pages below.
+Run them locally with `pnpm install && pnpm dev`.
 
-| Page                                                    | Description                                                      |
+| Page                                                    | Shows                                                            |
 | ------------------------------------------------------- | ---------------------------------------------------------------- |
 | [`pages/element.tsx`](examples/pages/element.tsx)       | `<ai-form-fill>` in React, with the `voice` and `review` toggles |
-| [`pages/controller.tsx`](examples/pages/controller.tsx) | Headless `createFormFill()`, state machine, undo, `FillResult`   |
+| [`pages/controller.tsx`](examples/pages/controller.tsx) | Headless `createFormFill`, state machine, undo, `FillResult`     |
 | [`pages/voice.tsx`](examples/pages/voice.tsx)           | `createDictation` transcript into `fillForm`                     |
 | [`pages/react.tsx`](examples/pages/react.tsx)           | `useFormFill` with controlled inputs                             |
-| [`pages/advanced.tsx`](examples/pages/advanced.tsx)     | Provider/model switching, single-field fill, `aff:*` event log   |
-| [`pages/script-tag.tsx`](examples/pages/script-tag.tsx) | The drop-in path, next to the plain page it describes            |
-| [`vanilla.html`](examples/vanilla.html)                 | Static page on the built script-tag bundle, no framework         |
+| [`pages/advanced.tsx`](examples/pages/advanced.tsx)     | Provider switching, single-field fill, `aff:*` event log         |
+| [`vanilla.html`](examples/vanilla.html)                 | The script tag path, no framework, no build step                 |
 | [`snippets/`](examples/snippets)                        | Vue and Svelte snippets                                          |
 | [`server/`](examples/server)                            | Zero-dependency passthrough proxy for cloud providers            |
 
-The dev server ships passthrough proxies (`mock/*.mock.ts`) for OpenAI,
-OpenRouter and Perplexity: copy `.env.example` to `.env`, add a key, pick the
-provider in the advanced demo.
+## Contributing
 
-## Development
+Issues and pull requests are welcome. [CONTRIBUTING.md](CONTRIBUTING.md) has
+the setup, the scripts, the layout of the demo app and the release process;
+[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) applies.
 
 ```bash
 pnpm install
-pnpm dev              # demo pages
-pnpm test             # unit tests (no network needed)
-pnpm test:integration # requires Ollama + gemma3:4b
-pnpm lint && pnpm typecheck && pnpm build
+pnpm dev                                            # demo pages
+pnpm lint && pnpm typecheck && pnpm test && pnpm build
 ```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for the full setup, and
-[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for how the pieces fit together.
+`dist/` is tracked in the repository, because the package is also installable
+through Composer (`jdeffner/ai-form-fill`) for PHP asset pipelines. There are
+no PHP classes; it is a JavaScript asset package.
 
-## Building
+## Thesis version
 
-`pnpm build` emits one file set per entry point to `dist/`:
-
-- `ai-form-fill.js` / `ai-form-fill.cjs` (ESM and CommonJS) plus
-  `ai-form-fill.d.ts`: the core, imported as `ai-form-fill`
-- `voice.js` / `voice.cjs` plus `voice.d.ts`: the dictation module, imported as
-  `ai-form-fill/voice`
-- `ui.js` / `ui.cjs` plus `ui.d.ts`: the `<ai-form-fill>` element, imported as
-  `ai-form-fill/ui`
-- `react.js` / `react.cjs` plus `react.d.ts`: the `useFormFill` hook, imported
-  as `ai-form-fill/react`. `react` stays external, as an optional peer
-  dependency
-- `ai-form-fill.browser.js`: everything in one minified IIFE for a script tag,
-  built by the second config (`vite.browser.config.js`) and served by unpkg and
-  jsDelivr
-
-`main` points at `dist/ai-form-fill.cjs`. The old UMD bundle
-(`dist/ai-form-fill.umd.cjs`) is gone; `dist/ai-form-fill.browser.js` replaces
-it.
-
-The `.d.ts` keeps all TSDoc comments from the source, so consumers get hover
-documentation and IntelliSense. Keep doc comments on exported APIs and leave
-`declaration: true` plus the `vite-plugin-dts` plugin enabled.
-
-### PHP / Composer
-
-The package is installable via Composer (`jdeffner/ai-form-fill`) for use in
-PHP asset pipelines: `dist/` is tracked in the repository, so include
-`dist/ai-form-fill.js` (ESM, from your bundler or a `<script type="module">`)
-or `dist/ai-form-fill.cjs` (CommonJS). There are no PHP classes; it is a
-JavaScript asset package.
+Tag `v1.0.0` is the state of the library submitted with the bachelor thesis,
+and it is identical to version 1.0.1 on npm. 2.0.0 is a rewrite with breaking
+changes; [CHANGELOG.md](CHANGELOG.md) lists all of them.
 
 ## License
 

@@ -3,17 +3,23 @@ name: CI
 on:
   push:
     branches: [main, alt-dev]
+    tags: ['v*']
   pull_request:
 
 jobs:
   checks:
+    if: ${{ !startsWith(github.ref, 'refs/tags/') }}
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [20, 22]
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: ${{ matrix.node-version }}
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
@@ -38,3 +44,20 @@ jobs:
       - run: pnpm build
       - name: Fail if dist/ is stale
         run: git diff --exit-code dist/
+
+  # A tag must name the version it points at, otherwise the release workflow
+  # would publish a package whose version does not match its tag.
+  version-tag:
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compare package.json version with the tag
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          version="$(node -p "require('./package.json').version")"
+          if [ "$tag" != "$version" ]; then
+            echo "Tag $GITHUB_REF_NAME does not match package.json version $version." >&2
+            exit 1
+          fi
+          echo "Tag and package.json agree on $version."
