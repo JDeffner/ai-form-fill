@@ -73,6 +73,7 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build && vite build -c vite.browser.config.js",
     "build:site": "vite build -c vite.site.config.js && node scripts/build-site.mjs && typedoc",
+    "wiki:sync": "node scripts/sync-wiki.mjs",
     "release:build": "pnpm build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",

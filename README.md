@@ -17,7 +17,7 @@ OpenAI-compatible API. Zero runtime dependencies.
 | You want                         | Use                                                           |
 | -------------------------------- | ------------------------------------------------------------- |
 | A finished panel, no build step  | A script tag plus `<ai-form-fill>`                            |
-| A finished panel inside your app | `import 'ai-form-fill/ui'` plus `<ai-form-fill>`              |
+| A finished panel inside your app | `defineFormFillElement()` plus `<ai-form-fill>`               |
 | Your own interface               | `createFormFill()`, `useFormFill()` or the `AIFormFill` class |
 
 The element is built on the controller, the controller is built on the class.

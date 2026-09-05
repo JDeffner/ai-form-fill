@@ -34,6 +34,7 @@ applies to every space of this project. Security problems go through
 | `pnpm typecheck`        | `tsc --noEmit`                                              |
 | `pnpm build`            | Typecheck + build `dist/` (ESM, CJS, rolled-up `.d.ts`)     |
 | `pnpm build:site`       | Build the docs site into `site/` (demo app + API reference) |
+| `pnpm wiki:sync`        | Push `docs/wiki/` to the GitHub wiki (maintainers only)     |
 
 The build has one entry per public import path: `lib/index.ts` becomes
 `dist/ai-form-fill.*` (imported as `ai-form-fill`) and `lib/voice/index.ts`
@@ -73,6 +74,16 @@ Forms in the demos use native controls (`NativeSelect`, plain checkbox and
 radio inputs) rather than the Radix-based shadcn `Select`/`Checkbox`/
 `RadioGroup`: the library writes to native form controls, and a Radix widget
 with a hidden mirror input would not update visually.
+
+## Wiki
+
+The [wiki](https://github.com/JDeffner/ai-form-fill/wiki) is authored in this repository, under
+`docs/wiki/`. Edit the page files there and open a pull request like any other change; do not edit
+the pages in the GitHub wiki UI, because the next sync overwrites them. After the pull request is
+merged, a maintainer runs `pnpm wiki:sync`, which clones the wiki repository, replaces its Markdown
+with `docs/wiki/*.md` and pushes. File names become page titles, so `Getting-Started.md` is the page
+"Getting Started" and links between pages are `[Getting Started](Getting-Started)`. `_Sidebar.md` and
+`_Footer.md` are the wiki's navigation.
 
 ## Docs site
 
