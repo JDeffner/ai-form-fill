@@ -29,7 +29,12 @@ Thanks for your interest in improving `ai-form-fill`!
 | `pnpm format`           | Prettier write                                          |
 | `pnpm format:check`     | Prettier check (CI mode)                                |
 | `pnpm typecheck`        | `tsc --noEmit`                                          |
-| `pnpm build`            | Typecheck + build `dist/` (ESM, UMD, rolled-up `.d.ts`) |
+| `pnpm build`            | Typecheck + build `dist/` (ESM, CJS, rolled-up `.d.ts`) |
+
+The build has one entry per public import path: `lib/index.ts` becomes
+`dist/ai-form-fill.*` (imported as `ai-form-fill`) and `lib/voice/index.ts`
+becomes `dist/voice.*` (imported as `ai-form-fill/voice`). Add an entry in
+`vite.config.js` and an `exports` key in `package.json` for every new one.
 
 ## Tests
 

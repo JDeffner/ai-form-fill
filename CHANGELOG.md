@@ -9,8 +9,21 @@
   Use `createFormFill({ form, source, trigger })`, which takes elements or
   selectors, has real teardown, and reports state. The `AutoInitOptions` type
   and the `data-aff-provider` / `data-aff-model` attributes are gone with it.
+- **The UMD bundle is removed.** `dist/ai-form-fill.umd.cjs` is gone and
+  `main` now points at `dist/ai-form-fill.cjs`. Use the ESM build
+  (`dist/ai-form-fill.js`) from a bundler or a `<script type="module">`. A
+  script-tag bundle comes back in a later release.
 
 ### Added
+
+- **`ai-form-fill/voice`**, a separate entry point with `createDictation` and
+  `isDictationSupported`. `createDictation` wraps the browser's Web Speech
+  API: it reports the full transcript on every result (interim words
+  included), stops on its own after a configurable silence window
+  (`silenceMs`, 1500 ms by default), and calls `onEnd` exactly once per
+  session, so one click covers speak-and-fill. Options: `lang`, `interim`,
+  `silenceMs`, `onText`, `onEnd`, `onError`. New exported types `Dictation`
+  and `DictationOptions`. The core bundle carries no speech code.
 
 - **`AIFormFill.extract(form, text, opts?)`** returns the parsed model output
   (`{ data, fields, raw }`) without writing anything to the form, so callers
@@ -58,9 +71,15 @@
 - The Basic and Voice demo pages create a controller in an effect and destroy
   it on unmount; the fill flash listens for `aff:field-filled` instead of
   guessing from untrusted `input` events.
+- **The build has one entry per public import path.** `vite.config.js` builds
+  `lib/index.ts` into `dist/ai-form-fill.*` and `lib/voice/index.ts` into
+  `dist/voice.*`, each as ESM, CommonJS and a rolled-up `.d.ts`, with a
+  matching `exports` key in `package.json`.
 - `pnpm build` appends the `HTMLElementEventMap` augmentation to the rolled-up
-  `dist/ai-form-fill.d.ts` (`scripts/append-event-types.js`), because API
-  Extractor drops `declare global` blocks when it bundles declarations.
+  `dist/ai-form-fill.d.ts`, because API Extractor drops `declare global`
+  blocks when it bundles declarations. This is now a `vite-plugin-dts`
+  `afterBuild` hook instead of the separate `scripts/append-event-types.js`
+  step, which is deleted.
 
 ## 0.9.0 (2026-07-02)
 
