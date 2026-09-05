@@ -4,27 +4,36 @@ import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/ca
 
 const CARDS = [
   {
-    path: 'basic',
-    title: 'Basic',
-    text: 'The one-line createFormFill() setup. A contact form filled from a short introduction.',
+    path: 'element',
+    title: 'Element',
+    text: 'Drop <ai-form-fill> next to a form and the user gets the finished panel: text box, microphone, status, undo, review.',
   },
   {
-    path: 'advanced',
-    title: 'Advanced',
-    text: 'Switch providers and models, fill a single field, and read the full FillResult in a log.',
+    path: 'controller',
+    title: 'Controller',
+    text: 'The headless createFormFill() setup: your own markup, the state machine and the full FillResult.',
   },
   {
     path: 'voice',
     title: 'Voice',
-    text: 'Dictate with the Web Speech API; the transcript goes into the same fillForm call.',
+    text: 'Dictate with the Web Speech API; the transcript goes into the same fill call.',
   },
   {
-    path: 'controlled',
-    title: 'React controlled',
-    text: 'Controlled components: AI-filled values update React state exactly like typing.',
+    path: 'react',
+    title: 'React hook',
+    text: 'useFormFill from ai-form-fill/react. Controlled inputs receive AI-filled values like typed ones.',
+  },
+  {
+    path: 'advanced',
+    title: 'Advanced',
+    text: 'Switch providers and models, fill a single field, and follow the aff:* lifecycle events in a log.',
+  },
+  {
+    path: 'script-tag',
+    title: 'Script tag',
+    text: 'One script tag, no bundler. The same element on a plain HTML page.',
   },
 ];
-
 export function Home() {
   return (
     <>
@@ -44,7 +53,7 @@ export function Home() {
         </p>
       </section>
 
-      <section className="mt-12 grid gap-4 sm:grid-cols-2">
+      <section className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {CARDS.map((c, i) => (
           <a key={c.path} href={`#/${c.path}`} className="group">
             <Card className="h-full transition-colors group-hover:bg-muted/50">

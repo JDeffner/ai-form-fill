@@ -17,6 +17,15 @@ export function PageHeader(props: { title: string; children: ReactNode }) {
   );
 }
 
+/** A read-only snippet. No highlighting: the demos show a handful of lines. */
+export function CodeBlock(props: { children: string }) {
+  return (
+    <pre className="overflow-x-auto rounded-md bg-muted p-4 font-mono text-xs leading-relaxed">
+      {props.children}
+    </pre>
+  );
+}
+
 export function Field(props: { label: string; htmlFor?: string; children: ReactNode }) {
   return (
     <div className="grid gap-2">

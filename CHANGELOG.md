@@ -16,6 +16,16 @@
 
 ### Added
 
+- **`ai-form-fill/react`, a React hook.** `useFormFill(options?)` returns a
+  `formRef` for the form plus `fill`, `extract`, `applyExtracted`, `cancel`,
+  `undo` and the current `state`, `result` and `error`. It creates the
+  controller when the form mounts and destroys it when the form unmounts, and
+  reads the snapshot through `useSyncExternalStore`, so a fill is ordinary
+  React state. Controlled inputs need no extra code. `react` is an optional
+  peer dependency (`>=18`) and stays external in the build, so the other entry
+  points are unaffected. New exported types `UseFormFillOptions` and
+  `UseFormFillResult`.
+
 - **`<ai-form-fill>`, the ready-made interface.** Two lines of HTML next to a
   form give the user a text box, an optional microphone, a fill button, live
   status, a summary of what was filled and what is still missing, undo, and an
@@ -82,20 +92,30 @@
 
 ### Changed
 
-- **Demo pages rebuilt on shadcn/ui.** `examples/` is now one small React app
-  (hash-routed: Basic, Advanced, Voice, React controlled) styled with stock
-  shadcn/ui components and Tailwind v4, replacing ~1000 lines of bespoke CSS.
-  Everything added is a dev dependency; the published bundle is unchanged.
-  Forms keep native controls (`NativeSelect`, native checkbox/radio), because
-  the library fills native elements.
+- **Demo pages rebuilt on shadcn/ui and reorganised around the ready-made
+  paths.** `examples/` is one small React app styled with stock shadcn/ui
+  components and Tailwind v4, replacing ~1000 lines of bespoke CSS. The
+  hash-routed pages are Element, Controller, Voice, React hook, Advanced and
+  Script tag: Element shows `<ai-form-fill>` inside React with live `voice`
+  and `review` toggles, Controller is the headless setup with the state
+  machine, undo and a `FillResult` table, React hook is built on
+  `useFormFill`, and Script tag explains the drop-in next to
+  `examples/vanilla.html`, a static page served against the built bundle.
+  `examples/snippets/` adds Vue and Svelte snippets. Everything added is a dev
+  dependency; the published bundle is unchanged. Forms keep native controls
+  (`NativeSelect`, native checkbox/radio), because the library fills native
+  elements.
 - Removed the unused `mock/form.mock.ts` endpoints; moved the executed rework
   plan to `docs/REWORK-PLAN.md`.
-- The Basic and Voice demo pages create a controller in an effect and destroy
-  it on unmount; the fill flash listens for `aff:field-filled` instead of
-  guessing from untrusted `input` events.
+- The demo pages create their controller in an effect and destroy it on
+  unmount; the fill flash sets `data-aff-filled` from `aff:field-filled`, the
+  same attribute `<ai-form-fill>` sets, so one CSS rule covers every page.
+- The Advanced log listens for the `aff:*` events on the form instead of
+  wrapping the fill call.
 - **The build has one entry per public import path.** `vite.config.js` builds
-  `lib/index.ts` into `dist/ai-form-fill.*` and `lib/voice/index.ts` into
-  `dist/voice.*`, each as ESM, CommonJS and a rolled-up `.d.ts`, with a
+  `lib/index.ts` into `dist/ai-form-fill.*`, `lib/voice/index.ts` into
+  `dist/voice.*`, `lib/ui/index.ts` into `dist/ui.*` and `lib/react/index.ts`
+  into `dist/react.*`, each as ESM, CommonJS and a rolled-up `.d.ts`, with a
   matching `exports` key in `package.json`.
 - `pnpm build` appends the `HTMLElementEventMap` augmentation to the rolled-up
   `dist/ai-form-fill.d.ts`, because API Extractor drops `declare global`

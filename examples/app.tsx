@@ -3,19 +3,23 @@ import { Moon, Sun } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Home } from './pages/home';
-import { Basic } from './pages/basic';
-import { Advanced } from './pages/advanced';
+import { Element } from './pages/element';
+import { Controller } from './pages/controller';
 import { Voice } from './pages/voice';
-import { Controlled } from './pages/controlled';
+import { ReactHook } from './pages/react';
+import { Advanced } from './pages/advanced';
+import { ScriptTag } from './pages/script-tag';
 
 export const DEMOS = [
-  { path: 'basic', title: 'Basic', page: Basic },
-  { path: 'advanced', title: 'Advanced', page: Advanced },
+  { path: 'element', title: 'Element', page: Element },
+  { path: 'controller', title: 'Controller', page: Controller },
   { path: 'voice', title: 'Voice', page: Voice },
-  { path: 'controlled', title: 'React controlled', page: Controlled },
+  { path: 'react', title: 'React hook', page: ReactHook },
+  { path: 'advanced', title: 'Advanced', page: Advanced },
+  { path: 'script-tag', title: 'Script tag', page: ScriptTag },
 ];
 
-/** Minimal hash router: `#/basic`, `#/advanced`, ... and `#/` for the landing page. */
+/** Minimal hash router: `#/element`, `#/controller`, ... and `#/` for the landing page. */
 function useRoute() {
   const read = () => window.location.hash.replace(/^#\/?/, '');
   const [route, setRoute] = useState(read);

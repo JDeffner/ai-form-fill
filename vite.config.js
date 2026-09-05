@@ -60,13 +60,16 @@ export default defineConfig(({ mode }) => {
           'ai-form-fill': resolve(__dirname, 'lib/index.ts'),
           voice: resolve(__dirname, 'lib/voice/index.ts'),
           ui: resolve(__dirname, 'lib/ui/index.ts'),
+          react: resolve(__dirname, 'lib/react/index.ts'),
         },
         formats: ['es', 'cjs'],
         fileName: (format, entryName) => `${entryName}.${format === 'cjs' ? 'cjs' : 'js'}`,
       },
       rollupOptions: {
-        // The library has no runtime dependencies, so nothing is external.
-        external: [],
+        // The library has no runtime dependencies. `react` is an optional
+        // peer dependency of the `ai-form-fill/react` entry only, so it is
+        // left to the consumer's bundler instead of being inlined.
+        external: ['react'],
       },
     },
     plugins: [
@@ -76,6 +79,10 @@ export default defineConfig(({ mode }) => {
       // `prefix` makes the plugin intercept /api/* without a server.proxy entry.
       mockDevServerPlugin({ prefix: '^/api' }),
       dts({
+        // Only the library. Without this, `declare module` blocks from the
+        // demo app (the JSX augmentation for <ai-form-fill>) end up in every
+        // rolled-up declaration file.
+        include: ['lib/**/*.ts'],
         insertTypesEntry: true,
         rollupTypes: true,
         tsconfigPath: './tsconfig.json',
@@ -89,7 +96,7 @@ export default defineConfig(({ mode }) => {
           test: {
             name: 'unit',
             environment: 'jsdom',
-            include: ['tests/**/*.test.ts'],
+            include: ['tests/**/*.test.{ts,tsx}'],
             exclude: ['tests/integration/**'],
           },
         },

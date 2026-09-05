@@ -29,6 +29,9 @@ describe.skipIf(!built)('build entry points', () => {
       'ui.js',
       'ui.cjs',
       'ui.d.ts',
+      'react.js',
+      'react.cjs',
+      'react.d.ts',
     ]) {
       expect(existsSync(dist(file)), `dist/${file} is missing`).toBe(true);
     }
@@ -40,6 +43,19 @@ describe.skipIf(!built)('build entry points', () => {
     expect(core).not.toContain('SpeechRecognition');
     expect(core).not.toContain('customElements');
     expect(core).not.toMatch(/from\s*["'][^"']*(voice|ui)/);
+  });
+
+  it('keeps react out of every entry but the react one', () => {
+    for (const file of ['ai-form-fill.js', 'voice.js', 'ui.js', 'ai-form-fill.browser.js']) {
+      expect(read(file), `dist/${file} pulls in react`).not.toMatch(/["']react["']/);
+    }
+  });
+
+  it('imports react from the react entry instead of bundling it', () => {
+    expect(read('react.js')).toMatch(/from\s*["']react["']/);
+    expect(read('react.js')).toMatch(/export\s*\{[^}]*useFormFill/);
+    expect(read('react.cjs')).toContain('useFormFill');
+    expect(read('react.d.ts')).toContain('declare function useFormFill');
   });
 
   it('exports the custom element from the ui entry', () => {

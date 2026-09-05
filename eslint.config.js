@@ -28,7 +28,7 @@ export default tseslint.config(
   },
   // Tests, examples and dev mocks: standard (non-type-aware) rules, relaxed.
   {
-    files: ['tests/**/*.ts', 'examples/**/*.{ts,tsx}', 'mock/**/*.ts'],
+    files: ['tests/**/*.{ts,tsx}', 'examples/**/*.{ts,tsx}', 'mock/**/*.ts'],
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     languageOptions: {
       globals: { ...globals.browser, ...globals.node },

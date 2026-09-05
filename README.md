@@ -209,6 +209,52 @@ One script tag registers the element and puts the whole library on the
 
 ---
 
+## React
+
+`ai-form-fill/react` is one hook. It creates the controller when the form
+mounts, destroys it when the form unmounts, and reports the state as plain
+React state. `react` is an optional peer dependency, so nothing changes for
+users of the other entry points.
+
+```tsx
+import { useState } from 'react';
+import { useFormFill } from 'ai-form-fill/react';
+
+export function Contact() {
+  const [values, setValues] = useState({ name: '', email: '' });
+  const [text, setText] = useState('');
+  const { formRef, fill, state, result } = useFormFill();
+  const set = (key: 'name' | 'email') => (e) => setValues((v) => ({ ...v, [key]: e.target.value }));
+
+  return (
+    <>
+      <textarea value={text} onChange={(e) => setText(e.target.value)} />
+      <button disabled={state === 'working'} onClick={() => fill(text)}>
+        Fill form
+      </button>
+      {result && <p>Filled {result.filled.length} field(s).</p>}
+      <form ref={formRef}>
+        <input name="name" value={values.name} onChange={set('name')} />
+        <input name="email" value={values.email} onChange={set('email')} />
+      </form>
+    </>
+  );
+}
+```
+
+Controlled inputs work without extra code: values are written through the
+native prototype setters before the `input` event, so React state updates on an
+AI fill exactly like on typing.
+
+The hook returns `formRef`, `fill(text)`, `extract(text)`,
+`applyExtracted(data, fields)`, `cancel()`, `undo()`, and the `state`, `result`
+and `error` of the controller. It takes the same options as `createFormFill`
+minus `form`, `source`, `trigger` and `onState`; they are read once, when the
+controller is created, so remount the form (a `key` is enough) to switch
+provider or model.
+
+---
+
 ## Using the class directly
 
 ```typescript
@@ -531,6 +577,12 @@ Headless controller around `AIFormFill`:
 `{ form, source?, trigger?, provider?, model?, baseUrl?, targetFields?, skipFilled?, debug?, onState? }`
 → `FormFillController`. Throws when an element or selector does not resolve.
 
+### `useFormFill(options?)`
+
+The React hook from `ai-form-fill/react`. Same options as `createFormFill`
+without `form`, `source`, `trigger` and `onState` →
+`{ formRef, fill, extract, applyExtracted, cancel, undo, state, result, error }`.
+
 ### `revertFill(result, keys?)`
 
 Restore the values a `FillResult` overwrote, all of them or only `keys`.
@@ -557,13 +609,17 @@ Run `pnpm dev` and open the landing page. The demos are one small React app
 and shadcn are dev dependencies only, the library itself ships nothing but
 the bundle.
 
-| Page                                                    | Description                                                   |
-| ------------------------------------------------------- | ------------------------------------------------------------- |
-| [`pages/basic.tsx`](examples/pages/basic.tsx)           | One-call `createFormFill()` setup                             |
-| [`pages/advanced.tsx`](examples/pages/advanced.tsx)     | Provider/model switching, single-field fill, `FillResult` log |
-| [`pages/voice.tsx`](examples/pages/voice.tsx)           | `createDictation` transcript into `fillForm`                  |
-| [`pages/controlled.tsx`](examples/pages/controlled.tsx) | Controlled React components receive AI-filled values          |
-| [`server/`](examples/server)                            | Zero-dependency passthrough proxy for cloud providers         |
+| Page                                                    | Description                                                      |
+| ------------------------------------------------------- | ---------------------------------------------------------------- |
+| [`pages/element.tsx`](examples/pages/element.tsx)       | `<ai-form-fill>` in React, with the `voice` and `review` toggles |
+| [`pages/controller.tsx`](examples/pages/controller.tsx) | Headless `createFormFill()`, state machine, undo, `FillResult`   |
+| [`pages/voice.tsx`](examples/pages/voice.tsx)           | `createDictation` transcript into `fillForm`                     |
+| [`pages/react.tsx`](examples/pages/react.tsx)           | `useFormFill` with controlled inputs                             |
+| [`pages/advanced.tsx`](examples/pages/advanced.tsx)     | Provider/model switching, single-field fill, `aff:*` event log   |
+| [`pages/script-tag.tsx`](examples/pages/script-tag.tsx) | The drop-in path, next to the plain page it describes            |
+| [`vanilla.html`](examples/vanilla.html)                 | Static page on the built script-tag bundle, no framework         |
+| [`snippets/`](examples/snippets)                        | Vue and Svelte snippets                                          |
+| [`server/`](examples/server)                            | Zero-dependency passthrough proxy for cloud providers            |
 
 The dev server ships passthrough proxies (`mock/*.mock.ts`) for OpenAI,
 OpenRouter and Perplexity: copy `.env.example` to `.env`, add a key, pick the
@@ -592,6 +648,9 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the full setup, and
   `ai-form-fill/voice`
 - `ui.js` / `ui.cjs` plus `ui.d.ts`: the `<ai-form-fill>` element, imported as
   `ai-form-fill/ui`
+- `react.js` / `react.cjs` plus `react.d.ts`: the `useFormFill` hook, imported
+  as `ai-form-fill/react`. `react` stays external, as an optional peer
+  dependency
 - `ai-form-fill.browser.js`: everything in one minified IIFE for a script tag,
   built by the second config (`vite.browser.config.js`) and served by unpkg and
   jsDelivr
