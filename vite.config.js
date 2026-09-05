@@ -51,13 +51,15 @@ export default defineConfig(({ mode }) => {
     resolve: { alias: { '@': resolve(__dirname, 'examples') } },
     build: {
       lib: {
-        // One entry per public import path. `ai-form-fill/voice` is separate
-        // so the core bundle carries no speech code.
+        // One entry per public import path. `ai-form-fill/voice` and
+        // `ai-form-fill/ui` are separate so the core bundle carries neither
+        // speech code nor markup.
         // The entry key is the output file name, so the core keeps the names
         // it has always had: dist/ai-form-fill.js, .cjs and .d.ts.
         entry: {
           'ai-form-fill': resolve(__dirname, 'lib/index.ts'),
           voice: resolve(__dirname, 'lib/voice/index.ts'),
+          ui: resolve(__dirname, 'lib/ui/index.ts'),
         },
         formats: ['es', 'cjs'],
         fileName: (format, entryName) => `${entryName}.${format === 'cjs' ? 'cjs' : 'js'}`,
