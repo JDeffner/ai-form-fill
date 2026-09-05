@@ -1,8 +1,9 @@
 /**
  * Advanced demo: provider and model switching, single-field fill, and the
- * full `FillResult` in a log.
+ * `aff:*` lifecycle events in a log. The log listens on the form instead of
+ * wrapping the fill call, which is what a real page would do.
  */
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   AIFormFill,
   OllamaProvider,
@@ -51,8 +52,11 @@ export function Advanced() {
   const [log, setLog] = useState<LogEntry[]>([]);
   const [selectedField, setSelectedField] = useState<HTMLElement | null>(null);
 
-  const logLine = (text: string, kind?: Kind) =>
-    setLog((prev) => [...prev, { time: new Date().toLocaleTimeString(), text, kind }]);
+  const logLine = useCallback(
+    (text: string, kind?: Kind) =>
+      setLog((prev) => [...prev, { time: new Date().toLocaleTimeString(), text, kind }]),
+    [],
+  );
   const fail = (text: string, error: unknown) => {
     setStatus({ text, kind: 'error' });
     logLine(`${text}: ${String(error)}`, 'error');
@@ -76,6 +80,40 @@ export function Advanced() {
       .catch((error) => fail('Could not load models. Is the service running?', error));
   }, [aff, providerName]);
 
+  // The library reports every step as a bubbling event on the form, so the log
+  // needs no wrapper around the fill call. `fillField` dispatches
+  // `aff:field-filled` on the field it wrote, which bubbles to the form too.
+  useEffect(() => {
+    const form = formRef.current;
+    if (!form) return;
+
+    const onStart = (event: HTMLElementEventMap['aff:start']) =>
+      logLine(`aff:start - ${event.detail.text.length} characters sent`);
+    const onFieldFilled = (event: HTMLElementEventMap['aff:field-filled']) =>
+      logLine(`aff:field-filled - ${event.detail.key} = ${String(event.detail.value)}`);
+    const onDone = (event: HTMLElementEventMap['aff:done']) => {
+      const { filled, skipped, unmatchedKeys, missingRequired } = event.detail;
+      logLine(
+        `aff:done - ${filled.length} filled, ${skipped.length} skipped, ` +
+          `${unmatchedKeys.length} unmatched, ${missingRequired.length} required still empty`,
+        'success',
+      );
+    };
+    const onError = (event: HTMLElementEventMap['aff:error']) =>
+      logLine(`aff:error - ${String(event.detail.error)}`, 'error');
+
+    form.addEventListener('aff:start', onStart);
+    form.addEventListener('aff:field-filled', onFieldFilled);
+    form.addEventListener('aff:done', onDone);
+    form.addEventListener('aff:error', onError);
+    return () => {
+      form.removeEventListener('aff:start', onStart);
+      form.removeEventListener('aff:field-filled', onFieldFilled);
+      form.removeEventListener('aff:done', onDone);
+      form.removeEventListener('aff:error', onError);
+    };
+  }, [logLine]);
+
   const initialize = async () => {
     if (!model) return setStatus({ text: 'Select a model first', kind: 'warning' });
     const ok = await aff.setSelectedModel(model);
@@ -95,20 +133,9 @@ export function Advanced() {
   const fillForm = async () => {
     if (!text.trim()) return setStatus({ text: 'Enter some text first', kind: 'warning' });
     setStatus({ text: 'Filling form...', kind: 'info' });
-    logLine('Starting fill...');
     try {
       const result = await aff.fillForm(formRef.current!, text);
       setStatus({ text: `Filled ${result.filled.length} field(s)`, kind: 'success' });
-      logLine(`Filled: ${result.filled.map((f) => f.key).join(', ') || '(none)'}`, 'success');
-      if (result.skipped.length) {
-        logLine(
-          `Skipped: ${result.skipped.map((s) => `${s.key} (${s.reason})`).join(', ')}`,
-          'warning',
-        );
-      }
-      if (result.unmatchedKeys.length) {
-        logLine(`Unmatched keys from model: ${result.unmatchedKeys.join(', ')}`, 'warning');
-      }
     } catch (error) {
       fail('Error filling form', error);
     }
@@ -125,10 +152,7 @@ export function Advanced() {
           ? { text: 'Field filled', kind: 'success' }
           : { text: 'Model produced no usable value', kind: 'warning' },
       );
-      logLine(
-        outcome ? `Field filled with: ${outcome.value}` : 'No usable value for this field',
-        outcome ? 'success' : 'warning',
-      );
+      if (!outcome) logLine('No usable value for this field', 'warning');
     } catch (error) {
       fail('Error filling field', error);
     }
@@ -140,8 +164,10 @@ export function Advanced() {
   return (
     <>
       <PageHeader title="Provider switching and full results">
-        Pick a provider and model, fill the whole form or a single field, and read the{' '}
-        <code>FillResult</code> (filled, skipped and unmatched keys) in the log.
+        Pick a provider and model, fill the whole form or a single field, and follow the{' '}
+        <code>aff:start</code>, <code>aff:field-filled</code>, <code>aff:done</code> and{' '}
+        <code>aff:error</code> events in the log. The log listens on the form; nothing wraps the
+        fill call.
       </PageHeader>
 
       <div className="grid gap-6 lg:grid-cols-[2fr_3fr]">
@@ -254,7 +280,7 @@ export function Advanced() {
             <div className="max-h-80 overflow-auto rounded-md bg-muted p-4 font-mono text-xs">
               {log.length === 0 && (
                 <p className="text-muted-foreground">
-                  Results and debug information will appear here.
+                  The lifecycle events of a fill will appear here.
                 </p>
               )}
               {log.map((entry, i) => (

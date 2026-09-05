@@ -91,7 +91,9 @@
   }
 }
 
-/* A field briefly highlights when the library writes into it (see fill-flash.ts). */
+/* A field briefly highlights when the library writes into it. `<ai-form-fill>`
+   sets `data-aff-filled` itself; fill-flash.ts sets it on the controller pages.
+   `--color-ring` is a theme token, so this reads in light and dark mode. */
 @keyframes aff-flash {
   from {
     box-shadow: 0 0 0 3px var(--color-ring);
@@ -100,11 +102,12 @@
     box-shadow: 0 0 0 0 transparent;
   }
 }
-.aff-flash {
+[data-aff-filled] {
   animation: aff-flash 900ms ease-out;
 }
 @media (prefers-reduced-motion: reduce) {
-  .aff-flash {
+  [data-aff-filled] {
     animation: none;
+    box-shadow: 0 0 0 3px var(--color-ring);
   }
 }

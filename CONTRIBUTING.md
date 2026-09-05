@@ -52,11 +52,18 @@ becomes `dist/voice.*` (imported as `ai-form-fill/voice`). Add an entry in
 ## Demo app
 
 `examples/` is a small React app (hash-routed pages in `examples/pages/`)
-styled with shadcn/ui; the generated components live in
+styled with shadcn/ui. The pages are Element (`<ai-form-fill>` inside React),
+Controller (headless `createFormFill`), Voice, React hook (`useFormFill`),
+Advanced (provider switching and the `aff:*` event log) and Script tag, which
+links to `examples/vanilla.html`. That page is static, loads
+`/dist/ai-form-fill.browser.js` and imports nothing from `lib/`, so run
+`pnpm build` once before opening it. `examples/snippets/` holds the Vue and
+Svelte snippets. The generated shadcn components live in
 `examples/components/ui/` and `components.json` configures the shadcn CLI
 (`pnpm dlx shadcn@latest add <component>`). The `@/` alias points at
 `examples/`. All of this is dev-only: the library build (`lib/`) has no
-React, Tailwind or shadcn dependency.
+Tailwind or shadcn dependency, and the only entry that touches React is
+`lib/react/`, where `react` is an optional peer dependency left external.
 
 Forms in the demos use native controls (`NativeSelect`, plain checkbox and
 radio inputs) rather than the Radix-based shadcn `Select`/`Checkbox`/

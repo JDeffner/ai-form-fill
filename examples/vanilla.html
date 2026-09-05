@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ai-form-fill without a bundler</title>
+    <style>
+      /* The element inherits the page font and text colour, so following the
+         OS theme here is enough to make the panel follow it too. */
+      :root {
+        color-scheme: light dark;
+        --bg: #ffffff;
+        --fg: #1a1a1a;
+        --muted: #555555;
+        --border: #cccccc;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #14161a;
+          --fg: #e9eaec;
+          --muted: #a0a4ab;
+          --border: #3a3f47;
+        }
+      }
+      body {
+        margin: 0 auto;
+        max-width: 40rem;
+        padding: 2rem 1rem 4rem;
+        font-family: system-ui, sans-serif;
+        line-height: 1.5;
+        background: var(--bg);
+        color: var(--fg);
+      }
+      h1 {
+        font-size: 1.5rem;
+      }
+      p {
+        color: var(--muted);
+      }
+      form {
+        display: grid;
+        gap: 0.75rem;
+        margin-top: 1.5rem;
+      }
+      label {
+        display: grid;
+        gap: 0.25rem;
+        font-size: 0.875rem;
+      }
+      input,
+      textarea {
+        font: inherit;
+        padding: 0.5rem;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: var(--bg);
+        color: var(--fg);
+      }
+      /* The element marks every field it writes for 1.5 seconds. */
+      [data-aff-filled] {
+        outline: 2px solid #3b82f6;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>ai-form-fill without a bundler</h1>
+    <p>
+      One script tag and one custom element. No import, no build step. This page is served from
+      <code>examples/vanilla.html</code> and loads the built bundle from <code>dist/</code>, so run
+      <code>pnpm build</code> once before opening it. It fills against local Ollama.
+    </p>
+
+    <ai-form-fill for="#form" voice review></ai-form-fill>
+
+    <form id="form">
+      <label>
+        Name
+        <input name="name" type="text" required />
+      </label>
+      <label>
+        Email
+        <input name="email" type="email" required />
+      </label>
+      <label>
+        Phone
+        <input name="phone" type="tel" />
+      </label>
+      <label>
+        City
+        <input name="city" type="text" />
+      </label>
+      <label>
+        About
+        <textarea name="about" rows="3"></textarea>
+      </label>
+    </form>
+
+    <!-- Loaded last, so the element upgrades when the form it points at exists. -->
+    <script src="/dist/ai-form-fill.browser.js"></script>
+  </body>
+</html>
